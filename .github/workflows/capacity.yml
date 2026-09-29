@@ -2,9 +2,43 @@ name: Kumwe sampled capacity
 
 on:
   pull_request:
+    paths:
+      - '.github/workflows/capacity.yml'
+      - 'src/Application/Automation/**'
+      - 'src/Infrastructure/Automation/**'
+      - 'src/Infrastructure/Persistence/**'
+      - 'src/BusinessRecord/**'
+      - 'src/BusinessSchema/**'
+      - 'src/BusinessIntegration/**'
+      - 'src/BusinessReporting/**'
+      - 'src/Kernel/ContainerFactory.php'
+      - 'tools/perf*'
+      - 'tests/Integration/Automation/**'
+      - 'tests/Integration/BusinessRecord/**'
+      - 'tests/Support/*Performance*'
+      - 'tests/Support/*Concurrent*'
+      - 'composer.lock'
   push:
     branches: [master]
+    paths:
+      - '.github/workflows/capacity.yml'
+      - 'src/Application/Automation/**'
+      - 'src/Infrastructure/Automation/**'
+      - 'src/Infrastructure/Persistence/**'
+      - 'src/BusinessRecord/**'
+      - 'src/BusinessSchema/**'
+      - 'src/BusinessIntegration/**'
+      - 'src/BusinessReporting/**'
+      - 'src/Kernel/ContainerFactory.php'
+      - 'tools/perf*'
+      - 'tests/Integration/Automation/**'
+      - 'tests/Integration/BusinessRecord/**'
+      - 'tests/Support/*Performance*'
+      - 'tests/Support/*Concurrent*'
+      - 'composer.lock'
   merge_group:
+  schedule:
+    - cron: '37 2 * * *'
   workflow_dispatch:
     inputs:
       samples:
@@ -28,7 +62,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: capacity-${{ github.workflow }}-${{ github.ref }}
+  group: capacity-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:

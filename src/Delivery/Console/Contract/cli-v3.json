@@ -2,7 +2,7 @@
   "format": "kumwe-cli-machine-contract-v1",
   "generation": 3,
   "status": "retained",
-  "surface_digest": "sha256:351a13360fdf4dd95d2d34e74426ea6e7c2113534fbea2b24ef479a6f5d71a5b",
+  "surface_digest": "sha256:aefa6edc2ebe1cc015b4d9aa5c2fcb803a29c2719678ce95f7b548b62792e32f",
   "dispatcher": {
     "list_exit": 0,
     "unknown_command_exit": 64,
@@ -101,6 +101,21 @@
       "exit_codes": {"0":"ready","1":"not-ready"},
       "actions": [
         {"name":"invoke","risk":"read","positionals":[],"allowed_options":[],"required_options":[],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "app:diagnostics",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"section","type":"enum","enum":["contention","queues","slow","backlog","retention"]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"invoke","risk":"read","positionals":[],"allowed_options":["site","token-file","section"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
       ]
     },
     {

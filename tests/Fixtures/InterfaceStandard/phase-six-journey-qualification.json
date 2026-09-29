@@ -3,6 +3,7 @@
   "schema_version": 1,
   "phase": 6,
   "standard": "kis-1.0",
+  "note": "Historical Phase 6 acceptance evidence map retained for review provenance. Source markers and CI job assignments describe the reviewed revision; current behavior is verified by the application and browser test suites, not by this inventory.",
   "execution_owners": [
     {
       "id": "ci-browser-bootstrap",

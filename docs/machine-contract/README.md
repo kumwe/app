@@ -115,9 +115,9 @@ still served unchanged beside it:
 
 | Contract | Current generation | Retained predecessor | Regenerate with |
 |---|---|---|---|
-| CLI | `cli-v3` — 54 commands (`src/Delivery/Console/Contract/cli-v3.json`, mirrored in `docs/machine-contract/cli-v3.json`) | `cli-v1`, 44 commands; `cli-v2`, 54 commands | `php tools/verify-cli-machine-contract.php --rehash-successor` after adding a reviewed command, then `--write` |
-| MCP | `mcp-v2` — 124 tools (`docs/machine-contract/mcp-v2.json`) | `mcp-v1`, 75 tools | `php tools/generate-mcp-machine-contract.php --write` |
-| REST | `1.1.0` — 142 operations (`api/openapi/generations/1.1.0/`) | `1.0.0` (`api/openapi/kumwe-v1.json`) | `composer openapi:accept-generation` from `api/openapi/generations/1.1.0/core.json` |
+| CLI | `cli-v3` — 55 commands (`src/Delivery/Console/Contract/cli-v3.json`, mirrored in `docs/machine-contract/cli-v3.json`) | `cli-v1`, 44 commands; `cli-v2`, 54 commands | `php tools/verify-cli-machine-contract.php --rehash-successor` after adding a reviewed command, then `--write` |
+| MCP | `mcp-v2` — 125 tools (`docs/machine-contract/mcp-v2.json`) | `mcp-v1`, 75 tools | `php tools/generate-mcp-machine-contract.php --write` |
+| REST | `1.1.0` — 143 operations (`api/openapi/generations/1.1.0/`) | `1.0.0` (`api/openapi/kumwe-v1.json`) | `composer openapi:accept-generation` from `api/openapi/generations/1.1.0/core.json` |
 
 `composer cli:contract` and `composer mcp:contract` prove every generation-one command, tool, resource, prompt and
 error row is still present unchanged. Until these successors are released, an extension of the same unreleased

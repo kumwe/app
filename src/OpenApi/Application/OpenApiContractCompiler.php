@@ -6,6 +6,7 @@ namespace Kumwe\App\OpenApi\Application;
 
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\App\Application\Diagnostics\OperatorDiagnostics;
 use Kumwe\Reporting\Domain\ReportValueType;
 use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessSchema;
 use Kumwe\App\OpenApi\Infrastructure\CanonicalOpenApiJson;
@@ -2240,6 +2241,29 @@ final readonly class OpenApiContractCompiler
         $downloadOperation['responses'] = $downloadResponses;
 
         return [
+            '/api/v1/diagnostics' => [
+                'get' => [
+                    'operationId' => 'readOperatorDiagnostics',
+                    'summary' => 'Read bounded operator diagnostics',
+                    'security' => [['bearerAuth' => [], 'siteContext' => []]],
+                    'x-kumwe-required-capabilities' => [OperatorDiagnostics::CAPABILITY],
+                    'parameters' => [$this->parameter('section', 'query', false, [
+                        'type' => 'string', 'enum' => OperatorDiagnostics::SECTIONS, 'default' => 'queues',
+                    ])],
+                    'responses' => [
+                        '200' => [
+                            'description' => 'Bounded diagnostic snapshot with source availability and cost limits.',
+                            'headers' => ['Cache-Control' => ['schema' => ['type' => 'string', 'const' => 'no-store']]],
+                            'content' => ['application/json' => ['schema' => [
+                                'type' => 'object', 'additionalProperties' => true,
+                            ]]],
+                        ],
+                        '401' => $this->problem('Authentication is required.'),
+                        '403' => $this->problem('Operator diagnostics authority is required.'),
+                        '422' => $this->problem('The diagnostic section is invalid.'),
+                    ],
+                ],
+            ],
             '/api/v1/business/reports' => [
                 'get' => $this->operation(
                     'businessReportList',

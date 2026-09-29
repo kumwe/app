@@ -21,6 +21,7 @@ use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRetentionService;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditTrailExporter;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditTrailVerifier;
 use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditArchiveStorage;
+use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditArchiveVerifier;
 use Kumwe\App\Delivery\Console\Command\VerifyAuditTrailCommand;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\App\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
@@ -151,11 +152,13 @@ final class AuditEnforcementUnavailableTest extends TestCase
         $this->clock->advance('+40 days');
         self::assertSame(1, $this->anchorWriter()->anchor($this->context()));
         $report = $this->verifier()->verify($this->context());
-        self::assertTrue($report->intact(), $report->firstDivergence?->detail ?? '');
+        self::assertFalse($report->intact());
+        self::assertSame('audit.enforcement.unavailable', $report->firstDivergence?->code);
         // Four recorded events plus the anchor pass recording itself, which is also part of the trail.
         self::assertSame(5, $report->eventsVerified);
         self::assertSame(1, $report->anchorsVerified);
-        // The scheduled pass stays quiet: an absent control is a standing condition, not an incident.
+        // Missing protection cannot distinguish an empty trail from one erased through database credentials.
+        $this->expectException(\RuntimeException::class);
         (new VerifyAuditTrailHandler($this->verifier()))->handle([], $this->context());
     }
 
@@ -166,7 +169,7 @@ final class AuditEnforcementUnavailableTest extends TestCase
 
         $report = $this->verifier()->verify($this->context());
 
-        self::assertTrue($report->intact(), 'The chain itself is sound.');
+        self::assertFalse($report->intact(), 'Continuity cannot be established without immutable evidence guards.');
         self::assertFalse($report->guarded(), 'Nothing is preventing a rewrite on this server.');
         self::assertSame(AuditEnforcementState::NotInstalled, $report->enforcement);
         self::assertStringContainsString('NOT installed', $report->enforcement->summary());
@@ -189,7 +192,7 @@ final class AuditEnforcementUnavailableTest extends TestCase
         self::assertSame($identifiers[1], $report->firstDivergence?->eventId);
     }
 
-    public function testRetentionPrunesCorrectlyAndInstallsNoGuardOnItsWayOut(): void
+    public function testRetentionRefusesToPruneWithoutImmutableEvidenceGuards(): void
     {
         $this->migrate();
         $this->record(3);
@@ -198,13 +201,13 @@ final class AuditEnforcementUnavailableTest extends TestCase
         $this->record(2);
         $this->clock->advance('+2 hours');
 
-        $result = $this->retention()->prune($this->context(), 30);
-
-        self::assertSame(3, $result->prunedCount);
-        self::assertSame(1, $result->fromPosition);
-        self::assertSame(3, $result->toPosition);
-        self::assertFileExists($this->archiveRoot . '/' . (string) $result->archiveKey);
-        self::assertSame('0', (string) $this->database->fetchOne(sprintf(
+        try {
+            $this->retention()->prune($this->context(), 30);
+            self::fail('Unguarded retention must fail before deleting evidence.');
+        } catch (\RuntimeException $exception) {
+            self::assertStringContainsString('immutable guards', $exception->getMessage());
+        }
+        self::assertSame('3', (string) $this->database->fetchOne(sprintf(
             'SELECT COUNT(*) FROM %s WHERE position <= 3',
             $this->tables->quoted('audit_events'),
         )));
@@ -216,7 +219,7 @@ final class AuditEnforcementUnavailableTest extends TestCase
         self::assertSame('0', (string) $this->database->fetchOne(
             "SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger'",
         ));
-        self::assertTrue($this->verifier()->verify($this->context())->intact());
+        self::assertFalse($this->verifier()->verify($this->context())->intact());
     }
 
     public function testTheConsoleVerdictSeparatesTheDegradedTrailFromAGuardedOne(): void
@@ -270,6 +273,7 @@ final class AuditEnforcementUnavailableTest extends TestCase
             $this->tables,
             new AllowingAuditAuthorization(),
             $this->encoder,
+            new FilesystemAuditArchiveVerifier($this->archiveRoot),
         );
     }
 
@@ -305,6 +309,8 @@ final class AuditEnforcementUnavailableTest extends TestCase
             $this->clock,
             new AllowingAuditAuthorization(),
             $this->encoder,
+            new FilesystemAuditArchiveVerifier($this->archiveRoot),
+            $this->verifier(),
         );
     }
 

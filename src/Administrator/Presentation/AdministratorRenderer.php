@@ -106,6 +106,10 @@ final readonly class AdministratorRenderer
             'label' => 'core.navigation.administrator.automation.label',
             'description' => 'core.navigation.administrator.automation.description',
         ],
+        'core.diagnostics' => [
+            'label' => 'core.diagnostics.title',
+            'description' => 'core.diagnostics.description',
+        ],
         'core.settings' => [
             'label' => 'core.navigation.administrator.settings.label',
             'description' => 'core.navigation.administrator.settings.description',

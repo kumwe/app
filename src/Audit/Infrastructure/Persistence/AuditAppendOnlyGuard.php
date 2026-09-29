@@ -27,19 +27,15 @@ use Throwable;
  * never leak into another connection, and on SQLite, whose triggers cannot read session state, the
  * trigger is dropped and recreated inside the same transaction instead.
  *
- * Installation is best-effort by design, because the privilege it needs is one a managed database
- * routinely withholds — a MySQL with binary logging enabled and no `SUPER` refuses `CREATE TRIGGER`
- * outright, which describes Amazon RDS, Cloud SQL and Azure Database for MySQL as they ship. Demanding
- * the privilege would make Kumwe uninstallable there, so `install()` reports the refusal as a state
- * instead of raising it, and only for the exact codes `AuditEnforcementRefusal` recognises; every other
- * failure still aborts the migration. What is lost when enforcement is unavailable is *prevention*, not
- * evidence: digests, witness links, the anchor ledger and `audit:verify` are untouched, and the
- * verification report names the degraded state so nobody reads a clean chain as a guarded one.
+ * The original installer reports recognized privilege refusals as a state. The later retention-evidence
+ * migration requires these guards and adds immutable ledger and deletion-coverage guards. Verification
+ * refuses an intact verdict when required enforcement is absent: hashes in the same mutable database
+ * cannot distinguish a genuinely empty trail from complete erasure.
  *
  * Even when installed this is evidence against mistakes and casual tampering, not against a database
  * superuser: an account that may drop triggers can remove them. `docs/operations/monitoring.md`
- * therefore pairs this control with least-privilege account guidance, and the anchor ledger keeps
- * removals evident regardless.
+ * therefore bounds the guarantee to runtime DML authority. The session flag itself is not authority;
+ * AuditRetentionGuard and the private archive proof prevent it from concealing evidence erasure.
  *
  * @since  2.0.0
  */

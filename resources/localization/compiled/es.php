@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for es, carrying 2592 messages.
+ * Compiled interface message catalogue for es, carrying 2629 messages.
  *
  * Generated from es.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2059,6 +2059,43 @@ return [
     'core.console.user_create_admin.description' => 'Crea un administrador a partir de un archivo de contraseña protegido.',
     'core.console.user_recover_credentials.description' => 'Acceso de emergencia: restablece una contraseña, retira segundos factores o finaliza sesiones desde el host.',
     'core.console.wording.description' => 'Enumera, busca, guarda o retira sustituciones de redacción.',
+    'core.diagnostics.backlog' => 'Acumulación',
+    'core.diagnostics.bounds' => 'Cada instrucción está limitada a {timeout} ms; cada fuente devuelve como máximo {rows} filas.',
+    'core.diagnostics.budget_exceeded' => 'El diagnóstico superó su límite de tiempo o resultados. Reduzca la carga o inspeccione directamente la base de datos.',
+    'core.diagnostics.contention' => 'Contención',
+    'core.diagnostics.description' => 'Inspeccionar contención, colas, costes de consultas y retención.',
+    'core.diagnostics.empty' => 'No se encontraron observaciones en esta muestra.',
+    'core.diagnostics.field.backlog_approximate' => 'Acumulación aproximada',
+    'core.diagnostics.field.backlog_rows' => 'Filas acumuladas',
+    'core.diagnostics.field.calls' => 'Llamadas',
+    'core.diagnostics.field.capacity_rows' => 'Capacidad (filas)',
+    'core.diagnostics.field.configured' => 'Configurado',
+    'core.diagnostics.field.definition' => 'Definición',
+    'core.diagnostics.field.depth_lower_bound' => 'Tamaño de cola (mínimo)',
+    'core.diagnostics.field.expiry_rows_per_second' => 'Caducidad (filas/segundo)',
+    'core.diagnostics.field.forecast_seconds_to_capacity' => 'Previsión hasta la capacidad (segundos)',
+    'core.diagnostics.field.ingest_rows_per_second' => 'Entrada (filas/segundo)',
+    'core.diagnostics.field.last_drain_at' => 'Última eliminación',
+    'core.diagnostics.field.lock_class' => 'Clase de bloqueo',
+    'core.diagnostics.field.mean_ms' => 'Tiempo medio (ms)',
+    'core.diagnostics.field.net_growth_rows_per_second' => 'Crecimiento neto (filas/segundo)',
+    'core.diagnostics.field.oldest_age_seconds' => 'Antigüedad máxima (segundos)',
+    'core.diagnostics.field.policy_cost' => 'Medición de políticas',
+    'core.diagnostics.field.source' => 'Fuente',
+    'core.diagnostics.field.store' => 'Registro',
+    'core.diagnostics.field.stream' => 'Flujo',
+    'core.diagnostics.field.sustained_drain_rows_per_second' => 'Eliminación sostenida (filas/segundo)',
+    'core.diagnostics.field.table_name' => 'Tabla',
+    'core.diagnostics.field.total_ms' => 'Tiempo total (ms)',
+    'core.diagnostics.field.waiting' => 'En espera',
+    'core.diagnostics.policy_cost_included' => 'Incluida en el coste de la consulta',
+    'core.diagnostics.queues' => 'Colas',
+    'core.diagnostics.retention' => 'Retención',
+    'core.diagnostics.sampled' => 'Los resultados son muestras limitadas. Los recuentos de colas son límites inferiores; una tasa desconocida no es cero.',
+    'core.diagnostics.slow' => 'Consultas lentas',
+    'core.diagnostics.title' => 'Diagnóstico',
+    'core.diagnostics.unavailable' => 'Esta fuente no está disponible. Compruebe el acceso a la base de datos y si las estadísticas están activadas.',
+    'core.diagnostics.unknown' => 'Desconocido',
     'core.identity.password.change_refused' => 'No se pudo cambiar tu contraseña. Comprueba tu contraseña actual y elige una contraseña diferente de al menos 12 caracteres.',
     'core.identity.password.confirmation_mismatch' => 'La contraseña nueva y su confirmación no coinciden.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'Valores predeterminados del grupo de acceso',

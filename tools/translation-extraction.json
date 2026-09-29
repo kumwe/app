@@ -258,7 +258,7 @@
     },
     {
       "category": "machine_capability_catalogue",
-      "reason": "The MCP capability catalogue is consumed by a protocol client selecting a tool, not rendered to a person."
+      "reason": "MCP capability and OpenAPI operation catalogues are protocol metadata consumed by clients selecting an operation, not rendered interface wording."
     }
   ],
   "untranslatable_sources": [
@@ -346,6 +346,11 @@
       "path": "src/Infrastructure/Persistence/Migration/DynamicSiteContentMigration.php",
       "category": "operator_content_seed",
       "reason": "Its user-facing keys carry seeded content that becomes operator-owned the moment it is installed."
+    },
+    {
+      "path": "src/OpenApi/Application/OpenApiContractCompiler.php",
+      "category": "machine_capability_catalogue",
+      "reason": "Operation summaries describe the versioned OpenAPI machine contract; administrator wording is localized separately."
     },
     {
       "path": "src/Portal/Http/Middleware/PortalSessionMiddleware.php",

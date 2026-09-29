@@ -18,9 +18,9 @@
         },
         {
             "artifact": "api/openapi/generations/1.1.0/openapi.json",
-            "artifact_sha256": "3e906a564127dc777e1561020e966bf568c5c6cc041b148dbcdc81665edc40b8",
+            "artifact_sha256": "9514b66d516e8db40dd1ad051b870028bd1efef0f3ee3a6b38f85c6246cb9f85",
             "compatibility_fixture": "api/openapi/generations/1.1.0/compatibility.json",
-            "compatibility_fixture_sha256": "0ae6effd8aa0a5a557185637e159100e2aba5dd0eae90b8dd2b5e9d22c048c2e",
+            "compatibility_fixture_sha256": "79aea415cf556e8ffcf52c03f9eeb6a4daec32a88ced53f9ac285fa4ca0e0ea7",
             "compiler_generation_sha256": "0d02e70ec26eb9d50b82ad4cef0fc757736c4ce4cb758599178dac8797c7c6b0",
             "core": "api/openapi/generations/1.1.0/core.json",
             "core_sha256": "108a4efe692146f8c11d0c10c943bdbba328639c601b719a7896a9dfe95b968b",

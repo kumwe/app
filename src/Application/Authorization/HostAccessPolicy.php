@@ -87,6 +87,7 @@ final readonly class HostAccessPolicy
         'menu_item' => OwnershipScopeRule::SiteOnly,
         'organization' => OwnershipScopeRule::SiteOnly,
         'organization_membership' => OwnershipScopeRule::SiteOnly,
+        'operator_diagnostics' => OwnershipScopeRule::SiteGroupOrInstallation,
         'portal_session' => OwnershipScopeRule::SiteOnly,
         'queue' => OwnershipScopeRule::SiteOnly,
         'resource_policy' => OwnershipScopeRule::SiteOnly,
@@ -116,7 +117,7 @@ final readonly class HostAccessPolicy
     /**
      * The reserved ownership-rule table, keyed by resource category.
      *
-     * @return  array<string, OwnershipScopeRule>  The forty-four categories this build fixes.
+     * @return  array<string, OwnershipScopeRule>  The reserved categories this build fixes.
      *
      * @since   2.0.0
      */

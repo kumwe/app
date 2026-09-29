@@ -14785,6 +14785,98 @@
                 ]
             }
         },
+        "/api/v1/diagnostics": {
+            "get": {
+                "operationId": "readOperatorDiagnostics",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "section",
+                        "required": false,
+                        "schema": {
+                            "default": "queues",
+                            "enum": [
+                                "contention",
+                                "queues",
+                                "slow",
+                                "backlog",
+                                "retention"
+                            ],
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": true,
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "Bounded diagnostic snapshot with source availability and cost limits.",
+                        "headers": {
+                            "Cache-Control": {
+                                "schema": {
+                                    "const": "no-store",
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Authentication is required."
+                    },
+                    "403": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Operator diagnostics authority is required."
+                    },
+                    "422": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The diagnostic section is invalid."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Read bounded operator diagnostics",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "none",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "none",
+                "x-kumwe-required-capabilities": [
+                    "system.diagnostics.read"
+                ]
+            }
+        },
         "/api/v1/extension-trust-keys": {
             "get": {
                 "operationId": "listExtensionTrustKeys",
@@ -19443,7 +19535,8 @@
         "/api/v1/business/reports/{report}",
         "/api/v1/business/reports/{report}/exports",
         "/api/v1/business/views/{definition}/{record}/{view}",
-        "/api/v1/business/views/{definition}/{view}"
+        "/api/v1/business/views/{definition}/{view}",
+        "/api/v1/diagnostics"
     ],
     "x-kumwe-machine-contract-generation": "1.1.0",
     "x-kumwe-problem-registry": "api/problem-details/generations/1.1.0.json"

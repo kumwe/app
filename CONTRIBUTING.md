@@ -1,65 +1,48 @@
 # Contributing to Kumwe
 
-Read [`AGENTS.md`](AGENTS.md) first. It is the operator checklist: where code lives, which
-gate watches a given change, and the recipes that keep `composer qa` green. Read
-[the Kumwe coding standard](docs/coding-standard.md) before your first change. It is the
-normative source for documentation blocks, type declarations, naming, structure, and
-error handling, and it applies to human and automated contributors alike.
+Read [AGENTS.md](AGENTS.md) for the current workflow and [the coding standard](docs/coding-standard.md)
+for types, layout and useful documentation.
 
-## Development principles
+## Keep the host small
 
-- Preserve the dependency direction defined in the 2.0 architecture.
-- Prefer a maintained Laminas or Mezzio component; add another maintained, focused
-  package only with explicit justification recorded in the change.
-- Do not add Symfony or Laravel as direct production dependencies.
-- Do not add Kumwe 1.x migrations or compatibility layers.
-- Do not fetch services from a static container or service locator.
-- Put product policy in domain/application code and driver behavior in adapters.
-- Add unit tests for every behavior-bearing Kumwe class and integration tests for
-  infrastructure boundaries.
-- Document every class, method, property, class constant, and enum case with a
-  documentation block that ends in `@since`, as
-  [the coding standard](docs/coding-standard.md) describes.
+Use the existing Kumwe packages for reusable behavior. App composes their public APIs and owns host
+security, persistence, delivery and operations. Do not copy package code, patch vendor files, add a
+parallel registry or put product domains into core. Keep application rules shared across UI, REST,
+CLI, MCP and workers, with dependencies pointing inward.
 
-## Commit structure
+## Make a focused change
 
-Kumwe 2.0 development uses focused commits aligned with the numbered phases in
-[`docs/roadmap/`](docs/roadmap/README.md). Start at
-[`docs/roadmap/STATUS.md`](docs/roadmap/STATUS.md) for live work. A phase commit
-must include its tests and relevant documentation.
+Continue the assigned branch, preserve existing work, and solve the concrete problem. Explain why
+non-obvious choices matter. Document public contracts and operator steps; avoid comments that repeat
+member names and status reports that duplicate the PR.
 
-## Required local checks
+Package repositories own tests for package functionality. App tests cover host wiring, authorization,
+persistence, extension lifecycle and working user flows. Use existing tests and add a focused regression
+when needed. Do not add copied corpora, source-string assertions or counter/hash bookkeeping to prove
+runtime behavior.
 
-The canonical commands are declared as Composer scripts. Before submitting a
-change, run `composer qa`. Its authoritative member set is
-[`docs/quality/contract.json`](docs/quality/contract.json), reproduced in
-[`AGENTS.md`](AGENTS.md) section 6. The complete list of changes that require
-`composer baseline:record` is the watcher table in [`AGENTS.md`](AGENTS.md)
-section 4 — this file deliberately does not restate it. [`AGENTS.md`](AGENTS.md)
-lists the recipes, and `bash tools/agent-setup.sh` provisions a fresh sandbox.
-
-Database integration tests run against the database service described by the
-development Compose file — MariaDB by default, with MySQL and PostgreSQL as the
-other supported engines.
-
-The two documentation tools are dependency free and run without `composer install`:
+## Validate
 
 ```bash
-php tools/verify-docblocks.php src   # report members missing documentation
-php tools/format-docblocks.php src   # apply the house alignment rules
+bash tools/agent-setup.sh
+. ./.agent-env
+composer qa
+npm run check
+npm run build
 ```
 
-## Acceptance
+Run the narrowest relevant tests during implementation. Database changes need real-database verification;
+security changes need the relevant refusal cases. Broader recovery, browser and artifact qualification
+belongs to the matching changed-path, scheduled and release lanes described in
+[development and testing](docs/development.md).
 
-A pull request is accepted by the maintainer's merge once every required check is green; that merge is the
-sole acceptance record ([ADR 0021](docs/roadmap/decisions/0021-automated-acceptance-and-sampled-capacity.md)).
-Browser, accessibility, visual, locale and right-to-left evidence comes from the workflows, and a WebKit result
-is reported as WebKit evidence, not as a person using Safari. No human checkbox, manual browser, Safari or
-right-to-left review, or follow-up acceptance commit is required. Write the changelog and
-[`docs/roadmap/acceptance-record.json`](docs/roadmap/acceptance-record.json) inside the pull request so the merged
-documentation already states what the merge accepts, and leave unfinished work open there.
+Performance evidence uses bounded concurrent samples with workload, sample size, variation and limitations.
+No 24-hour or 72-hour endurance run is required. Coverage is diagnostic; documentation counts and generated
+inventories do not determine whether a change is correct.
 
-## Security-sensitive changes
+## Submit
 
-Authentication, authorization, session, archive, extension, token, upload and MCP
-write changes require adversarial tests in addition to the ordinary happy path.
+Push coherent changes to the current PR and describe the problem, resulting behavior, validation actually
+performed and any limitation. Update the relevant documentation and changelog. Keep secrets, logs and
+local database files out of commits. The maintainer's merge accepts App changes; agents do not merge or
+publish an unaccepted release.

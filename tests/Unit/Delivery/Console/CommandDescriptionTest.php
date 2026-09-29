@@ -37,6 +37,7 @@ use Kumwe\App\Delivery\Console\Command\MaterializeExtensionRuntimeCommand;
 use Kumwe\App\Delivery\Console\Command\McpServeCommand;
 use Kumwe\App\Delivery\Console\Command\MigrateCommand;
 use Kumwe\App\Delivery\Console\Command\MigrationStatusCommand;
+use Kumwe\App\Delivery\Console\Command\OperatorDiagnosticsCommand;
 use Kumwe\App\Delivery\Console\Command\QueueWorkCommand;
 use Kumwe\App\Delivery\Console\Command\RecoverAdministratorThemeCommand;
 use Kumwe\App\Delivery\Console\Command\RecoverCredentialsCommand;
@@ -106,6 +107,7 @@ use ReflectionClass;
 #[CoversClass(McpServeCommand::class)]
 #[CoversClass(MigrateCommand::class)]
 #[CoversClass(MigrationStatusCommand::class)]
+#[CoversClass(OperatorDiagnosticsCommand::class)]
 #[CoversClass(QueueWorkCommand::class)]
 #[CoversClass(RecoverAdministratorThemeCommand::class)]
 #[CoversClass(RecoverCredentialsCommand::class)]
@@ -266,6 +268,7 @@ final class CommandDescriptionTest extends TestCase
             McpServeCommand::class,
             MigrateCommand::class,
             MigrationStatusCommand::class,
+            OperatorDiagnosticsCommand::class,
             QueueWorkCommand::class,
             RecoverAdministratorThemeCommand::class,
             RecoverCredentialsCommand::class,

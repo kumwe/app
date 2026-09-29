@@ -22771,4 +22771,43 @@
       </segment>
     </unit>
   </file>
+  <file id="core-operator-diagnostics">
+    <unit id="core.diagnostics.title"><segment><source>Diagnostics</source><target>Diagnostiek</target></segment></unit>
+    <unit id="core.diagnostics.description"><segment><source>Inspect contention, queues, query costs and retention.</source><target>Ondersoek mededinging, toue, navraagkoste en bewaring.</target></segment></unit>
+    <unit id="core.diagnostics.contention"><segment><source>Contention</source><target>Mededinging</target></segment></unit>
+    <unit id="core.diagnostics.queues"><segment><source>Queues</source><target>Toue</target></segment></unit>
+    <unit id="core.diagnostics.slow"><segment><source>Slow queries</source><target>Stadige navrae</target></segment></unit>
+    <unit id="core.diagnostics.backlog"><segment><source>Backlog</source><target>Agterstand</target></segment></unit>
+    <unit id="core.diagnostics.retention"><segment><source>Retention</source><target>Bewaring</target></segment></unit>
+    <unit id="core.diagnostics.bounds"><segment><source>Each statement is limited to {timeout} ms; each source returns at most {rows} rows.</source><target>Elke stelling is beperk tot {timeout} ms; elke bron lewer hoogstens {rows} rye.</target></segment></unit>
+    <unit id="core.diagnostics.unavailable"><segment><source>This source is unavailable. Check database access and whether engine statistics are enabled.</source><target>Hierdie bron is nie beskikbaar nie. Kontroleer databasistoegang en of enjinstatistiek geaktiveer is.</target></segment></unit>
+    <unit id="core.diagnostics.budget_exceeded"><segment><source>The diagnostic exceeded its time or result budget. Narrow the workload or inspect the database directly.</source><target>Die diagnostiek het sy tyd- of resultaatbegroting oorskry. Beperk die werklas of ondersoek die databasis direk.</target></segment></unit>
+    <unit id="core.diagnostics.empty"><segment><source>No observations were found in this sample.</source><target>Geen waarnemings is in hierdie steekproef gevind nie.</target></segment></unit>
+    <unit id="core.diagnostics.sampled"><segment><source>Results are bounded samples. Queue counts are lower bounds; an unknown rate is not zero.</source><target>Resultate is begrensde steekproewe. Toutellings is ondergrense; 'n onbekende tempo is nie nul nie.</target></segment></unit>
+    <unit id="core.diagnostics.unknown"><segment><source>Unknown</source><target>Onbekend</target></segment></unit>
+    <unit id="core.diagnostics.field.table_name"><segment><source>Table</source><target>Tabel</target></segment></unit>
+    <unit id="core.diagnostics.field.lock_class"><segment><source>Lock class</source><target>Slotklas</target></segment></unit>
+    <unit id="core.diagnostics.field.waiting"><segment><source>Waiting</source><target>Wagtend</target></segment></unit>
+    <unit id="core.diagnostics.field.source"><segment><source>Source</source><target>Bron</target></segment></unit>
+    <unit id="core.diagnostics.field.stream"><segment><source>Stream</source><target>Stroom</target></segment></unit>
+    <unit id="core.diagnostics.field.depth_lower_bound"><segment><source>Queue depth (at least)</source><target>Toulengte (minstens)</target></segment></unit>
+    <unit id="core.diagnostics.field.oldest_age_seconds"><segment><source>Oldest age (seconds)</source><target>Oudste ouderdom (sekondes)</target></segment></unit>
+    <unit id="core.diagnostics.field.definition"><segment><source>Definition</source><target>Definisie</target></segment></unit>
+    <unit id="core.diagnostics.field.policy_cost"><segment><source>Policy measurement</source><target>Beleidsmeting</target></segment></unit>
+    <unit id="core.diagnostics.field.calls"><segment><source>Calls</source><target>Oproepe</target></segment></unit>
+    <unit id="core.diagnostics.field.mean_ms"><segment><source>Mean time (ms)</source><target>Gemiddelde tyd (ms)</target></segment></unit>
+    <unit id="core.diagnostics.field.total_ms"><segment><source>Total time (ms)</source><target>Totale tyd (ms)</target></segment></unit>
+    <unit id="core.diagnostics.field.store"><segment><source>Ledger</source><target>Grootboek</target></segment></unit>
+    <unit id="core.diagnostics.field.backlog_rows"><segment><source>Backlog rows</source><target>Agterstandrye</target></segment></unit>
+    <unit id="core.diagnostics.field.backlog_approximate"><segment><source>Approximate backlog</source><target>Benaderde agterstand</target></segment></unit>
+    <unit id="core.diagnostics.field.ingest_rows_per_second"><segment><source>Ingest (rows/second)</source><target>Invoer (rye/sekonde)</target></segment></unit>
+    <unit id="core.diagnostics.field.sustained_drain_rows_per_second"><segment><source>Sustained drain (rows/second)</source><target>Volgehoue verwydering (rye/sekonde)</target></segment></unit>
+    <unit id="core.diagnostics.field.net_growth_rows_per_second"><segment><source>Net growth (rows/second)</source><target>Netto groei (rye/sekonde)</target></segment></unit>
+    <unit id="core.diagnostics.field.capacity_rows"><segment><source>Capacity (rows)</source><target>Kapasiteit (rye)</target></segment></unit>
+    <unit id="core.diagnostics.field.forecast_seconds_to_capacity"><segment><source>Forecast to capacity (seconds)</source><target>Voorspelde tyd tot kapasiteit (sekondes)</target></segment></unit>
+    <unit id="core.diagnostics.field.configured"><segment><source>Configured</source><target>Gekonfigureer</target></segment></unit>
+    <unit id="core.diagnostics.field.last_drain_at"><segment><source>Last drain</source><target>Laaste verwydering</target></segment></unit>
+    <unit id="core.diagnostics.field.expiry_rows_per_second"><segment><source>Expiry (rows/second)</source><target>Verstryking (rye/sekonde)</target></segment></unit>
+    <unit id="core.diagnostics.policy_cost_included"><segment><source>Included in query cost</source><target>In navraagkoste ingesluit</target></segment></unit>
+  </file>
 </xliff>

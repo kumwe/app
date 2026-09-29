@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2592 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2629 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2059,6 +2059,43 @@ return [
     'core.console.user_create_admin.description' => '根据受保护的密码文件创建一名管理员。',
     'core.console.user_recover_credentials.description' => '紧急操作：从主机重置密码、停用第二验证要素或终止会话。',
     'core.console.wording.description' => '列出、搜索、保存或撤回措辞覆盖。',
+    'core.diagnostics.backlog' => '积压',
+    'core.diagnostics.bounds' => '每条语句限时 {timeout} 毫秒；每个来源最多返回 {rows} 行。',
+    'core.diagnostics.budget_exceeded' => '诊断超出了时间或结果限制。请减少工作负载或直接检查数据库。',
+    'core.diagnostics.contention' => '锁争用',
+    'core.diagnostics.description' => '检查锁争用、队列、查询成本和保留情况。',
+    'core.diagnostics.empty' => '此样本中未发现观测结果。',
+    'core.diagnostics.field.backlog_approximate' => '近似积压量',
+    'core.diagnostics.field.backlog_rows' => '积压行数',
+    'core.diagnostics.field.calls' => '调用次数',
+    'core.diagnostics.field.capacity_rows' => '容量（行）',
+    'core.diagnostics.field.configured' => '已配置',
+    'core.diagnostics.field.definition' => '定义',
+    'core.diagnostics.field.depth_lower_bound' => '队列深度（至少）',
+    'core.diagnostics.field.expiry_rows_per_second' => '到期速率（行/秒）',
+    'core.diagnostics.field.forecast_seconds_to_capacity' => '预计达到容量所需时间（秒）',
+    'core.diagnostics.field.ingest_rows_per_second' => '写入速率（行/秒）',
+    'core.diagnostics.field.last_drain_at' => '上次清理',
+    'core.diagnostics.field.lock_class' => '锁类别',
+    'core.diagnostics.field.mean_ms' => '平均时间（毫秒）',
+    'core.diagnostics.field.net_growth_rows_per_second' => '净增长速率（行/秒）',
+    'core.diagnostics.field.oldest_age_seconds' => '最早记录已等待时间（秒）',
+    'core.diagnostics.field.policy_cost' => '策略测量',
+    'core.diagnostics.field.source' => '来源',
+    'core.diagnostics.field.store' => '记录库',
+    'core.diagnostics.field.stream' => '数据流',
+    'core.diagnostics.field.sustained_drain_rows_per_second' => '持续清理速率（行/秒）',
+    'core.diagnostics.field.table_name' => '表',
+    'core.diagnostics.field.total_ms' => '总时间（毫秒）',
+    'core.diagnostics.field.waiting' => '等待数',
+    'core.diagnostics.policy_cost_included' => '包含在查询成本中',
+    'core.diagnostics.queues' => '队列',
+    'core.diagnostics.retention' => '数据保留',
+    'core.diagnostics.sampled' => '结果为有限样本。队列计数是下限；未知速率不等于零。',
+    'core.diagnostics.slow' => '慢查询',
+    'core.diagnostics.title' => '诊断',
+    'core.diagnostics.unavailable' => '此来源不可用。请检查数据库访问权限及是否已启用引擎统计。',
+    'core.diagnostics.unknown' => '未知',
     'core.identity.password.change_refused' => '您的密码未能更改。请检查当前密码，并选择一个不同的、至少 12 个字符的新密码。',
     'core.identity.password.confirmation_mismatch' => '新密码与确认密码不一致。',
     'core.interface_standard.dashboard.access_group_browser_heading' => '访问组默认设置',

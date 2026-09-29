@@ -2,16 +2,58 @@ name: Recovery acceptance
 
 on:
   pull_request:
+    paths:
+      - '.github/workflows/recovery.yml'
+      - '.github/workflows/deployment-acceptance.yml'
+      - '.github/actions/database-client/**'
+      - 'docker/**'
+      - 'compose.production.yaml'
+      - 'config/database.php'
+      - 'src/Infrastructure/Persistence/**'
+      - 'src/Audit/**'
+      - 'src/Identity/**'
+      - 'src/BusinessRecord/**'
+      - 'src/Extension/Runtime/**'
+      - 'tools/*backup*'
+      - 'tools/*restore*'
+      - 'tools/*recovery*'
+      - 'tests/Support/*recovery*'
+      - 'tests/Support/*backup*'
+      - 'tests/Integration/Persistence/**'
+      - 'composer.lock'
+      - 'resources/native-runtime/**'
   push:
     branches: [master]
+    paths:
+      - '.github/workflows/recovery.yml'
+      - '.github/workflows/deployment-acceptance.yml'
+      - '.github/actions/database-client/**'
+      - 'docker/**'
+      - 'compose.production.yaml'
+      - 'config/database.php'
+      - 'src/Infrastructure/Persistence/**'
+      - 'src/Audit/**'
+      - 'src/Identity/**'
+      - 'src/BusinessRecord/**'
+      - 'src/Extension/Runtime/**'
+      - 'tools/*backup*'
+      - 'tools/*restore*'
+      - 'tools/*recovery*'
+      - 'tests/Support/*recovery*'
+      - 'tests/Support/*backup*'
+      - 'tests/Integration/Persistence/**'
+      - 'composer.lock'
+      - 'resources/native-runtime/**'
   merge_group:
+  schedule:
+    - cron: '37 2 * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: recovery-${{ github.workflow }}-${{ github.ref }}
+  group: recovery-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:

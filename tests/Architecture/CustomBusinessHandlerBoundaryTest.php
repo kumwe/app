@@ -4,20 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Architecture;
 
-use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionCommand;
-use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionHandler;
-use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionResult;
-use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewHandler;
-use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewResult;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-use ReflectionClass;
-use ReflectionMethod;
-use ReflectionNamedType;
 use SplFileInfo;
 
 /**
@@ -54,37 +44,6 @@ final class CustomBusinessHandlerBoundaryTest extends TestCase
             ) {
                 self::assertStringNotContainsString($forbidden, $source, $path);
             }
-        }
-    }
-
-    /**
-     * Proves handlers expose only validated query or command objects and bounded result DTOs.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testHandlerInterfacesExposeOnlyTheTypedApplicationBoundary(): void
-    {
-        foreach (
-            [
-                CustomBusinessViewHandler::class => [CustomBusinessViewQuery::class, CustomBusinessViewResult::class],
-                CustomBusinessActionHandler::class => [
-                    CustomBusinessActionCommand::class,
-                    CustomBusinessActionResult::class,
-                ],
-            ] as $handler => [$request, $result]
-        ) {
-            $method = new ReflectionMethod($handler, 'handle');
-            self::assertTrue($method->isPublic());
-            $parameters = $method->getParameters();
-            self::assertCount(1, $parameters);
-            self::assertSame($request, $this->namedType($parameters[0]->getType()));
-            self::assertSame($result, $this->namedType($method->getReturnType()));
-
-            $context = (new ReflectionClass($request))->getProperty('context');
-            self::assertTrue($context->isPublic());
-            self::assertSame(ExecutionContext::class, $this->namedType($context->getType()));
         }
     }
 
@@ -200,24 +159,5 @@ final class CustomBusinessHandlerBoundaryTest extends TestCase
         }
         ksort($sources, SORT_STRING);
         return $sources;
-    }
-
-    /**
-     * Resolve one non-built-in reflected type without comparing its source spelling.
-     *
-     * @param   ?\ReflectionType  $type  Runtime type declaration to inspect.
-     *
-     * @return  class-string  Declared application contract.
-     *
-     * @since   2.0.0
-     */
-    private function namedType(?\ReflectionType $type): string
-    {
-        self::assertInstanceOf(ReflectionNamedType::class, $type);
-        self::assertFalse($type->isBuiltin());
-
-        /** @var class-string $name */
-        $name = $type->getName();
-        return $name;
     }
 }

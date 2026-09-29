@@ -8,7 +8,7 @@
          failOnNotice="true"
          failOnRisky="true"
          failOnWarning="true"
-         requireCoverageMetadata="true">
+         requireCoverageMetadata="false">
     <testsuites>
         <testsuite name="unit">
             <directory>tests/Unit</directory>

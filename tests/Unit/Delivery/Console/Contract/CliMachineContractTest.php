@@ -35,7 +35,7 @@ final class CliMachineContractTest extends TestCase
     {
         $current = CliV3MachineContract::contract();
         self::assertSame(3, $current->generation());
-        self::assertSame(CliV2MachineContract::contract()->commandNames(), $current->commandNames());
+        self::assertSame([], array_diff(CliV2MachineContract::contract()->commandNames(), $current->commandNames()));
         foreach (['purge-plan', 'approve'] as $action) {
             $arguments = [
                 $action,

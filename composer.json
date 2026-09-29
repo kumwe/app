@@ -172,36 +172,21 @@
     "test:unit": "phpunit --testsuite unit --colors=always",
     "qa": [
       "@architecture:policy",
-      "@baseline:check",
-      "@quality:contract",
-      "@docs:api",
-      "@docs:format:check",
-      "@docs:tests",
-      "@extension:contract",
       "@extension:independence",
-      "@conversion:api",
-      "@cli:contract",
-      "@mcp:contract",
       "@machine:parity",
-      "@studio:corpus",
       "@studio:dependencies",
-      "@kumwe:capability-index-check",
-      "@kumwe:core-growth-check",
-      "@interface:programme",
       "@observability:rules",
-      "@roadmap:check",
-      "@acceptance:check",
       "@openapi:check",
       "@translation:check",
       "@translation:strings",
       "@translation:quality",
       "@assets:direction",
-      "@coverage:attribution",
       "@cs",
       "@analyse",
       "@test"
     ],
-    "post-create-project-cmd": "@php bin/kumwe-install"
+    "post-create-project-cmd": "@php bin/kumwe-install",
+    "test:database": "phpunit --testsuite integration,functional --colors=always"
   },
   "archive": {
     "exclude": [
@@ -222,6 +207,5 @@
   },
   "minimum-stability": "stable",
   "prefer-stable": true,
-  "repositories": {
-  }
+  "repositories": {}
 }

@@ -20,6 +20,7 @@ use Kumwe\Audit\Domain\AuditEnforcementState;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\Audit\Domain\AuditEventDigest;
 use Kumwe\App\Audit\Infrastructure\Persistence\AuditAppendOnlyGuard;
+use Kumwe\App\Audit\Infrastructure\Persistence\AuditRetentionGuard;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditAnchorWriter;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditTrailExporter;
@@ -38,6 +39,7 @@ use Ramsey\Uuid\Uuid;
 
 #[CoversClass(AuditTamperEvidenceMigration::class)]
 #[CoversClass(AuditAppendOnlyGuard::class)]
+#[CoversClass(AuditRetentionGuard::class)]
 #[CoversClass(DoctrineAuditRecorder::class)]
 #[CoversClass(DoctrineAuditAnchorWriter::class)]
 #[CoversClass(DoctrineAuditTrailVerifier::class)]
@@ -286,37 +288,61 @@ final class AuditTrailRuntimeIntegrationTest extends TestCase
         self::assertTrue($this->verifier()->verify($this->context())->intact());
     }
 
-    public function testTheGuardedRetentionWindowIsTheOnlyPathThatMayDelete(): void
+    /**
+     * Proves on the configured database that a session flag alone cannot erase an unsealed audit tail.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheGuardedRetentionWindowRequiresImmutablePruneEvidence(): void
     {
         $identifiers = $this->record(2);
-        $row = $this->row($identifiers[0]);
-
-        $deleted = $this->database->transactional(fn (): int => AuditAppendOnlyGuard::withPruneAllowed(
-            $this->database,
-            $this->tables,
-            fn (): int => (int) $this->database->executeStatement(sprintf(
-                'DELETE FROM %s WHERE id = ?',
-                $this->tables->quoted('audit_events'),
-            ), [$identifiers[0]]),
-        ));
-
-        self::assertSame(1, $deleted);
-        if (AuditAppendOnlyGuard::installed($this->database, $this->tables)) {
-            self::assertTrue(
-                AuditTamperHarness::deleteIsRefused($this->database, $this->tables, $identifiers[1]),
-                'The window must close behind the guarded delete.',
-            );
-        } else {
-            // Nothing was opened, so there is nothing to close; what matters is that the pass did not
-            // leave a guard behind it on a server that never had one.
-            self::assertSame(
-                AuditEnforcementState::NotInstalled,
-                AuditAppendOnlyGuard::state($this->database, $this->tables),
-                'A prune on an unguarded server must not install a guard on its way out.',
-            );
+        try {
+            $this->database->transactional(fn (): mixed => AuditAppendOnlyGuard::withPruneAllowed(
+                $this->database,
+                $this->tables,
+                fn (): int|string => $this->database->executeStatement(sprintf(
+                    'DELETE FROM %s WHERE id = ?',
+                    $this->tables->quoted('audit_events'),
+                ), [$identifiers[0]]),
+            ));
+            self::fail('A session flag alone must never authorize audit erasure.');
+        } catch (\Doctrine\DBAL\Exception) {
+            self::assertNotFalse($this->row($identifiers[0]));
         }
-        $this->database->insert($this->tables->raw('audit_events'), $row);
-        self::assertTrue($this->verifier()->verify($this->context())->intact());
+        self::assertTrue($this->verifier()->verify($this->context())->guarded());
+    }
+
+    /**
+     * The real database refuses deletion and rewriting of the evidence used to recognize erased events.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRuntimeDmlCannotEraseOrRewriteTheAuditLedger(): void
+    {
+        $this->record(3, '-2 hours');
+        self::assertIsInt($this->anchors()->anchor($this->context()));
+        foreach (['DELETE FROM %s', 'UPDATE %s SET row_count = 0'] as $statement) {
+            try {
+                $this->database->executeStatement(sprintf($statement, $this->tables->quoted('audit_anchors')));
+                self::fail('Runtime DML must not remove or replace continuity evidence.');
+            } catch (\Doctrine\DBAL\Exception) {
+                self::assertTrue($this->verifier()->verify($this->context())->guarded());
+            }
+        }
+        if ($this->database->getDatabasePlatform() instanceof PostgreSQLPlatform) {
+            foreach (['audit_events', 'audit_anchors'] as $table) {
+                try {
+                    $this->database->executeStatement('TRUNCATE ' . $this->tables->quoted($table));
+                    self::fail('PostgreSQL TRUNCATE must not bypass audit evidence guards.');
+                } catch (\Doctrine\DBAL\Exception) {
+                    self::assertTrue($this->verifier()->verify($this->context())->guarded());
+                }
+            }
+        }
     }
 
     public function testVerificationReportsTheEnforcementThisServerIsActuallyApplying(): void
@@ -349,7 +375,7 @@ final class AuditTrailRuntimeIntegrationTest extends TestCase
                 $report->enforcement,
                 'The report must follow the server, not whatever the migration once managed to do.',
             );
-            self::assertTrue($report->intact(), 'Removing prevention does not damage the evidence.');
+            self::assertFalse($report->intact(), 'Missing guards make complete evidence erasure indistinguishable.');
             self::assertFalse($report->guarded(), 'An unguarded server must never read as a guarded one.');
         });
 

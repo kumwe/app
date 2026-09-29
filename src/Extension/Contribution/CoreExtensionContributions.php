@@ -96,6 +96,7 @@ final class CoreExtensionContributions
         'studio.mode.model' => 'Open Studio with Content model authoring authority.',
         'studio.mode.read-only' => 'Open Studio without mutation authority.',
         'system.migrate' => 'Apply and recover database schema migrations.',
+        'system.diagnostics.read' => 'Read bounded installation-wide operator diagnostics.',
         'system.scheduler.dispatch' => 'Dispatch due schedules into the durable work queue.',
         'system.worker.operate' => 'Operate durable background work queues.',
         'themes.administrator.manage' => 'Manage the installation-wide administrator theme.',
@@ -141,6 +142,7 @@ final class CoreExtensionContributions
      * @since  2.0.0
      */
     private const GLOBAL_ONLY_CAPABILITIES = [
+        'system.diagnostics.read',
         'audit.export',
         'audit.manage',
         'extensions.manage',
@@ -320,6 +322,12 @@ final class CoreExtensionContributions
     public static function resourcePolicyDefinitions(): array
     {
         return [
+            self::policy(
+                'core.system.diagnostics.read',
+                'system.diagnostics.read',
+                [new ResourcePolicyTarget('operator_diagnostics')],
+                installationGlobal: true,
+            ),
             self::policy(
                 'core.administrator.access',
                 'administrator.access',
@@ -667,7 +675,8 @@ final class CoreExtensionContributions
     {
         $definitions = [];
         foreach (self::CAPABILITIES as $id => $description) {
-            $systemOnly = $id === 'administrator.bootstrap' || str_starts_with($id, 'system.');
+            $systemOnly = $id === 'administrator.bootstrap'
+                || (str_starts_with($id, 'system.') && $id !== 'system.diagnostics.read');
             $definitions[] = new CapabilityDefinition(
                 $id,
                 ucwords(str_replace('.', ' ', $id)),
@@ -1290,6 +1299,23 @@ final class CoreExtensionContributions
                 'icon' => 'automation',
             ]),
             SurfaceDefinition::fromArray($owner, [
+                'surface' => 'core.administrator.diagnostics',
+                'standard' => 'kis-1.0',
+                'area' => 'administrator',
+                'actor' => 'administrator',
+                'intent' => 'monitor',
+                'resource' => 'operator-diagnostics',
+                'purpose' => 'Inspect bounded contention, queue, query and retention measurements.',
+                'pattern' => 'status-workspace',
+                'capabilities' => ['system.diagnostics.read'],
+                'states' => ['default', 'empty', 'error', 'permission-reduced', 'read-only'],
+                'customization' => [],
+                'responsive' => [
+                    ['element' => 'diagnostic-results', 'priority' => 'essential', 'may_collapse' => false],
+                ],
+                'icon' => 'automation',
+            ]),
+            SurfaceDefinition::fromArray($owner, [
                 'surface' => 'core.administrator.settings',
                 'standard' => 'kis-1.0',
                 'area' => 'administrator',
@@ -1903,6 +1929,18 @@ final class CoreExtensionContributions
                 230,
                 'configuration site homepage seo',
                 'core.administrator.settings',
+            ),
+            new AdministratorNavigationDefinition(
+                'core.diagnostics',
+                'core.system',
+                'Diagnostics',
+                'Contention, queues and retention',
+                '/administrator/diagnostics',
+                'automation',
+                'system.diagnostics.read',
+                225,
+                'diagnostics contention queues slow queries retention',
+                'core.administrator.diagnostics',
             ),
         ];
     }

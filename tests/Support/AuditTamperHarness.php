@@ -7,6 +7,7 @@ namespace Kumwe\App\Tests\Support;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Kumwe\App\Audit\Infrastructure\Persistence\AuditAppendOnlyGuard;
+use Kumwe\App\Audit\Infrastructure\Persistence\AuditRetentionGuard;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**
@@ -23,13 +24,23 @@ final class AuditTamperHarness
     public static function disableGuards(Connection $database, TableNames $tables): void
     {
         $platform = $database->getDatabasePlatform();
-        foreach (['audit_append_only_update', 'audit_append_only_delete'] as $trigger) {
+        foreach (
+            [
+            'audit_append_only_update' => 'audit_events',
+            'audit_append_only_delete' => 'audit_events',
+            'audit_retention_delete' => 'audit_events',
+            'audit_retention_truncate' => 'audit_events',
+            'audit_ledger_update' => 'audit_anchors',
+            'audit_ledger_delete' => 'audit_anchors',
+            'audit_ledger_truncate' => 'audit_anchors',
+            ] as $trigger => $table
+        ) {
             $name = $database->quoteSingleIdentifier($tables->raw($trigger));
             if ($platform instanceof PostgreSQLPlatform) {
                 $database->executeStatement(sprintf(
                     'DROP TRIGGER IF EXISTS %s ON %s',
                     $name,
-                    $tables->quoted('audit_events'),
+                    $tables->quoted($table),
                 ));
                 continue;
             }
@@ -41,6 +52,7 @@ final class AuditTamperHarness
     public static function enableGuards(Connection $database, TableNames $tables): void
     {
         AuditAppendOnlyGuard::install($database, $tables);
+        AuditRetentionGuard::install($database, $tables);
     }
 
     /**
@@ -108,18 +120,16 @@ final class AuditTamperHarness
         return false;
     }
 
-    /** Empties the trail through the sanctioned retention window, as test fixtures reset state. */
+    /** Resets fixtures using test-only DDL authority; production retention cannot erase its own evidence. */
     public static function truncateTrail(Connection $database, TableNames $tables): void
     {
-        $database->transactional(static fn (): int => AuditAppendOnlyGuard::withPruneAllowed(
-            $database,
-            $tables,
-            static fn (): int => (int) $database->executeStatement(sprintf(
-                'DELETE FROM %s',
-                $tables->quoted('audit_events'),
-            )),
-        ));
-        $database->executeStatement(sprintf('DELETE FROM %s', $tables->quoted('audit_anchors')));
+        self::disableGuards($database, $tables);
+        try {
+            $database->executeStatement(sprintf('DELETE FROM %s', $tables->quoted('audit_events')));
+            $database->executeStatement(sprintf('DELETE FROM %s', $tables->quoted('audit_anchors')));
+        } finally {
+            self::enableGuards($database, $tables);
+        }
     }
 
     /** Swaps the stored positions of two rows, the reordering only an anchor can detect. */

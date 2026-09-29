@@ -1,11 +1,8 @@
 # Changelog
 
-Everything this programme has **finished** is recorded here. Its durable objectives, gates and package
-contracts live in [`docs/roadmap/README.md`](docs/roadmap/README.md); its **still-to-do** identifiers live in
-the [`STATUS.md`](docs/roadmap/STATUS.md) open-work table and open findings ledger. When planned work
-completes, its live-index entry leaves those indexes and arrives here in the same pull request, while its
-normative package definition remains. If you want to know what comes next, read STATUS; if you want to know
-what already shipped, read this file.
+Notable application changes are recorded here. Entries under `Unreleased` describe work on the current
+development branch, not a published stable release. Older roadmap and qualification records provide
+historical context; they do not impose additional acceptance paperwork on ordinary changes.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -18,6 +15,26 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 ## [Unreleased]
 
 ### #152 — Version 2 runtime completion
+
+- Reduce the default PHP checks from 29 to 13. Run unit and architecture tests once, database behavior on
+  each supported engine, and two routine Chromium projects. Move repeated database passes, wider browser
+  combinations and coverage reporting to scheduled/manual runs. Select recovery and artifact checks by
+  changed paths, and cache the native runtime while verifying its pinned identity on every restore.
+
+- Remove duplicated package conformance tests and tests for roadmap inventories, source counts,
+  documentation layout and duplicated workflow commands. Keep App tests for integration, authorization,
+  persistence and user journeys. Simplify contributor guidance and make coverage diagnostic; bounded
+  performance samples remain the requirement, with no 24-hour or 72-hour endurance prerequisite.
+
+- Add permission-controlled operator diagnostics to administrator, REST, CLI and MCP. Reuse existing
+  bounded queries and retention observations; report unavailable engine statistics explicitly.
+
+- Require protected archive evidence and immutable retention claims before pruning audit events.
+  Verify archived ranges against their original anchors, including concurrent changes during export.
+  The protection applies to database DML access, not database or filesystem administration.
+
+- Keep record pagination aligned with the requested sort direction and use native null ordering when
+  it matches the query. Preserve safe bounded execution for queries that cannot use an index.
 
 - Document the schema fixture's acting-administrator password and remove its resolved documentation
   exemptions, unblocking the pre-flight and PHP quality gates without changing fixture behavior (#152).

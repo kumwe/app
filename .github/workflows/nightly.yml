@@ -1,37 +1,23 @@
 name: Kumwe nightly
 
-# The nightly lane exists so that checks which do not fit a merge budget still run on a known cadence, and
-# so that "nightly" is a thing this repository executes rather than a thing its documentation mentions. It
-# does not restate what to run: the first job executes the nightly lane of docs/quality/contract.json, and a
-# check joins that lane by declaring the cadence there and nowhere else.
+# Full correctness, locale and deployment checks run daily in ci.yml.
+# This workflow adds the remaining browser engines and performance breakpoint.
 
 on:
   schedule:
     - cron: '23 2 * * *'
   workflow_dispatch:
-  pull_request:
-    paths:
-      - '.github/workflows/nightly.yml'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'playwright.config.ts'
-      - 'tests/Browser/**'
-      - 'tests/Support/BrowserProjectManifest.php'
-      - 'tests/Support/prepare-browser-contribution.php'
-      - 'tools/summarize-browser-attempts.mjs'
-      - 'tools/verify-browser-attempt-summary.mjs'
 
 permissions:
   contents: read
 
 concurrency:
   group: nightly-${{ github.workflow }}-${{ github.ref }}
-  # New PR heads supersede their older evidence; scheduled/master runs retain their complete execution.
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 jobs:
-  quality-contract:
-    name: Nightly quality contract
+  performance:
+    name: Nightly performance breakpoint
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     services:
@@ -105,15 +91,12 @@ jobs:
         shell: bash
         run: echo "APP_SECRET=$(openssl rand -base64 48 | tr -d '\n')" >> "$GITHUB_ENV"
 
-      - name: Verify the contract before executing it
-        run: composer quality:contract
-
-      # Manifest-owned checks execute here. Checks with an explicit nightly workflow binding are delegated
-      # to that provisioned job and reported as such, so browser work is not duplicated in this PHP process.
-      - name: Execute the nightly lane
-        env:
-          KUMWE_ARTIFACT_MEMORY: 256M
-        run: php tools/quality-contract.php --run --cadence=nightly
+      - name: Prepare the database
+        run: |
+          php tests/Support/install-parent-schema.php
+          php bin/kumwe database:migrate
+      - name: Measure the performance breakpoint
+        run: composer perf:breakpoint
 
   browser:
     name: Nightly browser breadth / ${{ matrix.database.name }}

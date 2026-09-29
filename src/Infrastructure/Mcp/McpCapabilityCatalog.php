@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Infrastructure\Mcp;
 
+use Kumwe\App\Application\Diagnostics\OperatorDiagnostics;
+
 /**
  * Single declaration of the MCP surface a Kumwe release publishes.
  *
@@ -113,6 +115,10 @@ final class McpCapabilityCatalog
         'kumwe_business_schema_plan_recover' => [McpRiskClass::InstallationGlobal, self::VIA_SCHEMA],
         'kumwe_schedule_list' => [McpRiskClass::Read, self::VIA_AUTOMATION],
         'kumwe_job_list' => [McpRiskClass::Read, self::VIA_AUTOMATION],
+        'kumwe_operator_diagnostics_read' => [
+            McpRiskClass::Read,
+            'GET /api/v1/diagnostics or bin/kumwe app:diagnostics.',
+        ],
         'kumwe_schedule_create' => [McpRiskClass::ScopedWrite, self::VIA_AUTOMATION],
         'kumwe_schedule_update' => [McpRiskClass::ScopedWrite, self::VIA_AUTOMATION],
         'kumwe_schedule_delete' => [McpRiskClass::Destructive, self::VIA_AUTOMATION],
@@ -1459,6 +1465,18 @@ final class McpCapabilityCatalog
                 ],
                 $object,
                 ['operationId', 'name', 'cron', 'jobType']
+            ),
+            $this->tool(
+                'kumwe_operator_diagnostics_read',
+                'Read operator diagnostics',
+                'Read bounded contention, queue, slow-query, backlog or retention diagnostics.',
+                'readOperatorDiagnostics',
+                OperatorDiagnostics::CAPABILITY,
+                true,
+                false,
+                true,
+                ['section' => ['type' => 'string', 'enum' => OperatorDiagnostics::SECTIONS, 'default' => 'queues']],
+                $object,
             ),
             $this->tool(
                 'kumwe_schedule_update',

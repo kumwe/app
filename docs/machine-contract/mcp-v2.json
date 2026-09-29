@@ -25,7 +25,7 @@
         ]
     },
     "inventory": {
-        "tools": 124,
+        "tools": 125,
         "resources": 1,
         "prompts": 1
     },
@@ -588,7 +588,7 @@
             ]
         }
     ],
-    "contract_sha256": "e679065fcf31359ee6966609b9a1409dd1e5cd50829fa675b47900cf0289f44a",
+    "contract_sha256": "70e131d6b9d4ee27faab9b1fd8bf5d3c3374ce8b719db28baec9b72e1cdfa529",
     "surface": {
         "tools": [
             {
@@ -5787,6 +5787,44 @@
                         "cron",
                         "jobType"
                     ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_operator_diagnostics_read",
+                "title": "Read operator diagnostics",
+                "description": "Read bounded contention, queue, slow-query, backlog or retention diagnostics.",
+                "handler": "readOperatorDiagnostics",
+                "capability": "system.diagnostics.read",
+                "risk": "read",
+                "alternative": "GET /api/v1/diagnostics or bin/kumwe app:diagnostics.",
+                "annotations": {
+                    "title": "Read operator diagnostics",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "section": {
+                            "type": "string",
+                            "enum": [
+                                "contention",
+                                "queues",
+                                "slow",
+                                "backlog",
+                                "retention"
+                            ],
+                            "default": "queues"
+                        }
+                    },
+                    "required": [],
                     "additionalProperties": false
                 },
                 "outputSchema": {

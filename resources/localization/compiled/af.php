@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2592 messages.
+ * Compiled interface message catalogue for af, carrying 2629 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2059,6 +2059,43 @@ return [
     'core.console.user_create_admin.description' => 'Skep ’n administrateur vanaf ’n beskermde wagwoordlêer.',
     'core.console.user_recover_credentials.description' => 'Noodtoegang: stel ’n wagwoord terug, trek tweede faktore terug, of beëindig sessies vanaf die gasheer.',
     'core.console.wording.description' => 'Lys, deursoek, stoor of onttrek bewoordingsoorskrywings.',
+    'core.diagnostics.backlog' => 'Agterstand',
+    'core.diagnostics.bounds' => 'Elke stelling is beperk tot {timeout} ms; elke bron lewer hoogstens {rows} rye.',
+    'core.diagnostics.budget_exceeded' => 'Die diagnostiek het sy tyd- of resultaatbegroting oorskry. Beperk die werklas of ondersoek die databasis direk.',
+    'core.diagnostics.contention' => 'Mededinging',
+    'core.diagnostics.description' => 'Ondersoek mededinging, toue, navraagkoste en bewaring.',
+    'core.diagnostics.empty' => 'Geen waarnemings is in hierdie steekproef gevind nie.',
+    'core.diagnostics.field.backlog_approximate' => 'Benaderde agterstand',
+    'core.diagnostics.field.backlog_rows' => 'Agterstandrye',
+    'core.diagnostics.field.calls' => 'Oproepe',
+    'core.diagnostics.field.capacity_rows' => 'Kapasiteit (rye)',
+    'core.diagnostics.field.configured' => 'Gekonfigureer',
+    'core.diagnostics.field.definition' => 'Definisie',
+    'core.diagnostics.field.depth_lower_bound' => 'Toulengte (minstens)',
+    'core.diagnostics.field.expiry_rows_per_second' => 'Verstryking (rye/sekonde)',
+    'core.diagnostics.field.forecast_seconds_to_capacity' => 'Voorspelde tyd tot kapasiteit (sekondes)',
+    'core.diagnostics.field.ingest_rows_per_second' => 'Invoer (rye/sekonde)',
+    'core.diagnostics.field.last_drain_at' => 'Laaste verwydering',
+    'core.diagnostics.field.lock_class' => 'Slotklas',
+    'core.diagnostics.field.mean_ms' => 'Gemiddelde tyd (ms)',
+    'core.diagnostics.field.net_growth_rows_per_second' => 'Netto groei (rye/sekonde)',
+    'core.diagnostics.field.oldest_age_seconds' => 'Oudste ouderdom (sekondes)',
+    'core.diagnostics.field.policy_cost' => 'Beleidsmeting',
+    'core.diagnostics.field.source' => 'Bron',
+    'core.diagnostics.field.store' => 'Grootboek',
+    'core.diagnostics.field.stream' => 'Stroom',
+    'core.diagnostics.field.sustained_drain_rows_per_second' => 'Volgehoue verwydering (rye/sekonde)',
+    'core.diagnostics.field.table_name' => 'Tabel',
+    'core.diagnostics.field.total_ms' => 'Totale tyd (ms)',
+    'core.diagnostics.field.waiting' => 'Wagtend',
+    'core.diagnostics.policy_cost_included' => 'In navraagkoste ingesluit',
+    'core.diagnostics.queues' => 'Toue',
+    'core.diagnostics.retention' => 'Bewaring',
+    'core.diagnostics.sampled' => 'Resultate is begrensde steekproewe. Toutellings is ondergrense; \'n onbekende tempo is nie nul nie.',
+    'core.diagnostics.slow' => 'Stadige navrae',
+    'core.diagnostics.title' => 'Diagnostiek',
+    'core.diagnostics.unavailable' => 'Hierdie bron is nie beskikbaar nie. Kontroleer databasistoegang en of enjinstatistiek geaktiveer is.',
+    'core.diagnostics.unknown' => 'Onbekend',
     'core.identity.password.change_refused' => 'Jou wagwoord kon nie verander word nie. Kontroleer jou huidige wagwoord en kies ’n ander wagwoord met ten minste 12 karakters.',
     'core.identity.password.confirmation_mismatch' => 'Die nuwe wagwoord en die bevestiging daarvan stem nie ooreen nie.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'Toegangsgroep-verstekke',

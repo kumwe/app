@@ -1538,10 +1538,11 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     /**
      * Compile the requested ordering into `ORDER BY` terms and the columns a cursor is read from.
      *
-     * Null placement is emitted as an explicit rank expression ahead of the column itself, so the order
-     * does not depend on where an engine puts empty values, and the record identity is always appended
-     * last, which makes the ordering total and therefore safe to page on. A column the installed schema
-     * declares NOT NULL gets no rank expression: it would rank every row alike, and leaving it out lets an
+     * Null placement uses the engine's native order when it matches the requested placement; otherwise
+     * an explicit rank expression preserves the request. The record identity is appended in the final
+     * key's direction, allowing a composite index to serve both forward and backward scans while keeping
+     * the ordering total and safe to page on. A column the installed schema declares NOT NULL gets no rank
+     * expression: it would rank every row alike, and leaving it out lets an
      * index that leads with the scope and that column deliver the page in order, so the engine examines
      * the page rather than sorting every row in scope (P5-G). A key on a unique, NOT NULL field already
      * makes the ordering total inside the equality-bound scope its unique index covers, so no identity
@@ -1576,6 +1577,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         $order = [];
         $cursor = [];
         $total = false;
+        $tieDirection = SortDirection::Descending;
         if ($specification->sorts === []) {
             $updated = $this->physical($table, 'updated_at');
             $order[] = $alias . '.' . $this->quote($updated) . ' DESC';
@@ -1601,7 +1603,10 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                 }
                 $physical = $columns[0]->physicalName;
                 $qualified = $alias . '.' . $this->quote($physical);
-                if ($columns[0]->nullable) {
+                $nativeNullsLast = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
+                    ? $sort->direction === SortDirection::Ascending
+                    : $sort->direction === SortDirection::Descending;
+                if ($columns[0]->nullable && $sort->nullsLast !== $nativeNullsLast) {
                     $nullRank = $sort->nullsLast ? '1' : '0';
                     $nonNullRank = $sort->nullsLast ? '0' : '1';
                     $order[] = sprintf(
@@ -1614,10 +1619,12 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                 $order[] = $qualified . ' ' . strtoupper($sort->direction->value);
                 $cursor[] = ['field' => $field->handle, 'physical' => $physical];
                 $total = $total || ($field->unique && !$columns[0]->nullable);
+                $tieDirection = $sort->direction;
             }
         }
         if (!$total) {
-            $order[] = $alias . '.' . $this->quote($this->physical($table, 'record_id')) . ' ASC';
+            $order[] = $alias . '.' . $this->quote($this->physical($table, 'record_id'))
+                . ' ' . strtoupper($tieDirection->value);
         }
 
         return [$order, $cursor];
@@ -1628,8 +1635,9 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      *
      * The result is a disjunction: one branch per ordering key, requiring the keys before it to be equal
      * and that key to lie beyond the cursor's value, plus a final branch matching every key exactly and a
-     * greater record identity. Keys holding no value are compared with `IS NULL`, and a nulls-last key
-     * that held none contributes no branch of its own, so no row is repeated or skipped where the valued
+     * record identity beyond the cursor in the final key's direction. Keys holding no value are compared
+     * with `IS NULL`, and a nulls-last key that held none contributes no branch of its own, so no row is
+     * repeated or skipped where the valued
      * rows meet the empty ones. A NOT NULL column has no empty rows to keep reachable, so its seek is the
      * bare comparison an index range can serve, and an ordering made total by a unique NOT NULL key needs
      * no identity branch, because no other row can share that key within the scope. Bindings are appended
@@ -1746,7 +1754,9 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                 $types[] = $key['type'];
             }
         }
-        $tie[] = $alias . '.' . $this->quote($this->physical($table, 'record_id')) . ' > ?';
+        $tieDirection = $keys[array_key_last($keys)]['direction'];
+        $tie[] = $alias . '.' . $this->quote($this->physical($table, 'record_id'))
+            . ($tieDirection === SortDirection::Ascending ? ' > ?' : ' < ?');
         $parameters[] = $recordKey;
         $types[] = $this->type($table, 'record_id');
         $parts[] = '(' . implode(' AND ', $tie) . ')';
@@ -2617,6 +2627,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         BusinessRecordAccessPlan $access,
     ): string {
         return CanonicalDefinitionJson::checksum([
+            'ordering_version' => 2,
             'definition_id' => $resolved->definition->id,
             'definition_version' => $resolved->definition->definitionVersion,
             'definition_checksum' => $resolved->definition->checksum(),

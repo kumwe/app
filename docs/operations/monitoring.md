@@ -8,6 +8,20 @@
 
 Use readiness to admit traffic. Do not restart a healthy PHP process solely because a dependency is briefly unavailable; alert and investigate that dependency separately. Monitor Redis independently so authentication latency, memory pressure, eviction, and connection errors are visible before or alongside a readiness failure.
 
+## Operator diagnostics
+
+Administrators with the installation-wide `system.diagnostics.read` capability can open
+`/administrator/diagnostics`, call `GET /api/v1/diagnostics?section=queues`, run
+`php bin/kumwe app:diagnostics --site=default --token-file=/run/secrets/operator-token --section=queues`,
+or use MCP tool `kumwe_operator_diagnostics_read`. Select `contention`, `queues`, `slow`, `backlog` or
+`retention`; each uses the same authorization and bounded reader. Responses state their sample and
+statement limits. Queue depths are lower bounds, unknown rates remain unknown, and retention drain
+uses the configured duty cycle. Slow-query cost includes policy evaluation; it does not measure policy
+cost separately. Engine lock and statement statistics require database access and, for slow queries,
+PostgreSQL `pg_stat_statements` or MySQL/MariaDB performance-schema digest collection. A source that
+cannot be read is reported as unavailable, never as an empty healthy system. No raw SQL or payloads are
+returned. Reads do not change data, and HTTP responses are not cached.
+
 ## Minimum signals
 
 Collect and alert on:
@@ -457,65 +471,41 @@ Run `bin/kumwe audit:verify --site=<site> --token-file=<file>` to re-derive the 
 walk runs nightly as the `audit.trail.verify` job, which fails loudly on a divergence — it becomes a failed and
 finally dead-lettered job, not a log line. Verification requires the `audit.manage` capability.
 
-The command has three verdicts, and a deployment gate should branch on all three:
+The host verifier exits `0` only when the evidence and required guards are intact:
 
 | Exit | `append_only_enforcement` | Meaning |
 | --- | --- | --- |
 | `0` | `active` | The chain verified and the database is refusing rewrites. This is the intended posture. |
-| `2` | `not_installed` | The chain verified, but the append-only triggers are **not** on this server. Nothing is known to have been tampered with; nothing is preventing it either. Printed on stderr. |
-| `1` | either | The trail diverged, or the command could not run. The first divergence is printed with its class, position, and event id. |
+| `1` | `not_installed` | Required guards are absent. Continuity cannot be proven, even when the remaining rows hash correctly. |
+| `1` | either | Evidence diverged, an archive or receipt is unavailable, or verification could not run. The first finding identifies the affected evidence. |
 
 The enforcement field is read from the server's catalog on every run, not from anything the migration recorded, so
 it stays true after a restore onto a different server and after a DBA grants or revokes the privilege.
 
 ### Append-only enforcement and least-privilege accounts
 
-`UPDATE` and `DELETE` on `audit_events` are refused by database triggers on MariaDB, MySQL, and PostgreSQL. The
-only sanctioned removal path is the retention job, which opens a session-scoped window after it has archived and
-anchored the range. These triggers stop mistakes and casual tampering; they cannot stop an account that may drop
-them. Give the application runtime a database account with `SELECT, INSERT, UPDATE, DELETE` on the application
-tables but **without** `SUPER`, `TRIGGER`, or `DROP` (PostgreSQL: not the table owner and without `BYPASSRLS`),
-and reserve a separate migration account for schema changes. With that separation the runtime account cannot
-remove the guards even if the application is compromised.
+`UPDATE` on `audit_events` and both `UPDATE` and `DELETE` on `audit_anchors` are refused by database
+triggers. The anchor table includes retention marks, so those cannot be removed after deleting their events.
+An event deletion requires both the retention session flag and an immutable prune mark covering its position.
+A forged mark remains visible and fails verification unless the exact archived events survive in the private
+store and reproduce the original sealed ranges. PostgreSQL `TRUNCATE` is refused on both tables.
 
-This is an operator control, not a property of the shipped Compose topology. `compose.production.yaml` currently
-passes the same database user and password file to the one-shot migration task and every long-lived PHP service,
-so its runtime account necessarily retains the rights used by migrations. Use a deployment overlay or platform
-secret injection to give `migrate` a separate DDL-capable identity and keep that credential out of `app`, `worker`,
-and `scheduler`; otherwise this mitigation is absent and the trigger plus tamper-evidence controls remain the
-available protection.
+This protects against a database principal limited to ordinary application DML. A session variable alone is
+not authorization. The archive and its receipt are outside that principal's database permissions. Missing
+guards produce `audit.enforcement.unavailable`; missing or altered retention evidence produces
+`anchor.prune.evidence.unavailable`. Neither result is reported as an intact trail.
 
-#### When the server will not grant them
+An administrator or account with DDL, trigger ownership, or filesystem access can remove these controls.
+Do not claim protection against complete database or host administration compromise. In particular,
+`compose.production.yaml` currently shares a database identity between migration and runtime services;
+that identity retains schema privileges. Sites requiring the narrower DML threat boundary must separately
+restrict runtime credentials using a deployment setup that also accounts for authorized schema operations.
 
-Installing the triggers needs a privilege managed database services withhold by default, so `database:migrate`
-does **not** insist on it. If the server refuses, the migration records the refusal and completes; it never
-aborts. That is deliberate — demanding the privilege would make Kumwe uninstallable on Amazon RDS, Cloud SQL and
-Azure Database for MySQL as they ship. Only a genuine privilege refusal is absorbed (MySQL and MariaDB `1419`,
-`1227` and `1142`; PostgreSQL SQLSTATE `42501`); any other failure still aborts the migration.
-
-**What the migration account needs, per platform:**
-
-- **MySQL and MariaDB** — the `TRIGGER` privilege on the schema, **plus** either the `SUPER` privilege or
-  `log_bin_trust_function_creators = 1` whenever binary logging is enabled. With binlog on and neither of those,
-  the server answers `ERROR 1419 (HY000): You do not have the SUPER privilege and binary logging is enabled`.
-  On managed services, set the `log_bin_trust_function_creators` parameter to `1` in the parameter group (RDS,
-  Cloud SQL) or use the equivalent server parameter (Azure), then re-run `database:migrate`.
-- **PostgreSQL** — ownership of `audit_events`, or the `TRIGGER` privilege on it plus `CREATE` on its schema.
-  Without it the server answers `SQLSTATE 42501: permission denied for table …`.
-
-**What you lose without it, and what you do not.** You lose *prevention*: nothing stops a rogue or mistaken
-`UPDATE`/`DELETE` at the database, so the trail is append-only by application discipline only. You do **not**
-lose *tamper evidence*, which is the actual claim this subsystem makes. Digest chaining, witness links, monotonic
-positions, the anchor ledger, `audit:verify` and `audit:export` all work identically and still make a mutated,
-deleted, reordered or inserted row detectable after the fact. Enforcement is defence in depth on top of that, not
-the thing that makes the trail trustworthy.
-
-**Detecting and closing the gap.** `bin/kumwe audit:verify` exits `2` and reports
-`"append_only_enforcement": "not_installed"` on any server where the guards are absent, so a qualification run
-cannot mistake it for a guarded installation. To close it, grant the privileges above and re-run
-`bin/kumwe database:migrate` — the migration is repeatable and will install the triggers on the next pass without
-touching anything else. Until then, compensate with least-privilege runtime accounts (above), scheduled
-`audit.trail.verify` runs, and off-host retention of `audit:export` archives.
+The new retention-evidence migration requires permission to install its guards; it fails if that protection
+cannot be installed. MySQL/MariaDB need `TRIGGER` and, with binary logging, the appropriate
+`log_bin_trust_function_creators` setting or administrative privilege. PostgreSQL needs trigger creation
+privileges on both tables and function creation privileges in their schema. Use the migration identity to
+supply these rights, and investigate a missing-guard finding before resuming retention.
 
 ### Audit export and retention
 
@@ -531,4 +521,15 @@ that schedule and enable it. A pass then archives and prunes only whole anchored
 exports the range, chains a `prune` mark carrying the archive checksum and the range's rolling digest into the
 anchor ledger, deletes the rows through the guarded window, and records an `audit.trail.pruned` event — all in one
 transaction. Evidence is transformed into archived evidence, never silently destroyed. Keep the archives under the
-same custody as backups; the trail names their checksums, so an altered archive is detectable.
+same custody as backups, including the `retention-proofs` subdirectory. Before deleting, retention verifies the
+existing trail, reads the archive back, and preserves a private receipt binding its checksum, file name and
+size to the exact prune digest. Before deletion and on every later verification, the archived ordered event
+digests must also reproduce the original immutable anchor ranges. A database-only forged prune, concurrent
+insertion into a sealed range, lost archive, or altered receipt therefore fails closed.
+
+Historical prune marks without receipts remain verifiable when a matching existing private archive proves
+its checksum, range, count and rolling digest against the original anchor ranges. This read-only compatibility
+search examines at most 1024 directory entries and streams at most 512 MiB of archive data; exceeding the bound
+or losing the archive fails closed. Preserve receipts when backing up and restoring to avoid this fallback.
+Retention remains disabled while verification fails. A rolled-back pass may leave an unreferenced archive or
+receipt; it does not authorize any deletion.
