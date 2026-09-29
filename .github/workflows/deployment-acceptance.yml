@@ -1161,6 +1161,15 @@ jobs:
           --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" --source-digest "$KUMWE_RELEASE_COMMIT"
         docker pull "$reference"
         echo "QUALIFIED_IMAGE=$reference" >> "$GITHUB_ENV"
+    - name: Allow audit trigger installation on the ephemeral MySQL server
+      if: matrix.database.driver == 'mysql'
+      shell: bash
+      run: |
+        # MySQL binary logging requires this server setting for schema-scoped trigger creators.
+        docker exec '${{ job.services.database.id }}' mysql --user=root --execute='
+          SET GLOBAL log_bin_trust_function_creators = 1;
+          SELECT @@GLOBAL.log_bin, @@GLOBAL.log_bin_trust_function_creators;
+        '
     - name: Qualify migration, faults and backlog in the exact ZIP and Composer installs
       shell: bash
       run: |

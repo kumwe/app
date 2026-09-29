@@ -229,6 +229,16 @@ jobs:
           composer install --no-interaction --prefer-dist
           npm ci
 
+      - name: Allow audit trigger installation on the ephemeral MySQL server
+        if: matrix.database.driver == 'mysql'
+        shell: bash
+        run: |
+          # MySQL binary logging requires this server setting for schema-scoped trigger creators.
+          docker exec '${{ job.services.database.id }}' mysql --user=root --execute='
+            SET GLOBAL log_bin_trust_function_creators = 1;
+            SELECT @@GLOBAL.log_bin, @@GLOBAL.log_bin_trust_function_creators;
+          '
+
       - name: Migrate and create the browser-test administrator
         shell: bash
         run: |
@@ -508,6 +518,16 @@ jobs:
           restore-keys: composer-files-
       - name: Install locked dependencies
         run: composer install --no-interaction --prefer-dist
+
+      - name: Allow audit trigger installation on the ephemeral MySQL server
+        if: matrix.database.driver == 'mysql'
+        shell: bash
+        run: |
+          # MySQL binary logging requires this server setting for schema-scoped trigger creators.
+          docker exec '${{ job.services.database.id }}' mysql --user=root --execute='
+            SET GLOBAL log_bin_trust_function_creators = 1;
+            SELECT @@GLOBAL.log_bin, @@GLOBAL.log_bin_trust_function_creators;
+          '
 
       - name: Install immutable parent schema
         run: php tests/Support/install-parent-schema.php
