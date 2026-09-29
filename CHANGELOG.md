@@ -19,6 +19,12 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ### #152 — Version 2 runtime completion
 
+- Document the schema fixture's acting-administrator password and remove its resolved documentation
+  exemptions, unblocking the pre-flight and PHP quality gates without changing fixture behavior (#152).
+
+- Restore the browser fixture's schema-installer call after an accidental self-reference stopped
+  browser setup before any journey could run; preserve the acting administrator's step-up proof (#152).
+
 - Preserve authored Studio field identities across durable type bindings, reopened entries and published
   rendering, and retain the presentation with which an authoring session started. The combined Studio,
   retention and CLI contract unit checks pass: 477 tests, 4,304 assertions (#152).
