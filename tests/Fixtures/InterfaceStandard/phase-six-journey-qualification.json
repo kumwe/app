@@ -541,7 +541,7 @@
       "id": "p6-005-security-sbom",
       "path": ".github/workflows/security.yml",
       "kind": "workflow-step",
-      "marker": "Generate source SBOM",
+      "marker": "Evaluate complete locked-source licence inventory",
       "owner": "ci-security",
       "must_contain": [
         "cyclonedx-json",
