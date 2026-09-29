@@ -1017,7 +1017,18 @@ final class NeutralBusinessFixture
         return IdempotencyKey::fromString('neutral-fixture:' . $operation);
     }
 
-    /** Publish and install a fixture document through the real application boundaries. */
+    /**
+     * Publish and install a fixture document through the real application boundaries.
+     *
+     * @param   Container                  $container        Real integration container.
+     * @param   ExecutionContext           $context          Actor authorized to publish and install the definition.
+     * @param   array<string, mixed>|null  $document         Definition document; null selects the backup fixture.
+     * @param   string                     $currentPassword  Acting administrator's password for schema step-up.
+     *
+     * @return  EntityTypeDefinition  Published definition with an active schema and fixture record grants.
+     *
+     * @since   2.0.0
+     */
     public static function install(
         Container $container,
         ExecutionContext $context,

@@ -273,7 +273,9 @@ try {
         }
         $assetDefinitionsById[$definitionId] = $assetDefinition;
     }
-    $installDefinition = static fn (array $definition) => $installDefinition(
+    $installDefinition = static fn (array $definition) => NeutralBusinessFixture::install(
+        $container,
+        $context,
         $definition,
         $adminPassword,
     );
