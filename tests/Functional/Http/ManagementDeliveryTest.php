@@ -14,6 +14,7 @@ use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Delivery\Console\ConsoleApplication;
 use Kumwe\App\Delivery\Console\Contract\CliV1MachineContract;
 use Kumwe\App\Delivery\Console\Contract\CliV2MachineContract;
+use Kumwe\App\Delivery\Console\Contract\CliV3MachineContract;
 use Kumwe\App\Kernel\ContainerFactory;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\AuthorizationContext;
@@ -275,7 +276,7 @@ final class ManagementDeliveryTest extends TestCase
     }
 
     /**
-     * Prove the real composition root registers exactly the current CLI generation, a superset of generation one.
+     * Prove the real composition root registers the current CLI generation and preserves earlier commands.
      *
      * @return  void
      *
@@ -288,13 +289,14 @@ final class ManagementDeliveryTest extends TestCase
         self::assertInstanceOf(ConsoleApplication::class, $console);
 
         $names = $console->commandNames();
-        self::assertSame(CliV2MachineContract::contract()->commandNames(), $names);
-        self::assertCount(54, $names);
-        self::assertSame(
-            [],
-            array_values(array_diff(CliV1MachineContract::contract()->commandNames(), $names)),
-            'Every retained generation-one command stays registered.',
-        );
+        self::assertSame(CliV3MachineContract::contract()->commandNames(), $names);
+        foreach ([CliV1MachineContract::contract(), CliV2MachineContract::contract()] as $retained) {
+            self::assertSame(
+                [],
+                array_values(array_diff($retained->commandNames(), $names)),
+                'Every retained command stays registered.',
+            );
+        }
         self::assertContains('studio-authoring', $names);
 
         // Every business feature reachable over REST is reachable from a shell too.

@@ -6,6 +6,7 @@ namespace Kumwe\App\Tests\Unit\Observability;
 
 use Kumwe\App\Infrastructure\Observability\MetricCatalog;
 use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
+use Kumwe\App\Tests\Support\ProcessOwnedShutdown;
 use Kumwe\App\Tools\Observability\DashboardGate;
 use Kumwe\App\Tools\Observability\InhibitionRules;
 use Kumwe\App\Tools\Observability\MetricInventory;
@@ -385,7 +386,7 @@ final class RuleGateTest extends TestCase
             @mkdir(dirname($root . '/' . $file), 0700, true);
             file_put_contents($root . '/' . $file, $contents);
         }
-        register_shutdown_function(static function () use ($root, $files): void {
+        register_shutdown_function(ProcessOwnedShutdown::capture(static function () use ($root, $files): void {
             foreach ($files as $file) {
                 @unlink($root . '/' . $file);
             }
@@ -400,7 +401,7 @@ final class RuleGateTest extends TestCase
                 @rmdir($root . '/' . $dir);
             }
             @rmdir($root);
-        });
+        }));
 
         return $root;
     }

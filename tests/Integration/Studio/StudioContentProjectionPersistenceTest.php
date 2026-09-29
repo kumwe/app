@@ -8,6 +8,8 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use Doctrine\DBAL\Types\Types;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioAuthoringIdentityMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringContextMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentProjectionMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Studio\Application\Host\StudioPersistenceRace;
@@ -45,6 +47,8 @@ final class StudioContentProjectionPersistenceTest extends TestCase
         $tables = new TableNames($database, 'kumwe_');
         $this->createContentParents($database, $tables);
         (new StudioContentProjectionMigration($tables))->up($database);
+        (new StudioContentAuthoringContextMigration($tables))->up($database);
+        (new StudioAuthoringIdentityMigration($tables))->up($database);
         $this->insertContentParents($database, $tables);
         $repository = new DoctrineContentProjectionBindingRepository($database, $tables);
         $binding = new ContentBlueprintBinding(
@@ -86,6 +90,8 @@ final class StudioContentProjectionPersistenceTest extends TestCase
         $tables = new TableNames($database, 'kumwe_');
         $this->createContentParents($database, $tables);
         (new StudioContentProjectionMigration($tables))->up($database);
+        (new StudioContentAuthoringContextMigration($tables))->up($database);
+        (new StudioAuthoringIdentityMigration($tables))->up($database);
         $this->insertContentParents($database, $tables);
         $repository = new DoctrineContentProjectionBindingRepository($database, $tables);
         $binding = new ContentBlueprintBinding(
@@ -129,6 +135,8 @@ final class StudioContentProjectionPersistenceTest extends TestCase
         $migration = new StudioContentProjectionMigration($tables);
         $migration->up($database);
         $migration->up($database);
+        (new StudioContentAuthoringContextMigration($tables))->up($database);
+        (new StudioAuthoringIdentityMigration($tables))->up($database);
         $this->insertContentParents($database, $tables);
         try {
             $this->insertBinding($database, $tables, 'publisher-botswana');
