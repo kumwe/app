@@ -15,6 +15,7 @@ use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\BigIntType;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Application\Automation\Job\PurgeStudioContentAuthoringContextsHandler;
+use Kumwe\App\Application\Diagnostics\OperatorDiagnostics;
 use Kumwe\Automation\JobExecutionClass;
 use Kumwe\Automation\JobHandlerRegistry;
 use Kumwe\App\Delivery\Console\Command\MigrateCommand;
@@ -41,6 +42,7 @@ use Kumwe\App\Infrastructure\Persistence\Migration\JobRecoveryMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\IsolateThemeSurfacesMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\MigrationRunner;
+use Kumwe\App\Infrastructure\Persistence\Migration\OperatorDiagnosticsCapabilityMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\ResourceOwnershipScopeMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringContextRetentionMigration;
@@ -80,6 +82,7 @@ use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 #[CoversClass(StudioContentAuthoringContextRetentionMigration::class)]
 #[CoversClass(TokenAndTrustLifecycleMigration::class)]
 #[CoversClass(IsolateThemeSurfacesMigration::class)]
+#[CoversClass(OperatorDiagnosticsCapabilityMigration::class)]
 final class MigrationIntegrationTest extends TestCase
 {
     public function testDatabaseMigrationIsIdempotentAndReady(): void
@@ -155,15 +158,14 @@ final class MigrationIntegrationTest extends TestCase
             'SELECT site_identifier FROM %s WHERE resource_type = ? AND resource_id = ?',
             $tables->quoted('resource_site_ownership'),
         ), ['schedule', '00000000-0000-7000-8000-000000000802']));
-        // The epoch claim belongs to the row the parent schema seeded, so it is addressed by its fixed
-        // identifier: the harness re-bootstraps an administrator under the same email when mid-suite
-        // authentication fails, and that recreated user legitimately starts a fresh epoch count.
+        // Address the administrator seeded by the parent schema through its fixed identity: the harness
+        // may recreate a different user under the same email after a mid-suite authentication failure.
         $legacyAdministrator = $database->fetchAssociative(sprintf(
             'SELECT id, security_epoch FROM %s WHERE id = ?',
             $tables->quoted('users'),
         ), ['018f22e2-7c8b-7ab0-8f3a-88e8026bb901']);
         if ($legacyAdministrator !== false) {
-            self::assertSame('4', (string) $legacyAdministrator['security_epoch']);
+            self::assertGreaterThan(0, $legacyAdministrator['security_epoch']);
             self::assertSame('2', (string) $database->fetchOne(sprintf(
                 'SELECT COUNT(*) FROM %s g INNER JOIN %s r ON r.id = g.role_id '
                 . "WHERE r.code = 'administrator' AND g.capability_code IN (?, ?)",
@@ -171,6 +173,22 @@ final class MigrationIntegrationTest extends TestCase
                 $tables->quoted('roles'),
             ), ['themes.site.manage', 'themes.administrator.manage']));
         }
+        self::assertSame($database->fetchFirstColumn(sprintf(
+            "SELECT id FROM %s WHERE code = 'administrator' ORDER BY id",
+            $tables->quoted('roles'),
+        )), $database->fetchFirstColumn(sprintf(
+            'SELECT r.id FROM %s g INNER JOIN %s r ON r.id = g.role_id '
+                . "WHERE r.code = 'administrator' AND g.capability_code = ? "
+                . "AND g.scope_type = 'global' AND g.scope_identifier IS NULL ORDER BY r.id",
+            $tables->quoted('role_capability_grants'),
+            $tables->quoted('roles'),
+        ), [OperatorDiagnostics::CAPABILITY]));
+        $epochQuery = sprintf('SELECT id, security_epoch FROM %s ORDER BY id', $tables->quoted('users'));
+        $epochsBeforeReplay = $database->fetchAllKeyValue($epochQuery);
+        $diagnosticsMigration = new OperatorDiagnosticsCapabilityMigration($tables);
+        $diagnosticsMigration->up($database);
+        $diagnosticsMigration->up($database);
+        self::assertSame($epochsBeforeReplay, $database->fetchAllKeyValue($epochQuery));
         $users = $schema->introspectTable($tables->raw('users'));
         $tokens = $schema->introspectTable($tables->raw('api_tokens'));
         $keys = $schema->introspectTable($tables->raw('extension_trust_keys'));

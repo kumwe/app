@@ -188,6 +188,7 @@ final readonly class SignedWorkflowExtensionFixture
                         $plan->checksum(),
                         $plan->risk->requiresHighImpactAuthorization() ? $plan->checksum() : null,
                         null,
+                        TestKernelFactory::ADMINISTRATOR_PASSWORD,
                     );
                 }
             }
