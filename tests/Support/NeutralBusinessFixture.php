@@ -1022,6 +1022,7 @@ final class NeutralBusinessFixture
         Container $container,
         ExecutionContext $context,
         ?array $document = null,
+        string $currentPassword = TestKernelFactory::ADMINISTRATOR_PASSWORD,
     ): EntityTypeDefinition {
         $document ??= self::backupDocument();
         $definitions = $container->get(BusinessDefinitionService::class);
@@ -1066,7 +1067,7 @@ final class NeutralBusinessFixture
                 $plan->checksum(),
                 $confirmation,
                 null,
-                TestKernelFactory::ADMINISTRATOR_PASSWORD,
+                $currentPassword,
             );
         }
         if ($plan->status === SchemaPlanStatus::Approved) {
