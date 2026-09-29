@@ -98,7 +98,7 @@ final class AlertDrills
         if (!$host->running('watcher')) {
             $materialized = $host->console(['extension:runtime:materialize']);
             if ($materialized['exit'] !== 0) {
-                $materialized = $host->console(['extension:runtime:materialize']);
+                $materialized = $host->console(['extension:runtime:materialize', '--repair']);
             }
             self::check($materialized['exit'] === 0, 'the extension runtime could not be materialized: '
                 . trim($materialized['output']));

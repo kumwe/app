@@ -166,19 +166,20 @@ final readonly class DoctrineContentStudioAuthoringContextRepository implements 
     /**
      * Record the start source with a conditional update, so the first choice wins under concurrency.
      *
-     * @param   string  $contextKey   Opaque key of an existing binding.
-     * @param   string  $startSource  Canonical JSON start source.
+     * @param   string  $contextKey    Opaque key of an existing binding.
+     * @param   string  $startSource   Canonical JSON start source.
+     * @param   string  $presentation  Initial Studio presentation, recorded atomically with the source.
      *
-     * @return  string|null  The start source now recorded, or null when the binding does not exist.
+     * @return  array{source: string, presentation: string}|null  Recorded start, or null.
      *
      * @since   2.0.0
      */
-    public function recordStart(string $contextKey, string $startSource): ?string
+    public function recordStart(string $contextKey, string $startSource, string $presentation): ?array
     {
         $this->connection->executeStatement(sprintf(
-            'UPDATE %s SET start_source = ? WHERE context_key = ? AND start_source IS NULL',
+            'UPDATE %s SET start_source = ?, initial_presentation = ? WHERE context_key = ? AND start_source IS NULL',
             $this->tables->quoted('studio_content_authoring_contexts'),
-        ), [$startSource, $contextKey]);
+        ), [$startSource, $presentation, $contextKey]);
 
         return $this->start($contextKey);
     }
@@ -188,18 +189,22 @@ final readonly class DoctrineContentStudioAuthoringContextRepository implements 
      *
      * @param   string  $contextKey  Opaque key of an existing binding.
      *
-     * @return  string|null  Canonical JSON start source, or null when none is recorded or the binding is absent.
+     * @return  array{source: string, presentation: string}|null  Recorded start, or null.
      *
      * @since   2.0.0
      */
-    public function start(string $contextKey): ?string
+    public function start(string $contextKey): ?array
     {
-        $value = $this->connection->fetchOne(sprintf(
-            'SELECT start_source FROM %s WHERE context_key = ?',
+        $row = $this->connection->fetchAssociative(sprintf(
+            'SELECT start_source, initial_presentation FROM %s WHERE context_key = ?',
             $this->tables->quoted('studio_content_authoring_contexts'),
         ), [$contextKey]);
 
-        return is_string($value) && $value !== '' ? $value : null;
+        if ($row === false || !is_string($row['start_source']) || !is_string($row['initial_presentation'])) {
+            return null;
+        }
+
+        return ['source' => $row['start_source'], 'presentation' => $row['initial_presentation']];
     }
 
     /**
@@ -230,7 +235,7 @@ final readonly class DoctrineContentStudioAuthoringContextRepository implements 
      * @param   array<string, mixed>  $row   Fetched database row.
      * @param   string                $name  Optional column name.
      *
-     * @return  string|null  Stored non-empty text or null.
+     * @return  string|null  Stored optional text.
      *
      * @throws  RuntimeException  When a present column is empty or not textual.
      *

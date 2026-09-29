@@ -76,7 +76,14 @@ final class BusinessSchemaExecutionStateGuardIntegrationTest extends TestCase
         $plan = $schemas->createPlan($context, $definition->id);
         if ($plan->status === SchemaPlanStatus::PendingApproval) {
             $confirmation = $plan->risk->requiresHighImpactAuthorization() ? $plan->checksum() : null;
-            $plan = $schemas->approve($context, $plan->id, $plan->checksum(), $confirmation, null);
+            $plan = $schemas->approve(
+                $context,
+                $plan->id,
+                $plan->checksum(),
+                $confirmation,
+                null,
+                TestKernelFactory::ADMINISTRATOR_PASSWORD,
+            );
         }
         self::assertSame(SchemaPlanStatus::Approved, $plan->status);
         $schemas->execute($context, $plan->id);
@@ -131,6 +138,7 @@ final class BusinessSchemaExecutionStateGuardIntegrationTest extends TestCase
             $upgrade->checksum(),
             $confirmation,
             null,
+            TestKernelFactory::ADMINISTRATOR_PASSWORD,
         );
         self::assertSame(SchemaPlanStatus::Approved, $approved->status);
         $plans = $primary->get(BusinessSchemaPlanRepository::class);
@@ -337,7 +345,14 @@ final class BusinessSchemaExecutionStateGuardIntegrationTest extends TestCase
         $plan = $schemas->createPlan($context, $definition->id);
         if ($plan->status === SchemaPlanStatus::PendingApproval) {
             $confirmation = $plan->risk->requiresHighImpactAuthorization() ? $plan->checksum() : null;
-            $plan = $schemas->approve($context, $plan->id, $plan->checksum(), $confirmation, null);
+            $plan = $schemas->approve(
+                $context,
+                $plan->id,
+                $plan->checksum(),
+                $confirmation,
+                null,
+                TestKernelFactory::ADMINISTRATOR_PASSWORD,
+            );
         }
         $schemas->execute($context, $plan->id);
 
@@ -392,6 +407,7 @@ final class BusinessSchemaExecutionStateGuardIntegrationTest extends TestCase
                     $upgrade->checksum(),
                     $confirmation,
                     null,
+                    TestKernelFactory::ADMINISTRATOR_PASSWORD,
                 );
             }
             $secondarySchemas->execute($secondaryContext, $upgrade->id);

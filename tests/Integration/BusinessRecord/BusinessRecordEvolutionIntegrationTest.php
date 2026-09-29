@@ -153,6 +153,7 @@ final class BusinessRecordEvolutionIntegrationTest extends TestCase
             $plan->checksum(),
             $plan->checksum(),
             $evidence->id,
+            TestKernelFactory::ADMINISTRATOR_PASSWORD,
         );
         self::assertSame(SchemaPlanStatus::Approved, $approved->status);
 

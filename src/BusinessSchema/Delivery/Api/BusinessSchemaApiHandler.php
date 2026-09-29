@@ -6,7 +6,6 @@ namespace Kumwe\App\BusinessSchema\Delivery\Api;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Application\Security\HighImpactCredentialGuard;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaRecoveryEvidenceRecorder;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\BusinessSchema\Domain\SchemaPlan;
@@ -38,11 +37,10 @@ final readonly class BusinessSchemaApiHandler implements RequestHandlerInterface
     /**
      * Wire the REST surface to the service that owns the rules and the collaborators that shape a reply.
      *
-     * @param  BusinessSchemaService                   $schema       Authorizes, composes, approves, and runs plans.
-     * @param  BusinessSchemaApiPresenter              $presenter    Renders plans, steps, and outcomes as documents.
-     * @param  BusinessApiResponder                    $responder    Maps a failure onto its RFC 9457 problem document.
-     * @param HighImpactCredentialGuard $credentials Re-proves the caller's password before a high-impact stage.
-     * @param  BusinessSchemaRecoveryEvidenceRecorder  $evidence     Files restore drills, as the schema screen does.
+     * @param  BusinessSchemaService                   $schema     Authorizes, composes, approves, and runs plans.
+     * @param  BusinessSchemaApiPresenter              $presenter  Renders plans, steps, and outcomes as documents.
+     * @param  BusinessApiResponder                    $responder  Maps a failure onto its RFC 9457 problem document.
+     * @param  BusinessSchemaRecoveryEvidenceRecorder  $evidence   Files restore drills, as the schema screen does.
      *
      * @since  2.0.0
      */
@@ -50,7 +48,6 @@ final readonly class BusinessSchemaApiHandler implements RequestHandlerInterface
         private BusinessSchemaService $schema,
         private BusinessSchemaApiPresenter $presenter,
         private BusinessApiResponder $responder,
-        private HighImpactCredentialGuard $credentials,
         private BusinessSchemaRecoveryEvidenceRecorder $evidence,
     ) {
     }
@@ -163,9 +160,11 @@ final readonly class BusinessSchemaApiHandler implements RequestHandlerInterface
         // Composing a destructive plan is itself high impact: it names the tables a later
         // approval may drop, so it re-proves the caller's credential exactly as the
         // administrator screen does.
-        $this->assertCurrentCredential($request, $context, 'business.schema.purge-plan');
-
-        return $this->created($this->schema->createPurgePlan($context, $this->definitionId($request)));
+        return $this->created($this->schema->createPurgePlan(
+            $context,
+            $this->definitionId($request),
+            $this->currentCredential($request),
+        ));
     }
 
     /**
@@ -213,12 +212,15 @@ final readonly class BusinessSchemaApiHandler implements RequestHandlerInterface
         if ($evidence !== null && !is_string($evidence)) {
             throw new InvalidArgumentException('The recovery evidence ID must be a string when supplied.');
         }
-        if ($confirmation !== null) {
-            $this->assertCurrentCredential($request, $context, 'business.schema.approve');
-        }
-
         return $this->json($this->presenter->plan(
-            $this->schema->approve($context, $planId, $expected, $confirmation, $evidence),
+            $this->schema->approve(
+                $context,
+                $planId,
+                $expected,
+                $confirmation,
+                $evidence,
+                $confirmation === null ? null : $this->currentCredential($request),
+            ),
         ));
     }
 
@@ -308,38 +310,31 @@ final readonly class BusinessSchemaApiHandler implements RequestHandlerInterface
     }
 
     /**
-     * Require a current-password step-up before a high-impact stage proceeds.
+     * Read the password that the application service must re-prove before a high-impact stage proceeds.
      *
      * An API token is a long-lived credential that can be replayed by whoever holds it, so the two stages
      * that can lead to installed data being dropped read `current_password` from the same JSON body and put
-     * it through the shared guard rather than comparing anything here. Nothing about the credential is
+     * it through the application service's guard rather than comparing anything here. Nothing about the credential is
      * echoed back; the caller learns only that the stage was refused.
      *
      * @param   ServerRequestInterface  $request  API request whose JSON body carries `current_password`.
-     * @param   ExecutionContext        $context  Actor whose stored credential the guard checks.
-     * @param   string                  $purpose  Stage the step-up is attributed to, such as
-     *          `business.schema.approve`.
      *
-     * @return  void
+     * @return  string  Credential forwarded only to the application service.
      *
      * @throws  InvalidArgumentException  When the body is not a JSON object or carries no non-empty
      *          `current_password`.
-     * @throws  \Kumwe\App\Application\Security\HighImpactAuthenticationRequired  When the guard refuses the
-     *          request, which includes a context that carries no human principal.
      *
      * @since   2.0.0
      */
-    private function assertCurrentCredential(
+    private function currentCredential(
         ServerRequestInterface $request,
-        ExecutionContext $context,
-        string $purpose,
-    ): void {
+    ): string {
         $body = ContentApiRequest::json($request);
         $password = $body['current_password'] ?? null;
         if (!is_string($password) || $password === '') {
             throw new InvalidArgumentException('This operation requires the caller\'s current password.');
         }
-        $this->credentials->assertCurrentPassword($context, $purpose, $password);
+        return $password;
     }
 
     /**

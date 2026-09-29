@@ -86,6 +86,33 @@ final class StudioPublishedContentRendererTest extends TestCase
     use TrustFencedStudioPreviewRenderers;
 
     /**
+     * Publishing resolves the exact authored field ID and refuses stale aliases and split dotted paths.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPublicationUsesThePersistedAuthoredFieldIdentity(): void
+    {
+        $theme = $this->theme();
+        $binding = $this->binding(['body' => 'summary.detail']);
+        $document = $this->blueprint($theme);
+        $document->roots[0]->bindings->value->source->fieldPath = ['summary.detail'];
+        $rendered = $this->renderer($binding, self::admission()->admit(SiteContext::DEFAULT, $document), $theme)
+            ->render($this->record());
+        self::assertNotNull($rendered);
+        self::assertStringContainsString('Exact &amp; safe', $rendered->html);
+        foreach ([['data_body'], ['summary', 'detail'], ['unknown']] as $path) {
+            $document->roots[0]->bindings->value->source->fieldPath = $path;
+            $this->assertThrows(StudioPublishedBlueprintMismatch::class, fn () => $this->renderer(
+                $binding,
+                self::admission()->admit(SiteContext::DEFAULT, $document),
+                $theme,
+            )->render($this->record()));
+        }
+    }
+
+    /**
      * Stable Content type used by every exact binding fixture.
      *
      * @var    string
@@ -892,7 +919,7 @@ final class StudioPublishedContentRendererTest extends TestCase
         return new CanonicalStudioPublishedContentRenderer(
             $bindings,
             $artifacts,
-            $this->guard($theme, $runtime, $registries),
+            $this->guard($theme, $runtime, $registries, bindings: $bindings),
             $this->projector(),
             $runtime,
             $resolver,
@@ -903,9 +930,10 @@ final class StudioPublishedContentRendererTest extends TestCase
      * Build the exact reusable compatibility guard used by publication and public rendering.
      *
      * @param   StudioPublishedTheme                     $theme       Deterministic live public theme.
-     * @param   StudioBlockRendererRuntime|null           $blocks      Live exact renderer runtime override.
+     * @param   StudioBlockRendererRuntime|null          $blocks      Live exact renderer runtime override.
      * @param   ExtensionContributionRegistrySet|null    $registries  Live canonical contribution override.
      * @param   ContentModelRepository|null              $models      Content model authority override.
+     * @param   ContentProjectionBindingRepository|null  $bindings    Exact host field identity mapping.
      *
      * @return  StudioPublishedCompositionGuard  Production guard around deterministic repositories.
      *
@@ -916,6 +944,7 @@ final class StudioPublishedContentRendererTest extends TestCase
         ?StudioBlockRendererRuntime $blocks = null,
         ?ExtensionContributionRegistrySet $registries = null,
         ?ContentModelRepository $models = null,
+        ?ContentProjectionBindingRepository $bindings = null,
     ): StudioPublishedCompositionGuard {
         if ($models === null) {
             $models = $this->createStub(ContentModelRepository::class);
@@ -933,6 +962,7 @@ final class StudioPublishedContentRendererTest extends TestCase
             $theme,
             $blocks ?? new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer()),
             $registries,
+            $bindings ?? $this->createStub(ContentProjectionBindingRepository::class),
         );
     }
 
@@ -1034,11 +1064,13 @@ final class StudioPublishedContentRendererTest extends TestCase
     /**
      * Build the exact immutable binding selected for definition version four.
      *
+     * @param   array<string, string>|null  $fieldIds  Authored field IDs or native Content mapping.
+     *
      * @return  ContentBlueprintBinding  Host-owned public composition coordinate.
      *
      * @since   2.0.0
      */
-    private function binding(): ContentBlueprintBinding
+    private function binding(?array $fieldIds = null): ContentBlueprintBinding
     {
         return new ContentBlueprintBinding(
             SiteContext::default(),
@@ -1048,6 +1080,7 @@ final class StudioPublishedContentRendererTest extends TestCase
             '1.0.0',
             null,
             1,
+            $fieldIds,
         );
     }
 

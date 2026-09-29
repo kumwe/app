@@ -1,0 +1,383 @@
+[
+    {
+        "id": "019b40d9-8dd0-7ca2-a0db-9eae6a150901",
+        "owner": {
+            "type": "site",
+            "identifier": "default"
+        },
+        "site": "default",
+        "handle": "site.default.browser_job_part",
+        "singular_label": "Part used",
+        "plural_label": "Parts used",
+        "status": "draft",
+        "definition_version": 0,
+        "storage_mode": "relational",
+        "identity_strategy": "uuid",
+        "scope": "site",
+        "audit_enabled": true,
+        "revisions_enabled": true,
+        "fields": [
+            {
+                "handle": "id",
+                "label": "ID",
+                "type": "core.uuid",
+                "required": true,
+                "nullable": false,
+                "unique": true,
+                "indexed": true,
+                "immutable_after_create": true,
+                "server_only": true,
+                "read_only": true
+            },
+            {
+                "handle": "part_number",
+                "label": "Part number",
+                "type": "core.text",
+                "required": true,
+                "nullable": false,
+                "length": 40
+            },
+            {
+                "handle": "description",
+                "label": "Part description",
+                "type": "core.text",
+                "required": true,
+                "nullable": false,
+                "length": 120
+            },
+            {
+                "handle": "quantity",
+                "label": "Quantity",
+                "type": "core.decimal",
+                "required": true,
+                "nullable": false,
+                "precision": 12,
+                "scale": 2
+            }
+        ],
+        "relationships": [],
+        "views": [
+            {
+                "handle": "list",
+                "label": "Parts used",
+                "kind": "list",
+                "fields": [
+                    "part_number",
+                    "description",
+                    "quantity"
+                ],
+                "filters": [],
+                "sorts": [],
+                "administrator": true,
+                "portal": false,
+                "public": false
+            }
+        ],
+        "actions": [],
+        "workflow": null,
+        "compatibility_metadata": [],
+        "administrator_exposure": true,
+        "portal_exposure": false,
+        "public_exposure": false
+    },
+    {
+        "id": "019b40d9-8dd0-7ca2-a0db-9eae6a150902",
+        "owner": {
+            "type": "site",
+            "identifier": "default"
+        },
+        "site": "default",
+        "handle": "site.default.browser_job_labour",
+        "singular_label": "Labour entry",
+        "plural_label": "Labour",
+        "status": "draft",
+        "definition_version": 0,
+        "storage_mode": "relational",
+        "identity_strategy": "uuid",
+        "scope": "site",
+        "audit_enabled": true,
+        "revisions_enabled": true,
+        "fields": [
+            {
+                "handle": "id",
+                "label": "ID",
+                "type": "core.uuid",
+                "required": true,
+                "nullable": false,
+                "unique": true,
+                "indexed": true,
+                "immutable_after_create": true,
+                "server_only": true,
+                "read_only": true
+            },
+            {
+                "handle": "task",
+                "label": "Work carried out",
+                "type": "core.text",
+                "required": true,
+                "nullable": false,
+                "length": 120
+            },
+            {
+                "handle": "hours",
+                "label": "Hours",
+                "type": "core.decimal",
+                "required": true,
+                "nullable": false,
+                "precision": 12,
+                "scale": 2
+            }
+        ],
+        "relationships": [],
+        "views": [
+            {
+                "handle": "list",
+                "label": "Labour",
+                "kind": "list",
+                "fields": [
+                    "task",
+                    "hours"
+                ],
+                "filters": [],
+                "sorts": [],
+                "administrator": true,
+                "portal": false,
+                "public": false
+            }
+        ],
+        "actions": [],
+        "workflow": null,
+        "compatibility_metadata": [],
+        "administrator_exposure": true,
+        "portal_exposure": false,
+        "public_exposure": false
+    },
+    {
+        "id": "019b40d9-8dd0-7ca2-a0db-9eae6a150903",
+        "owner": {
+            "type": "site",
+            "identifier": "default"
+        },
+        "site": "default",
+        "handle": "site.default.browser_job_measurement",
+        "singular_label": "Measurement",
+        "plural_label": "Measurements",
+        "status": "draft",
+        "definition_version": 0,
+        "storage_mode": "relational",
+        "identity_strategy": "uuid",
+        "scope": "site",
+        "audit_enabled": true,
+        "revisions_enabled": true,
+        "fields": [
+            {
+                "handle": "id",
+                "label": "ID",
+                "type": "core.uuid",
+                "required": true,
+                "nullable": false,
+                "unique": true,
+                "indexed": true,
+                "immutable_after_create": true,
+                "server_only": true,
+                "read_only": true
+            },
+            {
+                "handle": "metric",
+                "label": "What was measured",
+                "type": "core.text",
+                "required": true,
+                "nullable": false,
+                "length": 120
+            },
+            {
+                "handle": "reading",
+                "label": "Reading",
+                "type": "core.decimal",
+                "required": true,
+                "nullable": false,
+                "precision": 12,
+                "scale": 2
+            },
+            {
+                "handle": "unit",
+                "label": "Unit",
+                "type": "core.text",
+                "required": true,
+                "nullable": false,
+                "length": 20
+            }
+        ],
+        "relationships": [],
+        "views": [
+            {
+                "handle": "list",
+                "label": "Measurements",
+                "kind": "list",
+                "fields": [
+                    "metric",
+                    "reading",
+                    "unit"
+                ],
+                "filters": [],
+                "sorts": [],
+                "administrator": true,
+                "portal": false,
+                "public": false
+            }
+        ],
+        "actions": [],
+        "workflow": null,
+        "compatibility_metadata": [],
+        "administrator_exposure": true,
+        "portal_exposure": false,
+        "public_exposure": false
+    },
+    {
+        "id": "019b40d9-8dd0-7ca2-a0db-9eae6a150904",
+        "owner": {
+            "type": "site",
+            "identifier": "default"
+        },
+        "site": "default",
+        "handle": "site.default.browser_job_card",
+        "singular_label": "Job card",
+        "plural_label": "Job cards",
+        "status": "draft",
+        "definition_version": 0,
+        "storage_mode": "relational",
+        "identity_strategy": "uuid",
+        "scope": "site",
+        "audit_enabled": true,
+        "revisions_enabled": true,
+        "fields": [
+            {
+                "handle": "id",
+                "label": "ID",
+                "type": "core.uuid",
+                "required": true,
+                "nullable": false,
+                "unique": true,
+                "indexed": true,
+                "immutable_after_create": true,
+                "server_only": true,
+                "read_only": true
+            },
+            {
+                "handle": "title",
+                "label": "Job",
+                "type": "core.text",
+                "required": true,
+                "nullable": false,
+                "length": 120
+            },
+            {
+                "handle": "site_address",
+                "label": "Site address",
+                "type": "core.text",
+                "required": true,
+                "nullable": false,
+                "length": 200
+            },
+            {
+                "handle": "site_photo",
+                "label": "Site photograph",
+                "type": "core.media_reference",
+                "required": false,
+                "nullable": true
+            }
+        ],
+        "relationships": [
+            {
+                "handle": "parts",
+                "label": "Parts used",
+                "kind": "owned_line_collection",
+                "target": "site.default.browser_job_part",
+                "ordered": true,
+                "on_delete": "cascade"
+            },
+            {
+                "handle": "labour",
+                "label": "Labour",
+                "kind": "owned_line_collection",
+                "target": "site.default.browser_job_labour",
+                "ordered": true,
+                "on_delete": "cascade"
+            },
+            {
+                "handle": "measurements",
+                "label": "Measurements",
+                "kind": "owned_line_collection",
+                "target": "site.default.browser_job_measurement",
+                "ordered": true,
+                "on_delete": "cascade"
+            }
+        ],
+        "views": [
+            {
+                "handle": "list",
+                "label": "Job cards",
+                "kind": "list",
+                "fields": [
+                    "title",
+                    "site_address",
+                    "site_photo"
+                ],
+                "filters": [],
+                "sorts": [],
+                "administrator": true,
+                "portal": false,
+                "public": false
+            }
+        ],
+        "actions": [
+            {
+                "handle": "start",
+                "label": "Start work",
+                "capability": "business.record.action",
+                "administrator": true,
+                "portal": false,
+                "public": false,
+                "transition": "start"
+            },
+            {
+                "handle": "complete",
+                "label": "Complete job",
+                "capability": "business.record.action",
+                "administrator": true,
+                "portal": false,
+                "public": false,
+                "transition": "complete"
+            }
+        ],
+        "workflow": {
+            "initial_state": "assigned",
+            "states": [
+                "assigned",
+                "in_progress",
+                "completed"
+            ],
+            "immutable_states": [
+                "completed"
+            ],
+            "transitions": [
+                {
+                    "handle": "start",
+                    "from": "assigned",
+                    "to": "in_progress",
+                    "capability": "business.record.action"
+                },
+                {
+                    "handle": "complete",
+                    "from": "in_progress",
+                    "to": "completed",
+                    "capability": "business.record.action"
+                }
+            ]
+        },
+        "compatibility_metadata": [],
+        "administrator_exposure": true,
+        "portal_exposure": false,
+        "public_exposure": false
+    }
+]

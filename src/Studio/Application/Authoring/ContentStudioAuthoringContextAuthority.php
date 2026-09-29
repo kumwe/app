@@ -146,21 +146,26 @@ final readonly class ContentStudioAuthoringContextAuthority
      * later snapshot and save result against that start. The first recorded choice wins, so a second,
      * different start request for the same session is reported back rather than silently rebinding it.
      *
-     * @param   ExecutionContext  $context      Current authenticated administrator request.
-     * @param   string            $contextKey   Opaque server-issued context key.
-     * @param   string            $startSource  Canonical JSON of the requested Studio `startSource`.
+     * @param   ExecutionContext  $context       Current authenticated administrator request.
+     * @param   string            $contextKey    Opaque server-issued context key.
+     * @param   string            $startSource   Canonical JSON of the requested Studio `startSource`.
+     * @param   string            $presentation  Initial Studio presentation.
      *
-     * @return  string  Canonical JSON of the start source the session holds.
+     * @return  array{source: string, presentation: string}  The immutable start held by the session.
      *
      * @throws  ContentStudioAuthoringContextRefused  When the binding is absent, foreign or expired.
      *
      * @since   2.0.0
      */
-    public function rememberStart(ExecutionContext $context, string $contextKey, string $startSource): string
-    {
+    public function rememberStart(
+        ExecutionContext $context,
+        string $contextKey,
+        string $startSource,
+        string $presentation,
+    ): array {
         $this->assertHeld($context, $contextKey);
 
-        return $this->contexts->recordStart($contextKey, $startSource) ?? self::refuse();
+        return $this->contexts->recordStart($contextKey, $startSource, $presentation) ?? self::refuse();
     }
 
     /**
@@ -169,13 +174,13 @@ final readonly class ContentStudioAuthoringContextAuthority
      * @param   ExecutionContext  $context     Current authenticated administrator request.
      * @param   string            $contextKey  Opaque server-issued context key.
      *
-     * @return  string|null  Canonical JSON start source, or null when the session has not started.
+     * @return  array{source: string, presentation: string}|null  Recorded start, or null before start.
      *
      * @throws  ContentStudioAuthoringContextRefused  When the binding is absent, foreign or expired.
      *
      * @since   2.0.0
      */
-    public function startOf(ExecutionContext $context, string $contextKey): ?string
+    public function startOf(ExecutionContext $context, string $contextKey): ?array
     {
         $this->assertHeld($context, $contextKey);
 

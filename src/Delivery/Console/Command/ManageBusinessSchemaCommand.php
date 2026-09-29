@@ -98,6 +98,8 @@ final readonly class ManageBusinessSchemaCommand implements Command
      * changed in the meantime is refused rather than applied. Anything riskier than an online-safe
      * addition must repeat that checksum as `--confirmation`, and a rebuilding or destructive plan
      * must additionally name the recovery drill it is approved against as `--evidence`.
+     * Purge planning and high-impact approval also require the current password in an owner-only
+     * `--password-file`; the application service re-proves it just as it does for browser and REST callers.
      *
      * @param   list<string>  $arguments  Action name first, then `--name=value` options.
      * @param   Output        $output     Sink for the JSON result, or for the failure message.
@@ -126,6 +128,7 @@ final readonly class ManageBusinessSchemaCommand implements Command
                 'purge-plan' => $this->plan($this->schema->createPurgePlan(
                     $context,
                     CommandInput::required($options, 'definition'),
+                    isset($options['password-file']) ? CommandInput::secretFile($options['password-file']) : null,
                 )),
                 'approve' => $this->plan($this->schema->approve(
                     $context,
@@ -133,6 +136,7 @@ final readonly class ManageBusinessSchemaCommand implements Command
                     CommandInput::required($options, 'expected-checksum'),
                     isset($options['confirmation']) ? CommandInput::required($options, 'confirmation') : null,
                     isset($options['evidence']) ? CommandInput::required($options, 'evidence') : null,
+                    isset($options['password-file']) ? CommandInput::secretFile($options['password-file']) : null,
                 )),
                 'execute' => $this->schema->execute(
                     $context,

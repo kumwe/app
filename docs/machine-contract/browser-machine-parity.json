@@ -5,7 +5,7 @@
     "note": "Every administrator and portal browser route, the application operations it performs, and how an agent performs the same work. An equivalent operation names the application service method the browser handler calls and the REST operation ids, CLI command actions and MCP tools that call it with the same authorization, revisions, idempotency, audit and refusals; a surface that withholds it carries a reason from surface_exemption_reasons. A browser-only operation carries a reason from browser_only_reasons. composition marks an equivalence reached by composing the listed operations. tools/verify-browser-machine-parity.php (composer machine:parity) fails on an unrecorded route, a stale entry, an unknown machine operation or service, or any gap. An equivalent operation whose machine surfaces authorize with less assurance than the browser carries an assurance_gap naming both sides and its decision status; the architecture suite pins that list, so it cannot grow silently.",
     "machine_contracts": {
         "rest": "The current generation named by api/openapi/generations.json",
-        "cli": "src/Delivery/Console/Contract/cli-v2.json",
+        "cli": "src/Delivery/Console/Contract/cli-v3.json",
         "mcp": "Kumwe\\App\\Infrastructure\\Mcp\\McpCapabilityCatalog"
     },
     "browser_only_reasons": {
@@ -789,12 +789,7 @@
                     "mcp": [
                         "kumwe_business_schema_plan_approve"
                     ],
-                    "note": "A high-impact plan re-proves the current password in the browser and over REST (current_password); the MCP tool declines such plans rather than approving them. The released v1 console approves a high-impact plan without the re-proof.",
-                    "assurance_gap": {
-                        "browser": "current-password re-proof for a high-impact plan",
-                        "machine": "the v1 console business-schema approve action carries no password re-proof",
-                        "status": "pending-maintainer-decision"
-                    }
+                    "note": "The canonical schema service re-proves the current password for high-impact approval on every surface. Browser and REST carry current_password; CLI generation 3 carries protected --password-file input. MCP declines high-impact approval because it never accepts authentication secrets. Purpose-bound profile provisioning permits only creation of an absent schema."
                 }
             ]
         },
@@ -871,12 +866,7 @@
                             "note": "Composing a destructive purge plan re-proves the caller's current password."
                         }
                     },
-                    "note": "Composing a purge plan re-proves the current password in the browser and over REST (current_password). The released v1 console composes it without the re-proof.",
-                    "assurance_gap": {
-                        "browser": "current-password re-proof",
-                        "machine": "the v1 console business-schema purge-plan action carries no password re-proof",
-                        "status": "pending-maintainer-decision"
-                    }
+                    "note": "The canonical schema service re-proves the current password for purge planning. Browser and REST carry current_password; CLI generation 3 carries protected --password-file input. MCP withholds this secret-bearing operation."
                 }
             ]
         },

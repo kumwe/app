@@ -6,7 +6,6 @@ namespace Kumwe\App\BusinessSchema\Delivery\Administrator;
 
 use InvalidArgumentException;
 use Kumwe\App\Administrator\Http\AdministratorRequest;
-use Kumwe\App\Application\Security\HighImpactCredentialGuard;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -31,17 +30,14 @@ use Psr\Http\Server\RequestHandlerInterface;
 final readonly class ApproveBusinessSchemaPlanHandler implements RequestHandlerInterface
 {
     /**
-     * Wire the screen action to the approval facade and the re-authentication guard.
+     * Wire the screen action to the approval facade that enforces re-authentication.
      *
-     * @param  BusinessSchemaService      $schemas      Loads the plan and records the audited approval.
-     * @param  HighImpactCredentialGuard  $credentials  Re-checks the operator's current password for
-     *         plans above the online-safe risk band.
+     * @param  BusinessSchemaService  $schemas  Loads the plan and records the audited approval.
      *
      * @since  2.0.0
      */
     public function __construct(
         private BusinessSchemaService $schemas,
-        private HighImpactCredentialGuard $credentials,
     ) {
     }
 
@@ -88,11 +84,6 @@ final readonly class ApproveBusinessSchemaPlanHandler implements RequestHandlerI
                     'High-impact approval requires the exact current 64-character plan checksum.',
                 );
             }
-            $this->credentials->assertCurrentPassword(
-                $context,
-                'business.schema.approve',
-                BusinessSchemaAdministratorRequest::optional($form, 'current_password'),
-            );
         } else {
             $confirmation = null;
         }
@@ -103,6 +94,7 @@ final readonly class ApproveBusinessSchemaPlanHandler implements RequestHandlerI
             $expectedChecksum,
             $confirmation,
             BusinessSchemaAdministratorRequest::optional($form, 'recovery_evidence_id'),
+            BusinessSchemaAdministratorRequest::optional($form, 'current_password'),
         );
 
         return BusinessSchemaAdministratorRequest::redirect(

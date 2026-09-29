@@ -47,6 +47,46 @@ final class ContentBlueprintBindingTest extends TestCase
     }
 
     /**
+     * Exact authored IDs remain distinct from storage keys and cannot shadow identity or alias each other.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAuthoredFieldIdentitiesAreBijectiveAndFailClosed(): void
+    {
+        $make = static fn (?array $map): ContentBlueprintBinding => new ContentBlueprintBinding(
+            SiteContext::default(),
+            '018f22e2-7c8b-7ab0-8f3a-88e8026be100',
+            1,
+            'blueprint/article',
+            '1.0.0',
+            null,
+            1,
+            $map,
+        );
+        self::assertSame('data_title', $make(null)->fieldId('title'));
+        self::assertSame('summary', $make(['summary' => 'summary'])->fieldId('summary'));
+        self::assertSame('hero.heading', $make(['heading' => 'hero.heading'])->fieldId('heading'));
+        foreach (
+            [
+            ['summary' => 'title'], ['summary' => 'slug'], ['summary' => 'constructor'],
+            ['summary' => 'bad id'], ['summary' => str_repeat('x', 101)],
+            ['bad-key' => 'summary'], ['first' => 'summary', 'second' => 'summary'],
+            ] as $map
+        ) {
+            try {
+                $make($map);
+                self::fail('A malformed or aliased field identity was accepted.');
+            } catch (InvalidArgumentException) {
+                self::addToAssertionCount(1);
+            }
+        }
+        $this->expectException(InvalidArgumentException::class);
+        $make(['summary' => 'summary'])->fieldId('unknown');
+    }
+
+    /**
      * Every malformed coordinate is refused at construction instead of entering persistence.
      *
      * @return  void

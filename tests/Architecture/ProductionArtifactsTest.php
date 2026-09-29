@@ -94,6 +94,45 @@ final class ProductionArtifactsTest extends TestCase
         }
     }
 
+    /**
+     * Every literal workflow image version is a Composer version as well as a runtime release label.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testWorkflowImageVersionsCanBeInstalledByComposer(): void
+    {
+        $versions = [];
+        foreach (glob($this->root . '/.github/workflows/*.yml') ?: [] as $workflow) {
+            $source = file_get_contents($workflow);
+            self::assertIsString($source);
+            preg_match_all('/--build-arg\s+KUMWE_RELEASE=(2\.[0-9A-Za-z.+-]+)/', $source, $matches);
+            foreach ($matches[1] as $version) {
+                $versions[] = $version;
+            }
+        }
+        self::assertNotSame([], $versions);
+        $environment = getenv();
+        self::assertIsArray($environment);
+        foreach (array_unique($versions) as $version) {
+            $process = proc_open(
+                ['composer', 'validate', '--strict', '--no-check-all', '--no-interaction'],
+                [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+                $pipes,
+                $this->root,
+                array_replace($environment, ['COMPOSER_ROOT_VERSION' => $version]),
+            );
+            self::assertIsResource($process);
+            fclose($pipes[0]);
+            $output = stream_get_contents($pipes[1]);
+            $error = stream_get_contents($pipes[2]);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            self::assertSame(0, proc_close($process), $version . ': ' . $output . $error);
+        }
+    }
+
     public function testBackupToolsAreFailClosedAndRefuseNonV2Data(): void
     {
         $backup = $this->contents('tools/backup.sh');

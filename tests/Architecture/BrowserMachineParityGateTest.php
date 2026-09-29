@@ -235,8 +235,6 @@ final class BrowserMachineParityGateTest extends TestCase
             $access . 'token.revoke',
             $access . 'token.rotate',
             $access . 'token.emergency_revoke',
-            'administrator.business-schema-plans.approve approve',
-            'administrator.business-schema-plans.purge purge-plan',
         ], $summary['assurance_gaps']);
     }
 

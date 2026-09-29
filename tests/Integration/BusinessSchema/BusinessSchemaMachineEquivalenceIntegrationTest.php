@@ -5,11 +5,18 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Integration\BusinessSchema;
 
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaEnvironment;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaRecoveryEvidenceRecorder;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
+use Kumwe\App\Application\Security\HighImpactAuthenticationRequired;
 use Kumwe\App\BusinessSchema\Delivery\Administrator\RecordBusinessSchemaRecoveryEvidenceHandler;
+use Kumwe\App\BusinessSchema\Delivery\Administrator\ApproveBusinessSchemaPlanHandler;
 use Kumwe\App\BusinessSchema\Delivery\Api\BusinessSchemaApiHandler;
 use Kumwe\App\Delivery\Console\Command\BusinessSchemaEvidenceCommand;
+use Kumwe\App\Delivery\Console\Command\ManageBusinessSchemaCommand;
+use Kumwe\App\Application\Authorization\SystemPrincipal;
+use Kumwe\App\Demo\Infrastructure\DemoProfileInstaller;
+use Kumwe\BusinessSchema\Domain\SchemaPlanStatus;
 use Kumwe\App\Delivery\Http\Api\Idempotency\HttpMutationPreauthorizer;
 use Kumwe\App\Kernel\Container;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
@@ -35,8 +42,11 @@ use Ramsey\Uuid\Uuid;
  */
 #[CoversClass(BusinessSchemaApiHandler::class)]
 #[CoversClass(RecordBusinessSchemaRecoveryEvidenceHandler::class)]
+#[CoversClass(ApproveBusinessSchemaPlanHandler::class)]
 #[CoversClass(BusinessSchemaEvidenceCommand::class)]
 #[CoversClass(BusinessSchemaRecoveryEvidenceRecorder::class)]
+#[CoversClass(BusinessSchemaService::class)]
+#[CoversClass(ManageBusinessSchemaCommand::class)]
 #[CoversClass(HttpMutationPreauthorizer::class)]
 final class BusinessSchemaMachineEquivalenceIntegrationTest extends TestCase
 {
@@ -80,6 +90,136 @@ final class BusinessSchemaMachineEquivalenceIntegrationTest extends TestCase
     {
         $this->harness?->cleanup();
         $this->harness = null;
+    }
+
+    /**
+     * Reject token-only destructive stages in the service and CLI, then accept the exact password-bound requests.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDestructiveStagesRequireCurrentCredentialsInTheServiceAndConsole(): void
+    {
+        [$container, $harness] = $this->boot();
+        $schemas = $container->get(BusinessSchemaService::class);
+        self::assertInstanceOf(BusinessSchemaService::class, $schemas);
+        $context = TestKernelFactory::administratorContext($container);
+        $restToken = $harness->token('rest', self::OPERATOR);
+        $cliToken = $harness->token('cli', self::OPERATOR);
+        $plan = $this->purgePlan($container, $harness, $restToken);
+        $before = count($schemas->plans($context));
+
+        $installer = $container->get(DemoProfileInstaller::class);
+        self::assertInstanceOf(DemoProfileInstaller::class, $installer);
+        $system = (new \ReflectionProperty($installer, 'system'))->getValue($installer);
+        self::assertInstanceOf(SystemPrincipal::class, $system);
+        try {
+            $schemas->approve(
+                $system->context($context->site(), 'profile-must-not-approve-purge'),
+                $plan['id'],
+                $plan['checksum'],
+                $plan['checksum'],
+                null,
+            );
+            self::fail('Profile provisioning authority approved a destructive plan.');
+        } catch (HighImpactAuthenticationRequired) {
+            self::assertSame(SchemaPlanStatus::PendingApproval, $schemas->plan($context, $plan['id'])->status);
+        }
+
+        foreach ([null, 'wrong password'] as $password) {
+            foreach (['purge-plan', 'approve'] as $action) {
+                $arguments = $action === 'purge-plan'
+                    ? [$action, '--definition=' . $plan['definition_id']]
+                    : [
+                        $action,
+                        '--plan=' . $plan['id'],
+                        '--expected-checksum=' . $plan['checksum'],
+                        '--confirmation=' . $plan['checksum'],
+                    ];
+                if ($password !== null) {
+                    $arguments[] = '--password-file=' . $harness->protectedFile($password);
+                }
+                $refused = $harness->cli(ManageBusinessSchemaCommand::class, $cliToken, $arguments);
+                self::assertSame(1, $refused['status']);
+                self::assertSame(
+                    'This high-impact operation requires current-password authentication.',
+                    $refused['stderr'],
+                );
+                try {
+                    if ($action === 'purge-plan') {
+                        $schemas->createPurgePlan($context, $plan['definition_id'], $password);
+                    } else {
+                        $schemas->approve($context, $plan['id'], $plan['checksum'], $plan['checksum'], null, $password);
+                    }
+                    self::fail('The application service accepted a destructive stage without current credentials.');
+                } catch (HighImpactAuthenticationRequired) {
+                    self::assertCount($before, $schemas->plans($context));
+                    self::assertSame(SchemaPlanStatus::PendingApproval, $schemas->plan($context, $plan['id'])->status);
+                }
+            }
+        }
+
+        $passwordFile = $harness->protectedFile(TestKernelFactory::ADMINISTRATOR_PASSWORD);
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
+        $definition = NeutralBusinessFixture::install(
+            $container,
+            $context,
+            NeutralBusinessFixture::document($suffix, Uuid::uuid7()->toString()),
+        );
+        $purged = $harness->cli(ManageBusinessSchemaCommand::class, $cliToken, [
+            'purge-plan',
+            '--definition=' . $definition->id,
+            '--password-file=' . $passwordFile,
+        ]);
+        self::assertSame(0, $purged['status'], $purged['stderr']);
+        self::assertIsArray($purged['stdout']);
+        self::assertSame('pending_approval', $purged['stdout']['status']);
+        $evidence = $this->file(
+            $harness,
+            'rest',
+            $restToken,
+            $plan['id'],
+            TestKernelFactory::ADMINISTRATOR_PASSWORD,
+        );
+        self::assertTrue($evidence['ok'], json_encode($evidence, JSON_THROW_ON_ERROR));
+        self::assertIsArray($evidence['value']);
+        $approved = $harness->cli(ManageBusinessSchemaCommand::class, $cliToken, [
+            'approve',
+            '--plan=' . $plan['id'],
+            '--expected-checksum=' . $plan['checksum'],
+            '--confirmation=' . $plan['checksum'],
+            '--evidence=' . $evidence['value']['id'],
+            '--password-file=' . $passwordFile,
+        ]);
+        self::assertSame(0, $approved['status'], $approved['stderr']);
+        self::assertSame(SchemaPlanStatus::Approved, $schemas->plan($context, $plan['id'])->status);
+
+        sleep(1);
+        $screenPlan = $schemas->plan($context, $purged['stdout']['id']);
+        $screenEvidence = $this->file(
+            $harness,
+            'rest',
+            $restToken,
+            $screenPlan->id,
+            TestKernelFactory::ADMINISTRATOR_PASSWORD,
+        );
+        self::assertTrue($screenEvidence['ok'], json_encode($screenEvidence, JSON_THROW_ON_ERROR));
+        self::assertIsArray($screenEvidence['value']);
+        $screen = $container->get(ApproveBusinessSchemaPlanHandler::class);
+        self::assertInstanceOf(ApproveBusinessSchemaPlanHandler::class, $screen);
+        $screenApproved = $screen->handle((new ServerRequestFactory())
+            ->createServerRequest('POST', 'https://kumwe.test/administrator/business-schema-plans/approve')
+            ->withAttribute(ExecutionContextAttribute::NAME, $context)
+            ->withAttribute('id', $screenPlan->id)
+            ->withParsedBody([
+                'expected_checksum' => $screenPlan->checksum(),
+                'confirmation' => $screenPlan->checksum(),
+                'recovery_evidence_id' => $screenEvidence['value']['id'],
+                'current_password' => TestKernelFactory::ADMINISTRATOR_PASSWORD,
+            ]));
+        self::assertSame(303, $screenApproved->getStatusCode());
+        self::assertSame(SchemaPlanStatus::Approved, $schemas->plan($context, $screenPlan->id)->status);
     }
 
     /**

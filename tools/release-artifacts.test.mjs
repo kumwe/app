@@ -67,6 +67,7 @@ function fixture(run) {
   const root = mkdtempSync(join(tmpdir(), "kumwe-release-test-"));
   try {
     const names = [`kumwe-app-${version}.zip`, `kumwe-composer-${version}.zip`, "composer-repository.json",
+      `kumwe-documentation-${version}.zip`, "kumwe-documentation-index.json",
       "kumwe-app.cdx.json", "kumwe-archive.cdx.json", "kumwe-web.cdx.json",
       "kumwe-source.cdx.json", "kumwe-license-policy.json", "kumwe-license-evaluation.json"];
     const artifacts = names.map((name) => {
@@ -74,6 +75,9 @@ function fixture(run) {
       writeFileSync(join(root, name), bytes);
       return { name, sha256: digest(bytes), size: bytes.length };
     });
+    for (const lane of lanes.filter((name) => name.startsWith("resilience-"))) {
+      writeFileSync(join(root, `kumwe-${lane}.zip`), `Test evidence for ${lane}`);
+    }
     const manifest = { kind: "kumwe-release-manifest", contractVersion: "2.0.0", release: version, artifacts,
       authority: { commit }, source: { commit, repository: "https://github.com/kumwe/app" },
       build: { run: "123", attempt: "1" }, images: {
@@ -86,10 +90,10 @@ function fixture(run) {
   } finally { rmSync(root, { recursive: true, force: true }); }
 }
 
-test("one immutable manifest binds every image and distribution to all four lanes", () => fixture((root) => {
+test("one immutable manifest binds every image and distribution to every mandatory lane", () => fixture((root) => {
   const before = readFileSync(join(root, "kumwe-release-manifest.json"));
   const receipts = lanes.map((lane) => receipt(root, lane, commit, version, "123", "1"));
-  assert.equal(qualify(root, receipts, commit, version, "123", "1").receipts.length, 4);
+  assert.equal(qualify(root, receipts, commit, version, "123", "1").receipts.length, lanes.length);
   assert.deepEqual(readFileSync(join(root, "kumwe-release-manifest.json")), before);
 }));
 
@@ -113,6 +117,11 @@ test("changed image manifest and incomplete, failed or previous-attempt receipts
     const failed = structuredClone(receipts);
     failed[0].result = "failed";
     assert.throws(() => qualify(root, failed, commit, version, "123", "1"));
+    const evidencePath = join(root, "kumwe-resilience-mariadb.zip");
+    const evidence = readFileSync(evidencePath);
+    writeFileSync(evidencePath, "substituted resilience evidence");
+    assert.throws(() => qualify(root, receipts, commit, version, "123", "1"));
+    writeFileSync(evidencePath, evidence);
     manifest.images.application.digest = `sha256:${"d".repeat(64)}`;
     save();
     assert.throws(() => qualify(root, receipts, commit, version, "123", "1"));

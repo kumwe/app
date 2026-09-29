@@ -270,17 +270,18 @@ final readonly class StudioContentCompositionService
      * the artifact, binding and audit event commit together. An already-bound version is refused: a
      * published Blueprint revision never changes in place.
      *
-     * @param   ExecutionContext  $context             Authorized actor and site context.
-     * @param   string            $contentTypeId       Exact Content type UUID.
-     * @param   int               $contentTypeVersion  Exact published Content type version.
-     * @param   stdClass          $blueprint           Authored Blueprint document (roots and locks).
-     * @param   list<stdClass>    $admittedLocks       Every exact `{type, version, revision}` lock the authoring
+     * @param   ExecutionContext            $context             Authorized actor and site context.
+     * @param   string                      $contentTypeId       Exact Content type UUID.
+     * @param   int                         $contentTypeVersion  Exact published Content type version.
+     * @param   stdClass                    $blueprint           Authored Blueprint document (roots and locks).
+     * @param list<stdClass> $admittedLocks Every exact `{type, version, revision}` lock the authoring
      *          session offered; the authored lock must be a subset at identical coordinates.
-     * @param   string            $status              Lifecycle status to store, `draft` or `published`.
-     * @param   ?string           $predecessor         Blueprint identity of the type version this one succeeds,
+     * @param   string                      $status              Lifecycle status to store, `draft` or `published`.
+     * @param ?string $predecessor Blueprint identity of the type version this one succeeds,
      *          or null for a new reusable type. A successor keeps its predecessor's Blueprint identity and
      *          takes a version of its own, so the reusable type's Blueprint is one artifact with immutable
      *          successor revisions rather than a new artifact per type version.
+     * @param   array<string, string>|null  $fieldIds            Exact authored field IDs indexed by Content data key.
      *
      * @return  StudioContentComposition  Newly admitted composition.
      *
@@ -298,6 +299,7 @@ final readonly class StudioContentCompositionService
         array $admittedLocks,
         string $status,
         ?string $predecessor = null,
+        ?array $fieldIds = null,
     ): StudioContentComposition {
         if ($this->find($context, $contentTypeId, $contentTypeVersion) !== null) {
             throw new RuntimeException('The Content type version already binds a Studio Blueprint.');
@@ -311,6 +313,7 @@ final readonly class StudioContentCompositionService
             $predecessor === null ? '1.0.0' : $contentTypeVersion . '.0.0',
             null,
             1,
+            $fieldIds,
         );
         $theme = $this->theme->reference($context->site());
         $initial = self::initialBlueprint($model, $binding, $admittedLocks, $theme);
@@ -364,6 +367,7 @@ final readonly class StudioContentCompositionService
             $binding->blueprintVersion,
             $artifact->revision,
             1,
+            $fieldIds,
         );
         $this->transactions->transactional(function () use ($context, $bound, $artifact): void {
             $existing = $this->bindings->blueprint($context->site(), $bound->contentTypeId, $bound->contentTypeVersion);
@@ -393,7 +397,11 @@ final readonly class StudioContentCompositionService
             ));
         });
 
-        return new StudioContentComposition($model, $bound, $artifact);
+        return new StudioContentComposition(
+            $fieldIds === null ? $model : $this->authorizedModel($context, $contentTypeId, $contentTypeVersion),
+            $bound,
+            $artifact,
+        );
     }
 
     /**

@@ -42,7 +42,7 @@ final class DoctrineContentProjectionBindingRepositoryTest extends TestCase
             ->with('kumwe_studio_content_blueprint_bindings')
             ->willReturn('`kumwe_studio_content_blueprint_bindings`');
         $database->expects(self::once())->method('fetchAssociative')->with(
-            'SELECT blueprint_id, blueprint_version, blueprint_revision, binding_revision '
+            'SELECT blueprint_id, blueprint_version, blueprint_revision, binding_revision, field_ids '
                 . 'FROM `kumwe_studio_content_blueprint_bindings` '
                 . 'WHERE site_identifier = ? AND content_type_id = ? AND content_type_version = ?',
             ['publisher-namibia', self::typeId(), 4],
@@ -52,6 +52,7 @@ final class DoctrineContentProjectionBindingRepositoryTest extends TestCase
             'blueprint_version' => '1.5.0',
             'blueprint_revision' => 'artifact-22',
             'binding_revision' => '8',
+            'field_ids' => '{"summary":"summary"}',
         ]);
 
         $binding = $this->repository($database)->blueprint($site, self::typeId(), 4);
@@ -64,6 +65,8 @@ final class DoctrineContentProjectionBindingRepositoryTest extends TestCase
         self::assertSame('1.5.0', $binding->blueprintVersion);
         self::assertSame('artifact-22', $binding->blueprintRevision);
         self::assertSame(8, $binding->revision);
+        self::assertSame(['summary' => 'summary'], $binding->fieldIds);
+        self::assertSame('summary', $binding->fieldId('summary'));
     }
 
     /**

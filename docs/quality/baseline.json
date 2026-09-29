@@ -3,7 +3,7 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "db36c56a3276a730ba324c32e10e8c3cab1e159b",
+    "commit": "aa0cfbe803e41d836a0e4b67b2f42120dfefc37a",
     "recorded_at": "2026-09-28",
     "recorded_from": [],
     "toolchain": {
@@ -28,26 +28,26 @@
     "tests": {
         "architecture": {
             "files": 65,
-            "test_methods": 368
+            "test_methods": 369
         },
         "functional": {
             "files": 19,
             "test_methods": 57
         },
         "integration": {
-            "files": 168,
-            "test_methods": 599
+            "files": 170,
+            "test_methods": 608
         },
         "unit": {
             "files": 505,
-            "test_methods": 2566
+            "test_methods": 2571
         }
     },
     "coverage": {
         "canonical_engine": "mariadb",
         "ratchets": 3,
         "recorded_line_coverage_percent": 55.44,
-        "reasoned_attribution_rules": 20,
+        "reasoned_attribution_rules": 21,
         "tests_owing_attribution": 0
     },
     "surfaces": {
@@ -631,7 +631,8 @@
             "20260924050000_retention_catalogue",
             "20260924060000_studio_content_authoring_start",
             "20260924130000_async_trace_context",
-            "20260924140000_export_site_byte_budget"
+            "20260924140000_export_site_byte_budget",
+            "20260928090000_studio_authoring_identity"
         ]
     },
     "quarantine": {

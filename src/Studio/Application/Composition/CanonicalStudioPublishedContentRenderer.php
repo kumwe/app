@@ -149,7 +149,7 @@ final readonly class CanonicalStudioPublishedContentRenderer implements StudioPu
             throw new StudioPublishedModelMismatch();
         }
         try {
-            $values = $this->projector->publishedValues($record, $definition);
+            $values = $this->projector->publishedValues($record, $definition, $binding);
         } catch (StudioProjectionRejected) {
             throw new StudioPublishedModelMismatch();
         }

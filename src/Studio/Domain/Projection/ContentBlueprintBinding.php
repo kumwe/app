@@ -22,13 +22,15 @@ final readonly class ContentBlueprintBinding
     /**
      * Record one exact type-to-Blueprint coordinate.
      *
-     * @param   SiteContext  $site                Site whose Content definition and binding are addressed.
-     * @param   string       $contentTypeId       Canonical UUID of the Content type.
-     * @param   int          $contentTypeVersion  Published Content definition version, starting at one.
-     * @param   string       $blueprintId         Stable Studio artifact identifier.
-     * @param   string       $blueprintVersion    Exact semantic Blueprint version.
-     * @param   ?string      $blueprintRevision   Exact host revision when one has been selected.
-     * @param   int          $revision            Optimistic binding revision, starting at one.
+     * @param SiteContext $site Site whose Content definition and binding are addressed.
+     * @param   string                      $contentTypeId       Canonical UUID of the Content type.
+     * @param   int                         $contentTypeVersion  Published Content definition version, starting at one.
+     * @param   string                      $blueprintId         Stable Studio artifact identifier.
+     * @param   string                      $blueprintVersion    Exact semantic Blueprint version.
+     * @param   ?string                     $blueprintRevision   Exact host revision when one has been selected.
+     * @param   int                         $revision            Optimistic binding revision, starting at one.
+     * @param   array<string, string>|null  $fieldIds            Content storage keys to exact authored Studio IDs;
+     *          null retains the established mapping for types created outside contextual authoring.
      *
      * @throws  InvalidArgumentException  When any coordinate cannot be represented by the pinned contract.
      *
@@ -42,6 +44,7 @@ final readonly class ContentBlueprintBinding
         public string $blueprintVersion,
         public ?string $blueprintRevision,
         public int $revision,
+        public ?array $fieldIds = null,
     ) {
         if (preg_match(self::UUID, $contentTypeId) !== 1) {
             throw new InvalidArgumentException('A Studio binding content type ID must be a canonical UUID.');
@@ -61,6 +64,38 @@ final readonly class ContentBlueprintBinding
         if ($blueprintRevision !== null && ($blueprintRevision === '' || strlen($blueprintRevision) > 200)) {
             throw new InvalidArgumentException('A Studio binding Blueprint revision is invalid.');
         }
+        if ($fieldIds !== null) {
+            $seen = ['title' => true, 'slug' => true];
+            foreach ($fieldIds as $key => $id) {
+                if (
+                    !is_string($key) || preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $key) !== 1
+                    || !is_string($id) || strlen($id) > 100
+                    || preg_match('/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/D', $id) !== 1
+                    || in_array($id, self::FORBIDDEN_IDENTIFIERS, true) || isset($seen[$id])
+                ) {
+                    throw new InvalidArgumentException('The Studio Content field identity map is invalid.');
+                }
+                $seen[$id] = true;
+            }
+        }
+    }
+
+    /**
+     * Resolve a Content storage key without changing the field identity the author created.
+     *
+     * @param   string  $key  Schema-owned Content data key.
+     *
+     * @return  string  Exact Studio field identifier.
+     *
+     * @throws  InvalidArgumentException  When an authored map does not cover the requested field.
+     *
+     * @since   2.0.0
+     */
+    public function fieldId(string $key): string
+    {
+        return $this->fieldIds === null
+            ? 'data_' . $key
+            : ($this->fieldIds[$key] ?? throw new InvalidArgumentException('The Studio field map is incomplete.'));
     }
 
     /**

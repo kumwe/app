@@ -19,6 +19,18 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ### #152 — Version 2 runtime completion
 
+- Preserve authored Studio field identities across durable type bindings, reopened entries and published
+  rendering, and retain the presentation with which an authoring session started. The combined Studio,
+  retention and CLI contract unit checks pass: 477 tests, 4,304 assertions (#152).
+
+- Require current-password proof in the canonical schema service for purge planning and high-impact
+  approval. CLI generation 3 carries protected password-file input; older contract generations remain
+  immutable. Initial profile provisioning is restricted to creation-only schema operations (#152).
+
+- Enforce database statement budgets on retention observations and record the independent P7-C security
+  review. Correct its superseded host-recovery functional expectation and matrix claim; the audit retention
+  authority finding remains open until its runtime correction and adversarial evidence are complete (#152).
+
 - Prepare the Beta 1 release channel and coherent runtime defaults. The release pipeline binds one built
   candidate’s images and distributions to a signed digest manifest, qualifies those exact subjects, and
   promotes them without rebuilding. Publication requires the maintainer merge and successful CI on its

@@ -2,7 +2,7 @@
     "contract": "kumwe-coverage-contract",
     "authority": "docs/roadmap/README.md",
     "finding": "V2-QA-001",
-    "note": "Coverage was collected on one leg, attributed by whichever test happened to declare a class, and gated by nothing \u2014 the workflow said so itself. This file states the three things that were missing: which engine the canonical measurement comes from, which tests are allowed to attribute nothing, and what has to hold before a change is allowed to lower the number. Every rule here is executed by tools/coverage-contract.php; a rule that cannot be executed says so and is not counted as enforcement.",
+    "note": "Coverage was collected on one leg, attributed by whichever test happened to declare a class, and gated by nothing — the workflow said so itself. This file states the three things that were missing: which engine the canonical measurement comes from, which tests are allowed to attribute nothing, and what has to hold before a change is allowed to lower the number. Every rule here is executed by tools/coverage-contract.php; a rule that cannot be executed says so and is not counted as enforcement.",
     "canonical_engine": "mariadb",
     "canonical_engine_reason": "MariaDB is the primary engine. Collecting the canonical result anywhere else attributes the driver branches of one engine and calls them the product's coverage.",
     "driver": {
@@ -37,7 +37,7 @@
             "floor_percent": 80,
             "enforced": true,
             "replaces": "changed-branch-floor",
-            "note": "This is the honest substitute for the branch floor that stood here unenforced: pcov reports executed lines and no branches at all, so an 80% branch floor could not be measured on the canonical leg and was a declared intention rather than a gate. The branch class that floor existed to protect is the refusal path \u2014 the guard that throws instead of proceeding \u2014 and a covered `throw` line is line-level proof the refusing branch was actually taken, which coverage of the surrounding method alone never shows. The rule is measured from exactly what the canonical run already produces. A true branch floor may replace this entry if the canonical run ever collects branch data."
+            "note": "This is the honest substitute for the branch floor that stood here unenforced: pcov reports executed lines and no branches at all, so an 80% branch floor could not be measured on the canonical leg and was a declared intention rather than a gate. The branch class that floor existed to protect is the refusal path — the guard that throws instead of proceeding — and a covered `throw` line is line-level proof the refusing branch was actually taken, which coverage of the surrounding method alone never shows. The rule is measured from exactly what the canonical run already produces. A true branch floor may replace this entry if the canonical run ever collects branch data."
         }
     ],
     "baseline": {
@@ -47,7 +47,7 @@
         "note": "Recorded by the canonical MariaDB CI leg after 2,513 tests and 54,760 assertions measured 47,935 of 86,459 executable lines."
     },
     "attribution": {
-        "note": "A behavioural test that executes real code and attributes none of it makes the coverage report describe a smaller product than the one being tested. #[CoversNothing] is therefore allowed in exactly two places: on tests whose subject is not a class under src/ at all, which is the reasoned list, and on the behavioural tests that carried it when this gate was switched on, which was the pending list. That list only ever shrinks and was emptied on 2026-08-18 \u2014 every test it excused now names the classes it exercises \u2014 and it stays empty, because a new behavioural test cannot join it.",
+        "note": "A behavioural test that executes real code and attributes none of it makes the coverage report describe a smaller product than the one being tested. #[CoversNothing] is therefore allowed in exactly two places: on tests whose subject is not a class under src/ at all, which is the reasoned list, and on the behavioural tests that carried it when this gate was switched on, which was the pending list. That list only ever shrinks and was emptied on 2026-08-18 — every test it excused now names the classes it exercises — and it stays empty, because a new behavioural test cannot join it.",
         "reasoned": [
             {
                 "path": "tests/Unit/Tools/RecoveryToolsTest.php",
@@ -99,7 +99,7 @@
             },
             {
                 "path": "tests/Unit/Support/BrowserProjectManifestTest.php",
-                "reason": "The subject is tests/Support/BrowserProjectManifest, the test-infrastructure reader for the browser matrix manifest. It is not under src/ and is not part of the released package, so PHPUnit refuses it as a coverage target outright \u2014 naming it in #[CoversClass] emitted a warning per case and, with failOnWarning, failed the canonical engine's own run. The answer is to attribute nothing, not to widen the measured source tree: coverage exists to describe the product, and admitting tests/Support to it would credit the harness for the product's lines."
+                "reason": "The subject is tests/Support/BrowserProjectManifest, the test-infrastructure reader for the browser matrix manifest. It is not under src/ and is not part of the released package, so PHPUnit refuses it as a coverage target outright — naming it in #[CoversClass] emitted a warning per case and, with failOnWarning, failed the canonical engine's own run. The answer is to attribute nothing, not to widen the measured source tree: coverage exists to describe the product, and admitting tests/Support to it would credit the harness for the product's lines."
             },
             {
                 "path": "tests/Unit/Support/TransientBusinessDefinitionFixtureScopeTest.php",
@@ -128,6 +128,10 @@
             {
                 "path": "tests/Unit/Governance/",
                 "reason": "The subject is tools/Governance, the dependency-free capability-index, core-growth and acceptance-record tooling, which is not under src/ and is not part of the released package."
+            },
+            {
+                "path": "tests/Unit/Tools/ProjectInstallerTest.php",
+                "reason": "The test executes the shipped bin/kumwe-install entry point and its procedural helper in an isolated directory. Neither subject is a class under src/, so crediting an unrelated product class would misattribute the exercised bootstrap behavior."
             }
         ],
         "pending": [],

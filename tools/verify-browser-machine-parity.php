@@ -720,7 +720,7 @@ final class BrowserMachineParityVerifier
     private function cliCommands(): array
     {
         $contract = json_decode(
-            \Kumwe\App\Delivery\Console\Contract\CliV2MachineContract::json(),
+            \Kumwe\App\Delivery\Console\Contract\CliV3MachineContract::json(),
             true,
             128,
             JSON_THROW_ON_ERROR,

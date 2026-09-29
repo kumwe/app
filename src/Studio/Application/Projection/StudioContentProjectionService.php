@@ -152,6 +152,7 @@ final readonly class StudioContentProjectionService
             $definition,
             $workflow,
             $this->bindings->overrides($context->site(), $contentEntryId),
+            $this->bindings->blueprint($context->site(), $definition->id, $definition->version),
         );
     }
 }

@@ -1701,7 +1701,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "The security matrix and automated controls are on the PR head. ADR 0023 resolves host-local credential recovery under the standing agent mandate, with positive and forged-context regressions. Complete the independent threat-led review, final combined evidence and the supported out-of-process boundary owned by GM-SUP-05; no new human decision checkbox is required.",
+      "outstanding": "Independent agent review is recorded in docs/security/reviews/2026-09-28-p7c-threat-review.md. Its high-severity audit retention bypass (P7C-20260928-01 / GM-AUD-02) requires remediation and three-engine adversarial proof. Finding 02 is corrected by the ADR 0023 functional recovery contract and matrix alignment (7 tests, 2,272 assertions); final combined CI and extension isolation obligations remain open.",
       "gate_b_criteria": [
         1
       ],
