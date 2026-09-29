@@ -10,6 +10,7 @@ import {
   type FocusStop,
 } from './support/studio-authoring';
 import { journeyLocale, localized, studio, text } from './support/studio-journey-text';
+import { openStudioAdvanced, openStudioPanel } from './support/studio-navigation';
 
 const administratorEmail = process.env.KUMWE_BROWSER_ADMIN_EMAIL ?? 'browser-administrator@kumwe.test';
 const administratorPassword = process.env.KUMWE_BROWSER_ADMIN_PASSWORD ?? 'browser administrator password';
@@ -257,6 +258,7 @@ async function insertBlock(shell: Locator, type: string): Promise<void> {
     return canvas?.configuration?.blockDefinitions.findIndex((definition) => definition.type === blockType) ?? -1;
   }, type);
   expect(index, `Block ${type} must be admitted in the contextual authoring catalogue.`).toBeGreaterThanOrEqual(0);
+  await openStudioPanel(shell, 'blocks', journeyLocale);
   await shell.getByRole('complementary', { name: text('core.studio.shell.palette-label') })
     .locator('ul.palette').first().getByRole('button').nth(index).click();
   await expect.poll(() => rootTypes(shell)).toContain(type);
@@ -439,11 +441,13 @@ test('a layout change with an extension block saves an immutable successor type 
 
   // A core field block bound, through the explicit inspector control, to the type's typed field.
   await insertBlock(shell, 'core/field-text');
+  await openStudioAdvanced(shell, journeyLocale);
   const binding = inspector.locator('select', { has: shell.page().locator('option[value=\'["summary"]\']') });
   await binding.selectOption(JSON.stringify(['summary']));
 
   // The admitted manifest-six extension block, configured through the same non-drag inspector control.
   await insertBlock(shell, EXTENSION_BLOCK);
+  await openStudioAdvanced(shell, journeyLocale);
   for (const [name, value] of [['columns', '2'], ['collapse', '"stack"']] as const) {
     await inspector.getByLabel(text('core.studio.shell.inspector-add-property-name-label')).fill(name);
     await inspector.getByLabel(text('core.studio.shell.inspector-add-property-value-label')).fill(value);
@@ -618,11 +622,27 @@ test('the contextual shell is operable by keyboard alone with named controls in 
   const blueprint = await focusStop(page);
   expect(blueprint.name).toBe(studio('mode-blueprint'));
   await expect(blueprint.locator).toHaveAttribute('aria-selected', 'true');
+  const panels = shell.getByRole('navigation', { name: text('core.studio.shell.workspace-panels') });
+  const isBlocksSwitch = (stop: FocusStop): boolean =>
+    stop.role === 'button' && stop.name === text('core.studio.shell.palette-heading');
+  if (await panels.isVisible()) {
+    await tabUntil(page, isBlocksSwitch, 12);
+    await page.keyboard.press('Enter');
+    await expect(panels.getByRole('button', { name: text('core.studio.shell.palette-heading'), exact: true }))
+      .toHaveAttribute('aria-pressed', 'true');
+  }
   const inPalette = (stop: FocusStop): Promise<boolean> =>
     stop.locator.evaluate((element) => element.closest('ul.palette') !== null);
   await tabUntil(page, inPalette, 40);
   await page.keyboard.press('Enter');
   await expect.poll(() => rootTypes(shell)).toHaveLength(1);
+  // Insertion selects the canvas; reopen the responsive Blocks pane through the keyboard controls.
+  if (await panels.isVisible()) {
+    await tabUntil(page, isBlocksSwitch, 16, 'Shift+Tab');
+    await page.keyboard.press('Enter');
+    await expect(panels.getByRole('button', { name: text('core.studio.shell.palette-heading'), exact: true }))
+      .toHaveAttribute('aria-pressed', 'true');
+  }
   // The App's canonical empty-section pattern is offered beside the blocks, named in the interface locale, and
   // applies from the keyboard too.
   const pattern = text('core.administrator.content_form.studio_pattern_empty_section');

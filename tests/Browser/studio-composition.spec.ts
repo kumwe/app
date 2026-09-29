@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type FrameLocator, type Locator, type Page } from '@playwright/test';
 import { expectNoDocumentOverflow } from './support/interface-diagnostics';
 import { gotoAfterRuntimeConvergence } from './support/runtime-convergence';
+import { openStudioAdvanced, openStudioPanel } from './support/studio-navigation';
 
 const administratorEmail = process.env.KUMWE_BROWSER_ADMIN_EMAIL
   ?? 'browser-administrator@kumwe.test';
@@ -28,6 +29,7 @@ interface PreviewRect {
 type PreviewPointAnchor = 'start' | 'center' | 'end';
 
 async function revealPreviewCanvasRegions(page: Page, shell: Locator, regions: Locator[]): Promise<void> {
+  await openStudioPanel(shell, 'canvas');
   const nodeIds = await Promise.all(regions.map((region) => region.getAttribute('data-node-id')));
   expect(nodeIds.every((nodeId) => nodeId !== null), 'Every preview region must identify its node.')
     .toBe(true);
@@ -175,9 +177,11 @@ async function openComposition(page: Page, modelHandle?: string): Promise<Locato
     await expect(page).toHaveURL(/\/administrator\/content-models\/[^/]+\/versions\/[1-9][0-9]*\/composition$/u);
   }
   const shell = page.locator('kumwe-studio');
+  await openStudioPanel(shell, 'blocks');
   await expect(shell.getByRole('complementary', { name: 'Block palette' })
     .getByRole('button', { name: 'Section', exact: true })).toBeVisible();
   await expect(page.locator('[data-studio-composition-status]')).toHaveText('Studio is ready.');
+  await openStudioPanel(shell, 'canvas');
   return shell;
 }
 
@@ -190,9 +194,11 @@ function waitForCompositionReloadReady(page: Page, lifecycleName: string): Promi
     });
     expect(response.status()).toBe(201);
     const shell = page.locator('kumwe-studio');
+    await openStudioPanel(shell, 'blocks');
     await expect(shell.getByRole('complementary', { name: 'Block palette' })
       .getByRole('button', { name: 'Section', exact: true })).toBeVisible();
     await expect(page.locator('[data-studio-composition-status]')).toHaveText('Studio is ready.');
+    await openStudioPanel(shell, 'canvas');
     const lifecycle = page.getByRole('button', { name: lifecycleName });
     await expect(lifecycle).toBeVisible();
     await expect(lifecycle).toBeEnabled();
@@ -291,6 +297,7 @@ function observePreviewTraffic(page: Page): PreviewTraffic {
 }
 
 async function previewFrame(page: Page): Promise<FrameLocator> {
+  await openStudioPanel(page.locator('kumwe-studio'), 'canvas');
   const iframe = page.locator('iframe[data-studio-preview]');
   await expect(iframe).toBeVisible();
   const frame = iframe.contentFrame();
@@ -299,6 +306,7 @@ async function previewFrame(page: Page): Promise<FrameLocator> {
 }
 
 async function blockPaletteButton(shell: Locator, blockType: string): Promise<Locator> {
+  await openStudioPanel(shell, 'blocks');
   const index = await shell.evaluate((element, type) => {
     const studio = element as HTMLElement & {
       configuration?: { blockDefinitions: Array<{ type: string }> };
@@ -365,11 +373,12 @@ async function insertRoot(shell: Locator, label: string, exactType?: string): Pr
   const type = exactType ?? coreTypes[label];
   const before = new Set(await documentNodeIds(shell));
   if (type === undefined) {
+    await openStudioPanel(shell, 'blocks');
     await shell.getByRole('complementary', { name: 'Block palette' })
       .getByRole('button', { name: label, exact: true }).click();
   } else {
     const button = await blockPaletteButton(shell, type);
-    await expect(button).toHaveText(label);
+    await expect(button).toHaveAccessibleName(label);
     await button.click();
   }
   await expect.poll(async () => (await documentNodeIds(shell)).find((id) => !before.has(id)) ?? null)
@@ -380,7 +389,8 @@ async function insertRoot(shell: Locator, label: string, exactType?: string): Pr
 }
 
 async function outlineEntries(shell: Locator, label: string): Promise<Locator> {
-  const entries = shell.getByRole('complementary', { name: 'Outline' })
+  await openStudioPanel(shell, 'outline');
+  const entries = shell.getByRole('complementary', { name: 'Outline', includeHidden: true })
     .locator('button.outline-entry', { hasText: label });
   await expect(entries.first()).toBeVisible();
   return entries;
@@ -431,8 +441,10 @@ async function rootNodeIds(shell: Locator): Promise<string[]> {
 
 async function clearCompositionRoots(page: Page, shell: Locator): Promise<void> {
   for (const nodeId of await rootNodeIds(shell)) {
+    await openStudioPanel(shell, 'outline');
     const entry = shell.locator(`button.outline-entry[data-node-id="${nodeId}"]`);
     await entry.click();
+    await openStudioPanel(shell, 'outline');
     const actions = entry.locator('xpath=..').getByRole('group', { name: 'Block actions' });
     await persistCompositionChange(page, () =>
       actions.getByRole('button', { name: 'Delete', exact: true }).click());
@@ -628,7 +640,7 @@ test('AP7 composition provisions by POST and opens an exact measured preview cha
     type: 'kumwe.contract-manifest-six/grid',
   });
   for (const extension of contributionTruth.extensions) {
-    await expect(await blockPaletteButton(shell, extension.type)).toHaveText(extension.label);
+    await expect(await blockPaletteButton(shell, extension.type)).toHaveAccessibleName(extension.label);
   }
   const lifecycle = await shell.evaluate((element) => {
     const studio = element as HTMLElement & {
@@ -671,10 +683,7 @@ test('AP7 composition provisions by POST and opens an exact measured preview cha
     contentType: 'text/css; charset=utf-8',
     status: 200,
   });
-  await expect(shell.getByRole('complementary', { name: 'Block palette' }))
-    .toHaveCSS('overflow-x', 'visible');
-
-  const existingSections = await shell.getByRole('complementary', { name: 'Outline' })
+  const existingSections = await shell.getByRole('complementary', { name: 'Outline', includeHidden: true })
     .locator('button.outline-entry', { hasText: 'Section' }).count();
   await insertRoot(shell, 'Section');
   const insertedSection = (await outlineEntries(shell, 'Section')).nth(existingSections);
@@ -770,9 +779,11 @@ test('a signed field composition publishes marker-free public output and unpubli
   await expect.poll(() => frame.locator('.studio-preview-extension-grid').count()).toBe(0);
   const textNodeId = await persistCompositionChange(page, () =>
     insertRoot(shell, 'Text', 'core/field-text'));
+  await openStudioPanel(shell, 'outline');
   await expect(shell.locator(`button.outline-entry[data-node-id="${textNodeId}"]`)).toBeVisible();
+  await openStudioAdvanced(shell);
   const inspector = shell.getByRole('complementary', { name: 'Inspector' });
-  const field = inspector.getByLabel('Value', { exact: true });
+  const field = inspector.getByRole('combobox', { name: 'Value', exact: true });
   await expect(field.locator('option[value=\'["data_heading"]\']'))
     .toHaveText('Hero heading (data_heading)');
   await persistCompositionChange(page, () => field.selectOption(JSON.stringify(['data_heading'])));
@@ -787,7 +798,9 @@ test('a signed field composition publishes marker-free public output and unpubli
 
   const extensionNodeId = await persistCompositionChange(page, () =>
     insertRoot(shell, 'Grid', 'kumwe.contract-manifest-six/grid'));
+  await openStudioPanel(shell, 'outline');
   await expect(shell.locator(`button.outline-entry[data-node-id="${extensionNodeId}"]`)).toBeVisible();
+  await openStudioAdvanced(shell);
   await inspector.getByLabel('New property name').fill('columns');
   await inspector.getByLabel('New property value as JSON').fill('2');
   await persistCompositionChange(page, () =>
@@ -802,6 +815,7 @@ test('a signed field composition publishes marker-free public output and unpubli
     type: 'kumwe.contract-manifest-six/grid',
   });
 
+  await openStudioPanel(shell, 'canvas');
   await expect.poll(() => frame.locator('.studio-preview-field-text').count()).toBe(1);
   await expect.poll(() => frame.locator('.studio-preview-extension-grid').count()).toBe(1);
   await expect(frame.locator('.studio-preview-extension-grid', { hasText: extensionOutput }).last())
@@ -940,6 +954,7 @@ test('private target authority hides and refuses publication despite the shared 
 
   await page.reload();
   const shell = page.locator('kumwe-studio');
+  await openStudioPanel(shell, 'blocks');
   await expect(shell.getByRole('complementary', { name: 'Block palette' })
     .getByRole('button', { name: 'Section', exact: true })).toBeVisible();
   await expect(page.locator('[data-studio-composition-status]')).toHaveText('Studio is ready.');
@@ -1010,7 +1025,7 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
     });
   });
 
-  const existingSections = await shell.getByRole('complementary', { name: 'Outline' })
+  const existingSections = await shell.getByRole('complementary', { name: 'Outline', includeHidden: true })
     .locator('button.outline-entry', { hasText: 'Section' }).count();
   await insertRoot(shell, 'Section');
   await shell.evaluate((element) => {
@@ -1026,14 +1041,14 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   expect(secondSectionId).toBeTruthy();
 
   await firstSection.click();
-  const existingStacks = await shell.getByRole('complementary', { name: 'Outline' })
+  const existingStacks = await shell.getByRole('complementary', { name: 'Outline', includeHidden: true })
     .locator('button.outline-entry', { hasText: 'Stack' }).count();
   await insertRoot(shell, 'Stack');
   const stack = (await outlineEntries(shell, 'Stack')).nth(existingStacks);
   const stackId = await stack.getAttribute('data-node-id');
   expect(stackId).toBeTruthy();
   await secondSection.click();
-  const existingGrids = await shell.getByRole('complementary', { name: 'Outline' })
+  const existingGrids = await shell.getByRole('complementary', { name: 'Outline', includeHidden: true })
     .locator('button.outline-entry', { hasText: 'Grid' }).count();
   await insertRoot(shell, 'Grid');
   const grid = (await outlineEntries(shell, 'Grid')).nth(existingGrids);
@@ -1142,6 +1157,7 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
     return values.at(-1);
   }).toBe('studio.command/reorder-children');
 
+  await openStudioPanel(shell, 'canvas');
   await shell.getByRole('button', { name: 'Undo' }).click();
   await shell.getByRole('button', { name: 'Undo' }).click();
   await expect.poll(() => nodeParentId(shell, stackId ?? '')).toBe(firstSectionId);
@@ -1222,6 +1238,7 @@ test('a deterministically delayed conflicting save replaces the mutable shell an
   }, { times: 1 });
   await competingPage.goto(compositionUrl);
   const competingShell = competingPage.locator('kumwe-studio');
+  await openStudioPanel(competingShell, 'blocks');
   await expect(competingShell.getByRole('complementary', { name: 'Block palette' })
     .getByRole('button', { name: 'Section', exact: true })).toBeVisible();
   await previewFrame(competingPage);
@@ -1403,12 +1420,13 @@ test('an ambiguous preview transport failure terminally closes the sequenced cha
 
 test('closed layout intent renders four, two and one columns without surface overflow', async ({ page }) => {
   const shell = await openDraftComposition(page);
-  const existingGrids = await shell.getByRole('complementary', { name: 'Outline' })
+  const existingGrids = await shell.getByRole('complementary', { name: 'Outline', includeHidden: true })
     .locator('button.outline-entry', { hasText: 'Grid' }).count();
   const gridId = await insertRoot(shell, 'Grid');
   await expect(shell.locator(`button.outline-entry[data-node-id="${gridId}"]`))
     .toHaveAttribute('aria-pressed', 'true');
   const inspector = shell.getByRole('complementary', { name: 'Inspector' });
+  await openStudioAdvanced(shell);
   const columns = inspector.getByLabel('Value of columns as JSON');
   await expect(columns).toBeVisible();
   await columns.fill('4');

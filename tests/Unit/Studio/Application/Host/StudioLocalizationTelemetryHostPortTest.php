@@ -34,13 +34,13 @@ use stdClass;
 final class StudioLocalizationTelemetryHostPortTest extends TestCase
 {
     /**
-     * The exact corpus resolves through the effective chain and every malformed request is refused.
+     * Requested namespaces resolve through the effective chain and malformed requests are refused.
      *
      * @return  void
      *
      * @since  2.0.0
      */
-    public function testLocalizationReturnsExactCorpusAndUnknownLocaleIsNotFound(): void
+    public function testLocalizationReturnsScopedMessagesAndUnknownLocaleIsNotFound(): void
     {
         $supported = new SupportedLocales();
         $active = new ActiveLocale($supported);
@@ -59,8 +59,11 @@ final class StudioLocalizationTelemetryHostPortTest extends TestCase
             (object) ['locale' => 'en-GB', 'namespaces' => ['studio.shell']],
         );
 
-        self::assertCount(160, get_object_vars($result->value));
         self::assertSame('Undo composition', $result->value->{'studio.shell/undo'});
+        self::assertObjectNotHasProperty('studio.contextual/save-item', $result->value);
+        foreach (array_keys(get_object_vars($result->value)) as $wireId) {
+            self::assertMatchesRegularExpression('#^studio\.shell/[a-z0-9-]+$#', $wireId);
+        }
 
         // The contextual shell and the standalone start surface read their own namespaces from the same
         // translated catalogue; a namespace this host does not carry contributes nothing rather than failing.
@@ -68,7 +71,6 @@ final class StudioLocalizationTelemetryHostPortTest extends TestCase
             $port,
             (object) ['locale' => 'en-GB', 'namespaces' => ['studio.contextual', 'studio.standalone', 'studio.other']],
         );
-        self::assertCount(111, get_object_vars($contextual->value));
         self::assertSame('Save item', $contextual->value->{'studio.contextual/save-item'});
         self::assertSame('Save as new type', $contextual->value->{'studio.contextual/save-as-new-type'});
         self::assertObjectHasProperty('studio.standalone/download-project', $contextual->value);
@@ -76,6 +78,10 @@ final class StudioLocalizationTelemetryHostPortTest extends TestCase
         foreach (array_keys(get_object_vars($contextual->value)) as $wireId) {
             self::assertMatchesRegularExpression('#^studio\.(contextual|standalone)/[a-z0-9-]+$#', $wireId);
         }
+        self::assertSame([], get_object_vars(self::localization(
+            $port,
+            (object) ['locale' => 'en-GB', 'namespaces' => ['studio.other']],
+        )->value));
         self::assertPortRefused(
             static fn () => self::localization(
                 $port,

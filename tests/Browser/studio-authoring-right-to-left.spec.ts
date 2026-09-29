@@ -4,6 +4,7 @@ import { message, rightToLeftInterfaceLocales, type InterfaceLocale } from './su
 import { expectNoDocumentOverflow } from './support/interface-diagnostics';
 import { signInAdministrator } from './support/locale-qualification';
 import { awaitStudioLaunchSettled, focusStop, tabStops, tabUntil, type FocusStop } from './support/studio-authoring';
+import { openStudioPanel } from './support/studio-navigation';
 
 /**
  * The contextual Studio shell on Content New, in Hebrew and Arabic, laid out and operated from the right.
@@ -110,6 +111,7 @@ test('the contextual Studio shell runs right-to-left with localized names and ke
 
   // The App's own palette entries are named in this language as well, beside Studio's first-party blocks.
   await shell.getByRole('tab', { name: studio('mode-blueprint') }).click();
+  await openStudioPanel(shell, 'blocks', locale);
   const palette = shell.getByRole('complementary', { name: message(locale, 'core.studio.shell.palette-label') });
   for (const id of ['studio_block_yes_or_no', 'studio_block_text', 'studio_pattern_empty_section']) {
     const name = message(locale, `core.administrator.content_form.${id}`);
