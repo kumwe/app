@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2592 messages.
+ * Compiled interface message catalogue for de, carrying 2629 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2059,6 +2059,43 @@ return [
     'core.console.user_create_admin.description' => 'Erstellt einen Administrator aus einer geschützten Passwortdatei.',
     'core.console.user_recover_credentials.description' => 'Notfallzugriff: Setzt vom Host aus ein Passwort zurück, legt zweite Faktoren still oder beendet Sitzungen.',
     'core.console.wording.description' => 'Formulierungsüberschreibungen auflisten, durchsuchen, speichern oder zurückziehen.',
+    'core.diagnostics.backlog' => 'Rückstand',
+    'core.diagnostics.bounds' => 'Jede Anweisung ist auf {timeout} ms begrenzt; jede Quelle liefert höchstens {rows} Zeilen.',
+    'core.diagnostics.budget_exceeded' => 'Die Diagnose hat ihr Zeit- oder Ergebnisbudget überschritten. Arbeitslast eingrenzen oder Datenbank direkt prüfen.',
+    'core.diagnostics.contention' => 'Sperrkonflikte',
+    'core.diagnostics.description' => 'Sperrkonflikte, Warteschlangen, Abfragekosten und Aufbewahrung prüfen.',
+    'core.diagnostics.empty' => 'In dieser Stichprobe wurden keine Beobachtungen gefunden.',
+    'core.diagnostics.field.backlog_approximate' => 'Geschätzter Rückstand',
+    'core.diagnostics.field.backlog_rows' => 'Rückstand (Zeilen)',
+    'core.diagnostics.field.calls' => 'Aufrufe',
+    'core.diagnostics.field.capacity_rows' => 'Kapazität (Zeilen)',
+    'core.diagnostics.field.configured' => 'Konfiguriert',
+    'core.diagnostics.field.definition' => 'Definition',
+    'core.diagnostics.field.depth_lower_bound' => 'Warteschlangenlänge (mindestens)',
+    'core.diagnostics.field.expiry_rows_per_second' => 'Ablauf (Zeilen/Sekunde)',
+    'core.diagnostics.field.forecast_seconds_to_capacity' => 'Prognose bis zur Kapazitätsgrenze (Sekunden)',
+    'core.diagnostics.field.ingest_rows_per_second' => 'Zugang (Zeilen/Sekunde)',
+    'core.diagnostics.field.last_drain_at' => 'Letzter Abbau',
+    'core.diagnostics.field.lock_class' => 'Sperrklasse',
+    'core.diagnostics.field.mean_ms' => 'Mittlere Zeit (ms)',
+    'core.diagnostics.field.net_growth_rows_per_second' => 'Nettowachstum (Zeilen/Sekunde)',
+    'core.diagnostics.field.oldest_age_seconds' => 'Alter des ältesten Eintrags (Sekunden)',
+    'core.diagnostics.field.policy_cost' => 'Richtlinienmessung',
+    'core.diagnostics.field.source' => 'Quelle',
+    'core.diagnostics.field.store' => 'Protokoll',
+    'core.diagnostics.field.stream' => 'Datenstrom',
+    'core.diagnostics.field.sustained_drain_rows_per_second' => 'Dauerhafter Abbau (Zeilen/Sekunde)',
+    'core.diagnostics.field.table_name' => 'Tabelle',
+    'core.diagnostics.field.total_ms' => 'Gesamtzeit (ms)',
+    'core.diagnostics.field.waiting' => 'Wartend',
+    'core.diagnostics.policy_cost_included' => 'In den Abfragekosten enthalten',
+    'core.diagnostics.queues' => 'Warteschlangen',
+    'core.diagnostics.retention' => 'Aufbewahrung',
+    'core.diagnostics.sampled' => 'Die Ergebnisse sind begrenzte Stichproben. Warteschlangenzahlen sind Untergrenzen; eine unbekannte Rate ist nicht null.',
+    'core.diagnostics.slow' => 'Langsame Abfragen',
+    'core.diagnostics.title' => 'Diagnose',
+    'core.diagnostics.unavailable' => 'Diese Quelle ist nicht verfügbar. Datenbankzugriff und Aktivierung der Datenbankstatistik prüfen.',
+    'core.diagnostics.unknown' => 'Unbekannt',
     'core.identity.password.change_refused' => 'Ihr Passwort konnte nicht geändert werden. Überprüfen Sie Ihr aktuelles Passwort und wählen Sie ein anderes Passwort mit mindestens 12 Zeichen.',
     'core.identity.password.confirmation_mismatch' => 'Das neue Passwort und seine Bestätigung stimmen nicht überein.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'Standardwerte der Zugriffsgruppe',

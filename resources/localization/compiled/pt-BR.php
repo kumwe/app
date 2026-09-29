@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2592 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2629 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2059,6 +2059,43 @@ return [
     'core.console.user_create_admin.description' => 'Crie um administrador a partir de um arquivo de senha protegido.',
     'core.console.user_recover_credentials.description' => 'Emergência: redefina uma senha, desative fatores secundários ou encerre sessões a partir do host.',
     'core.console.wording.description' => 'Liste, pesquise, salve ou retire substituições de redação.',
+    'core.diagnostics.backlog' => 'Acúmulo',
+    'core.diagnostics.bounds' => 'Cada instrução é limitada a {timeout} ms; cada fonte retorna no máximo {rows} linhas.',
+    'core.diagnostics.budget_exceeded' => 'O diagnóstico excedeu o limite de tempo ou resultados. Reduza a carga ou inspecione o banco de dados diretamente.',
+    'core.diagnostics.contention' => 'Contenção',
+    'core.diagnostics.description' => 'Inspecionar contenção, filas, custos de consultas e retenção.',
+    'core.diagnostics.empty' => 'Nenhuma observação foi encontrada nesta amostra.',
+    'core.diagnostics.field.backlog_approximate' => 'Acúmulo aproximado',
+    'core.diagnostics.field.backlog_rows' => 'Linhas acumuladas',
+    'core.diagnostics.field.calls' => 'Chamadas',
+    'core.diagnostics.field.capacity_rows' => 'Capacidade (linhas)',
+    'core.diagnostics.field.configured' => 'Configurado',
+    'core.diagnostics.field.definition' => 'Definição',
+    'core.diagnostics.field.depth_lower_bound' => 'Tamanho da fila (mínimo)',
+    'core.diagnostics.field.expiry_rows_per_second' => 'Expiração (linhas/segundo)',
+    'core.diagnostics.field.forecast_seconds_to_capacity' => 'Previsão até a capacidade (segundos)',
+    'core.diagnostics.field.ingest_rows_per_second' => 'Entrada (linhas/segundo)',
+    'core.diagnostics.field.last_drain_at' => 'Última remoção',
+    'core.diagnostics.field.lock_class' => 'Classe de bloqueio',
+    'core.diagnostics.field.mean_ms' => 'Tempo médio (ms)',
+    'core.diagnostics.field.net_growth_rows_per_second' => 'Crescimento líquido (linhas/segundo)',
+    'core.diagnostics.field.oldest_age_seconds' => 'Maior idade (segundos)',
+    'core.diagnostics.field.policy_cost' => 'Medição de políticas',
+    'core.diagnostics.field.source' => 'Fonte',
+    'core.diagnostics.field.store' => 'Registro',
+    'core.diagnostics.field.stream' => 'Fluxo',
+    'core.diagnostics.field.sustained_drain_rows_per_second' => 'Remoção sustentada (linhas/segundo)',
+    'core.diagnostics.field.table_name' => 'Tabela',
+    'core.diagnostics.field.total_ms' => 'Tempo total (ms)',
+    'core.diagnostics.field.waiting' => 'Em espera',
+    'core.diagnostics.policy_cost_included' => 'Incluída no custo da consulta',
+    'core.diagnostics.queues' => 'Filas',
+    'core.diagnostics.retention' => 'Retenção',
+    'core.diagnostics.sampled' => 'Os resultados são amostras limitadas. As contagens de filas são limites inferiores; uma taxa desconhecida não é zero.',
+    'core.diagnostics.slow' => 'Consultas lentas',
+    'core.diagnostics.title' => 'Diagnóstico',
+    'core.diagnostics.unavailable' => 'Esta fonte está indisponível. Verifique o acesso ao banco de dados e se as estatísticas estão ativadas.',
+    'core.diagnostics.unknown' => 'Desconhecido',
     'core.identity.password.change_refused' => 'Não foi possível alterar sua senha. Verifique sua senha atual e escolha uma senha diferente com pelo menos 12 caracteres.',
     'core.identity.password.confirmation_mismatch' => 'A nova senha e a confirmação não coincidem.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'Padrões do grupo de acesso',

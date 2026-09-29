@@ -102,6 +102,7 @@ final readonly class OpenApiContractService implements OpenApiContractProvider
         ksort($merged, SORT_STRING);
         $definitions = array_values($merged);
         $generation = hash('sha256', implode(':', [
+            'operator-diagnostics-v1',
             $this->catalog->generation($definitions),
             $context->authorizationFingerprint(),
             hash('sha256', json_encode($definitions, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES)),

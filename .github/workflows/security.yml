@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: security-${{ github.workflow }}-${{ github.ref }}
+  group: security-${{ github.workflow }}-${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'full' || 'change' }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -23,7 +23,86 @@ env:
   TRIVY_IMAGE: aquasec/trivy:0.67.2
 
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      runtime: ${{ steps.paths.outputs.runtime }}
+      images: ${{ steps.paths.outputs.images }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      - id: paths
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          runtime=false
+          images=false
+          if [[ -z "$BASE_SHA" || "$BASE_SHA" =~ ^0+$ ]]; then
+            runtime=true
+            images=true
+          else
+            git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$BASE_SHA"
+            while IFS= read -r -d '' path; do
+              case "$path" in docs/*|*.md|*.txt|LICENSE|NOTICE) ;; *) runtime=true ;; esac
+              case "$path" in
+                docker/*|compose*.yaml|composer.json|composer.lock|package.json|package-lock.json|resources/native-runtime/*|resources/release/*|config/*|src/Kernel/Configuration/*|tools/install-native-engine.sh|.github/workflows/security.yml|.github/workflows/release.yml) images=true ;;
+              esac
+            done < <(git diff --name-only -z "$BASE_SHA" HEAD)
+          fi
+          echo "runtime=$runtime" >> "$GITHUB_OUTPUT"
+          echo "images=$images" >> "$GITHUB_OUTPUT"
+
+  secrets:
+    name: Repository secret scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      # tools/scan-secrets.sh runs this same scan locally as composer security:secrets, so a contributor
+      # can see this result before pushing. Change the pinned image or the arguments in both places.
+      # --config is passed explicitly rather than relied on being discovered, so a rename or a move of
+      # .gitleaks.toml fails the step instead of silently dropping the project's own token rules.
+      - name: Scan repository for secrets
+        shell: bash
+        run: |
+          install -d build/security
+          test -f .gitleaks.toml
+          set +e
+          docker run --rm \
+            --volume "$PWD:/repo:ro" \
+            --volume "$PWD/build/security:/report" \
+            --workdir /repo \
+            "$GITLEAKS_IMAGE" \
+            detect --source=/repo --no-banner --redact \
+            --config=/repo/.gitleaks.toml \
+            --report-format json --report-path /report/gitleaks.json
+          scan_status=$?
+          set -e
+
+          if test -s build/security/gitleaks.json; then
+            jq '[.[] | {RuleID, File, StartLine, Fingerprint}]' \
+              build/security/gitleaks.json
+          fi
+
+          exit "$scan_status"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: secret-scan-${{ github.sha }}
+          path: build/security/gitleaks.json
+          if-no-files-found: warn
+          retention-days: 14
+
   source-and-image:
+    needs: changes
+    if: needs.changes.outputs.runtime == 'true'
     permissions:
       contents: read
       id-token: write
@@ -59,55 +138,11 @@ jobs:
       - name: Install locked dependencies
         run: composer install --no-interaction --prefer-dist
 
-      # P7-C consumes this JUnit artifact as the application-level negative-path inventory for the
-      # authenticated Studio preview boundary. Scanners below supplement these authority, replay,
-      # single-use-grant and route-only CSP proofs; they do not replace them.
-      - name: Qualify authenticated Studio preview boundary
-        run: |
-          install -d build/security
-          vendor/bin/phpunit --colors=always --log-junit build/security/studio-preview-junit.xml \
-            tests/Unit/Administrator/Http/Handler/AdministratorStudioPreviewDocumentHandlerTest.php \
-            tests/Unit/Administrator/Http/StudioPreviewHttpTransportTest.php \
-            tests/Unit/Studio/Application/Preview/StudioPreviewTransportGuardTest.php \
-            tests/Unit/Studio/Application/Preview/StudioPreviewProducerPortTest.php \
-            tests/Unit/Studio/Application/Preview/StudioPreviewActivityRecorderTest.php \
-            tests/Integration/Studio/StudioPreviewPersistenceTest.php \
-            tests/Unit/Http/Security/SecurityHeadersTest.php \
-            tests/Unit/Http/Middleware/SecurityMiddlewareTest.php
-
       - name: Validate and audit dependencies
         run: |
           composer validate --strict --no-check-all
-          composer audit --locked --abandoned=fail
-          composer architecture:policy
-
-      # tools/scan-secrets.sh runs this same scan locally as composer security:secrets, so a contributor
-      # can see this result before pushing. Change the pinned image or the arguments in both places.
-      # --config is passed explicitly rather than relied on being discovered, so a rename or a move of
-      # .gitleaks.toml fails the step instead of silently dropping the project's own token rules.
-      - name: Scan repository for secrets
-        shell: bash
-        run: |
           install -d build/security
-          test -f .gitleaks.toml
-          set +e
-          docker run --rm \
-            --volume "$PWD:/repo:ro" \
-            --volume "$PWD/build/security:/report" \
-            --workdir /repo \
-            "$GITLEAKS_IMAGE" \
-            detect --source=/repo --no-banner --redact \
-            --config=/repo/.gitleaks.toml \
-            --report-format json --report-path /report/gitleaks.json
-          scan_status=$?
-          set -e
-
-          if test -s build/security/gitleaks.json; then
-            jq '[.[] | {RuleID, File, StartLine, Fingerprint}]' \
-              build/security/gitleaks.json
-          fi
-
-          exit "$scan_status"
+          composer audit --locked --abandoned=fail --format=json > build/security/dependency-audit.json
 
       - name: Scan filesystem dependencies and configuration
         run: >-
@@ -121,6 +156,7 @@ jobs:
       # into the image build makes every locked dist archive a local read: a GitHub API outage
       # cannot fail a build whose dependencies are already on the runner (V2-REL-002).
       - name: Build production runtime image
+        if: needs.changes.outputs.images == 'true'
         run: >-
           docker buildx build
           --pull
@@ -136,6 +172,7 @@ jobs:
       # budget; the ceilings live in docs/quality/artifact-budget.json and are enforced where each
       # artifact is built.
       - name: Hold the runtime image to its declared size budget
+        if: needs.changes.outputs.images == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -143,6 +180,7 @@ jobs:
           tools/verify-artifact-budget.sh production_runtime_image "$size"
 
       - name: Scan production runtime image
+        if: needs.changes.outputs.images == 'true'
         run: >-
           docker run --rm
           --volume /var/run/docker.sock:/var/run/docker.sock
@@ -151,6 +189,7 @@ jobs:
           --severity HIGH,CRITICAL kumwe-security:${GITHUB_SHA}
 
       - name: Build production web image
+        if: needs.changes.outputs.images == 'true'
         run: >-
           docker buildx build
           --pull
@@ -163,6 +202,7 @@ jobs:
           .
 
       - name: Hold the web image to its declared size budget
+        if: needs.changes.outputs.images == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -170,6 +210,7 @@ jobs:
           tools/verify-artifact-budget.sh production_web_image "$size"
 
       - name: Scan production web image
+        if: needs.changes.outputs.images == 'true'
         run: >-
           docker run --rm
           --volume /var/run/docker.sock:/var/run/docker.sock
@@ -178,23 +219,26 @@ jobs:
           --severity HIGH,CRITICAL kumwe-web-security:${GITHUB_SHA}
 
       - name: Install Node.js for source inventory tooling
+        if: needs.changes.outputs.images == 'true'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
 
       - name: Evaluate complete locked-source licence inventory
+        if: needs.changes.outputs.images == 'true'
         run: |
           node --test tools/source-sbom.test.mjs
           bash tools/source-sbom.sh build/security
 
       - name: Generate independent filesystem SBOM
+        if: needs.changes.outputs.images == 'true'
         run: |
           install -d build/security
           docker run --rm --volume "$PWD:/src:ro" "$SYFT_IMAGE" \
             dir:/src -o cyclonedx-json > build/security/kumwe-filesystem.cdx.json
 
       - name: Attest source inventory and licence decision on merged master
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: needs.changes.outputs.images == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |

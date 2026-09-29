@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2592 messages.
+ * Compiled interface message catalogue for ar, carrying 2629 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2059,6 +2059,43 @@ return [
     'core.console.user_create_admin.description' => 'أنشئ مسؤولًا من ملف كلمة مرور محمي.',
     'core.console.user_recover_credentials.description' => 'الوصول الطارئ: أعد تعيين كلمة مرور، أو أوقِف العوامل الثانية، أو أنهِ الجلسات من المضيف.',
     'core.console.wording.description' => 'عرض تجاوزات الصياغة أو البحث فيها أو حفظها أو سحبها.',
+    'core.diagnostics.backlog' => 'التراكم',
+    'core.diagnostics.bounds' => 'تُحدَّد كل عبارة بمدة {timeout} مللي ثانية؛ ويُرجع كل مصدر {rows} صفًا كحد أقصى.',
+    'core.diagnostics.budget_exceeded' => 'تجاوز التشخيص حد الوقت أو النتائج. قلّل عبء العمل أو افحص قاعدة البيانات مباشرةً.',
+    'core.diagnostics.contention' => 'التزاحم',
+    'core.diagnostics.description' => 'فحص التزاحم والطوابير وتكلفة الاستعلامات والاحتفاظ بالبيانات.',
+    'core.diagnostics.empty' => 'لم تُعثر على ملاحظات في هذه العينة.',
+    'core.diagnostics.field.backlog_approximate' => 'تراكم تقريبي',
+    'core.diagnostics.field.backlog_rows' => 'الصفوف المتراكمة',
+    'core.diagnostics.field.calls' => 'الاستدعاءات',
+    'core.diagnostics.field.capacity_rows' => 'السعة (صفوف)',
+    'core.diagnostics.field.configured' => 'مُهيّأ',
+    'core.diagnostics.field.definition' => 'التعريف',
+    'core.diagnostics.field.depth_lower_bound' => 'عمق الطابور (على الأقل)',
+    'core.diagnostics.field.expiry_rows_per_second' => 'انتهاء الصلاحية (صفوف/ثانية)',
+    'core.diagnostics.field.forecast_seconds_to_capacity' => 'الوقت المتوقع لبلوغ السعة (ثوانٍ)',
+    'core.diagnostics.field.ingest_rows_per_second' => 'الإدخال (صفوف/ثانية)',
+    'core.diagnostics.field.last_drain_at' => 'آخر إزالة',
+    'core.diagnostics.field.lock_class' => 'فئة القفل',
+    'core.diagnostics.field.mean_ms' => 'متوسط الوقت (مللي ثانية)',
+    'core.diagnostics.field.net_growth_rows_per_second' => 'النمو الصافي (صفوف/ثانية)',
+    'core.diagnostics.field.oldest_age_seconds' => 'عمر أقدم عنصر (ثوانٍ)',
+    'core.diagnostics.field.policy_cost' => 'قياس السياسة',
+    'core.diagnostics.field.source' => 'المصدر',
+    'core.diagnostics.field.store' => 'السجل',
+    'core.diagnostics.field.stream' => 'التدفق',
+    'core.diagnostics.field.sustained_drain_rows_per_second' => 'الإزالة المستمرة (صفوف/ثانية)',
+    'core.diagnostics.field.table_name' => 'الجدول',
+    'core.diagnostics.field.total_ms' => 'الوقت الإجمالي (مللي ثانية)',
+    'core.diagnostics.field.waiting' => 'قيد الانتظار',
+    'core.diagnostics.policy_cost_included' => 'مشمولة في تكلفة الاستعلام',
+    'core.diagnostics.queues' => 'الطوابير',
+    'core.diagnostics.retention' => 'الاحتفاظ',
+    'core.diagnostics.sampled' => 'النتائج عينات محدودة. أعداد الطوابير حدود دنيا؛ والمعدل المجهول لا يساوي صفرًا.',
+    'core.diagnostics.slow' => 'الاستعلامات البطيئة',
+    'core.diagnostics.title' => 'التشخيص',
+    'core.diagnostics.unavailable' => 'هذا المصدر غير متاح. تحقق من صلاحيات قاعدة البيانات وتفعيل إحصاءات المحرك.',
+    'core.diagnostics.unknown' => 'غير معروف',
     'core.identity.password.change_refused' => 'تعذّر تغيير كلمة مرورك. تحقّق من كلمة مرورك الحالية واختر كلمة مرور مختلفة لا تقل عن 12 حرفًا.',
     'core.identity.password.confirmation_mismatch' => 'لا تتطابق كلمة المرور الجديدة مع تأكيدها.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'إعدادات مجموعة الوصول الافتراضية',

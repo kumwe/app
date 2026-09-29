@@ -22771,4 +22771,43 @@
       </segment>
     </unit>
   </file>
+  <file id="core-operator-diagnostics">
+    <unit id="core.diagnostics.title"><segment><source>Diagnostics</source><target>Diagnóstico</target></segment></unit>
+    <unit id="core.diagnostics.description"><segment><source>Inspect contention, queues, query costs and retention.</source><target>Inspecionar contenção, filas, custos de consultas e retenção.</target></segment></unit>
+    <unit id="core.diagnostics.contention"><segment><source>Contention</source><target>Contenção</target></segment></unit>
+    <unit id="core.diagnostics.queues"><segment><source>Queues</source><target>Filas</target></segment></unit>
+    <unit id="core.diagnostics.slow"><segment><source>Slow queries</source><target>Consultas lentas</target></segment></unit>
+    <unit id="core.diagnostics.backlog"><segment><source>Backlog</source><target>Acúmulo</target></segment></unit>
+    <unit id="core.diagnostics.retention"><segment><source>Retention</source><target>Retenção</target></segment></unit>
+    <unit id="core.diagnostics.bounds"><segment><source>Each statement is limited to {timeout} ms; each source returns at most {rows} rows.</source><target>Cada instrução é limitada a {timeout} ms; cada fonte retorna no máximo {rows} linhas.</target></segment></unit>
+    <unit id="core.diagnostics.unavailable"><segment><source>This source is unavailable. Check database access and whether engine statistics are enabled.</source><target>Esta fonte está indisponível. Verifique o acesso ao banco de dados e se as estatísticas estão ativadas.</target></segment></unit>
+    <unit id="core.diagnostics.budget_exceeded"><segment><source>The diagnostic exceeded its time or result budget. Narrow the workload or inspect the database directly.</source><target>O diagnóstico excedeu o limite de tempo ou resultados. Reduza a carga ou inspecione o banco de dados diretamente.</target></segment></unit>
+    <unit id="core.diagnostics.empty"><segment><source>No observations were found in this sample.</source><target>Nenhuma observação foi encontrada nesta amostra.</target></segment></unit>
+    <unit id="core.diagnostics.sampled"><segment><source>Results are bounded samples. Queue counts are lower bounds; an unknown rate is not zero.</source><target>Os resultados são amostras limitadas. As contagens de filas são limites inferiores; uma taxa desconhecida não é zero.</target></segment></unit>
+    <unit id="core.diagnostics.unknown"><segment><source>Unknown</source><target>Desconhecido</target></segment></unit>
+    <unit id="core.diagnostics.field.table_name"><segment><source>Table</source><target>Tabela</target></segment></unit>
+    <unit id="core.diagnostics.field.lock_class"><segment><source>Lock class</source><target>Classe de bloqueio</target></segment></unit>
+    <unit id="core.diagnostics.field.waiting"><segment><source>Waiting</source><target>Em espera</target></segment></unit>
+    <unit id="core.diagnostics.field.source"><segment><source>Source</source><target>Fonte</target></segment></unit>
+    <unit id="core.diagnostics.field.stream"><segment><source>Stream</source><target>Fluxo</target></segment></unit>
+    <unit id="core.diagnostics.field.depth_lower_bound"><segment><source>Queue depth (at least)</source><target>Tamanho da fila (mínimo)</target></segment></unit>
+    <unit id="core.diagnostics.field.oldest_age_seconds"><segment><source>Oldest age (seconds)</source><target>Maior idade (segundos)</target></segment></unit>
+    <unit id="core.diagnostics.field.definition"><segment><source>Definition</source><target>Definição</target></segment></unit>
+    <unit id="core.diagnostics.field.policy_cost"><segment><source>Policy measurement</source><target>Medição de políticas</target></segment></unit>
+    <unit id="core.diagnostics.field.calls"><segment><source>Calls</source><target>Chamadas</target></segment></unit>
+    <unit id="core.diagnostics.field.mean_ms"><segment><source>Mean time (ms)</source><target>Tempo médio (ms)</target></segment></unit>
+    <unit id="core.diagnostics.field.total_ms"><segment><source>Total time (ms)</source><target>Tempo total (ms)</target></segment></unit>
+    <unit id="core.diagnostics.field.store"><segment><source>Ledger</source><target>Registro</target></segment></unit>
+    <unit id="core.diagnostics.field.backlog_rows"><segment><source>Backlog rows</source><target>Linhas acumuladas</target></segment></unit>
+    <unit id="core.diagnostics.field.backlog_approximate"><segment><source>Approximate backlog</source><target>Acúmulo aproximado</target></segment></unit>
+    <unit id="core.diagnostics.field.ingest_rows_per_second"><segment><source>Ingest (rows/second)</source><target>Entrada (linhas/segundo)</target></segment></unit>
+    <unit id="core.diagnostics.field.sustained_drain_rows_per_second"><segment><source>Sustained drain (rows/second)</source><target>Remoção sustentada (linhas/segundo)</target></segment></unit>
+    <unit id="core.diagnostics.field.net_growth_rows_per_second"><segment><source>Net growth (rows/second)</source><target>Crescimento líquido (linhas/segundo)</target></segment></unit>
+    <unit id="core.diagnostics.field.capacity_rows"><segment><source>Capacity (rows)</source><target>Capacidade (linhas)</target></segment></unit>
+    <unit id="core.diagnostics.field.forecast_seconds_to_capacity"><segment><source>Forecast to capacity (seconds)</source><target>Previsão até a capacidade (segundos)</target></segment></unit>
+    <unit id="core.diagnostics.field.configured"><segment><source>Configured</source><target>Configurado</target></segment></unit>
+    <unit id="core.diagnostics.field.last_drain_at"><segment><source>Last drain</source><target>Última remoção</target></segment></unit>
+    <unit id="core.diagnostics.field.expiry_rows_per_second"><segment><source>Expiry (rows/second)</source><target>Expiração (linhas/segundo)</target></segment></unit>
+    <unit id="core.diagnostics.policy_cost_included"><segment><source>Included in query cost</source><target>Incluída no custo da consulta</target></segment></unit>
+  </file>
 </xliff>

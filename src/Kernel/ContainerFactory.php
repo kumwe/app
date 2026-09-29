@@ -83,6 +83,8 @@ use Kumwe\App\Administrator\Http\Handler\AdministratorContentModelsHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorAccessControlHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorBusinessSecurityHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorAutomationHandler;
+use Kumwe\App\Administrator\Http\Handler\AdministratorDiagnosticsHandler;
+use Kumwe\App\Application\Diagnostics\OperatorDiagnostics;
 use Kumwe\App\Administrator\Http\Handler\AdministratorCreateContentHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorDashboardHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorDashboardPreferencesHandler;
@@ -533,6 +535,7 @@ use Kumwe\App\Delivery\Console\Command\DisableExtensionCommand;
 use Kumwe\App\Delivery\Console\Command\ExportAuditTrailCommand;
 use Kumwe\App\Delivery\Console\Command\RotateRecordSecretsCommand;
 use Kumwe\App\Delivery\Console\Command\HealthCheckCommand;
+use Kumwe\App\Delivery\Console\Command\OperatorDiagnosticsCommand;
 use Kumwe\App\Delivery\Console\Command\InstallExtensionCommand;
 use Kumwe\App\Delivery\Console\Command\InspectExtensionCommand;
 use Kumwe\App\Delivery\Console\Command\IntegrationWorkCommand;
@@ -602,6 +605,7 @@ use Kumwe\App\Delivery\Http\Api\Navigation\NavigationApiResponder;
 use Kumwe\App\Delivery\Http\Api\Plan\PlanPreviewHandler;
 use Kumwe\App\Delivery\Http\Api\Plan\SafePlanFactory;
 use Kumwe\App\Delivery\Http\Api\Site\SiteSettingsApiHandler;
+use Kumwe\App\Delivery\Http\Api\Diagnostics\OperatorDiagnosticsApiHandler;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\App\Delivery\Http\Mcp\McpHttpHandler;
 use Kumwe\App\Http\Handler\ApiIndexHandler;
@@ -669,6 +673,7 @@ use Kumwe\App\Infrastructure\Observability\MeteredAccessTokenVerifier;
 use Kumwe\App\Infrastructure\Observability\MeteredAuthenticationRateLimiter;
 use Kumwe\App\Infrastructure\Observability\MeteredAuthorizationDecisionRecorder;
 use Kumwe\App\Infrastructure\Observability\OperationalStatusCollector;
+use Kumwe\App\Infrastructure\Observability\DoctrineOperatorDiagnostics;
 use Kumwe\App\Infrastructure\Observability\ProcessRuntime;
 use Kumwe\App\Infrastructure\Observability\MetricCatalog;
 use Kumwe\App\Infrastructure\Observability\MetricRecorder;
@@ -704,6 +709,7 @@ use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionState;
 use Kumwe\App\Infrastructure\Persistence\Migration\MigrationLock;
 use Kumwe\App\Infrastructure\Persistence\Migration\MigrationPlan;
+use Kumwe\App\Infrastructure\Persistence\Migration\OperatorDiagnosticsCapabilityMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\MigrationRepository;
 use Kumwe\App\Infrastructure\Persistence\Migration\MigrationRunner;
 use Kumwe\App\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigration;
@@ -737,6 +743,7 @@ use Kumwe\App\Infrastructure\Persistence\Migration\JobRecoveryMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\InterfacePresentationPreferenceMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\AuditRetentionEvidenceMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\RecordEncryptionKeyRingMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\InterfaceMessageOverrideMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\ResourceOwnershipScopeMigration;
@@ -771,6 +778,7 @@ use Kumwe\App\Infrastructure\Mcp\KumweMcpServerFactory;
 use Kumwe\App\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\App\Infrastructure\Mcp\McpMutationGuard;
 use Kumwe\App\Infrastructure\Mcp\ReportMcpHandlers;
+use Kumwe\App\Infrastructure\Mcp\OperatorDiagnosticsMcpHandlers;
 use Kumwe\App\Infrastructure\Authorization\DoctrineGrantScopeOwnershipReferences;
 use Kumwe\App\Infrastructure\Authorization\DoctrineResourceSiteOwnership;
 use Kumwe\App\Infrastructure\Authorization\DoctrineResourceSiteOwnershipWriter;
@@ -1256,6 +1264,16 @@ final class ContainerFactory
         ), true);
         // Retention (V2-SCL-004, V2-SCL-008): catalogue, run ledger, budgeted drain, bounded observer, verdict.
         $container->share(RetentionCatalogue::class, RetentionCatalogue::declared(), true);
+        $container->share(OperatorDiagnostics::class, static fn (Container $container): OperatorDiagnostics =>
+            new DoctrineOperatorDiagnostics(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, AuthorizationGateway::class),
+                self::service($container, RetentionObserver::class),
+                self::service($container, RetentionCatalogue::class),
+                self::service($container, PhysicalNameCompiler::class),
+                self::service($container, ClockInterface::class),
+            ), true);
         $container->share(RetentionReadiness::class, new RetentionReadiness(), true);
         $container->share(LedgerCensus::class, static fn (Container $container): LedgerCensus =>
             new DoctrineLedgerCensus(
@@ -1909,6 +1927,7 @@ final class ContainerFactory
                 self::service($container, TableNames::class),
                 self::service($container, AuthorizationGateway::class),
                 self::service($container, CanonicalEncoder::class),
+                new FilesystemAuditArchiveVerifier($root . '/storage/private/audit-archives'),
             ), true);
         $container->share(AuditTrailExporter::class, static fn (Container $container): AuditTrailExporter =>
             new DoctrineAuditTrailExporter(
@@ -1931,6 +1950,7 @@ final class ContainerFactory
                 self::service($container, AuthorizationGateway::class),
                 self::service($container, CanonicalEncoder::class),
                 new FilesystemAuditArchiveVerifier($root . '/storage/private/audit-archives'),
+                self::service($container, AuditTrailVerifier::class),
             ), true);
         $container->share(ContentRepository::class, static fn (Container $container): ContentRepository =>
             new DoctrineContentRepository(
@@ -2681,6 +2701,7 @@ final class ContainerFactory
                         self::service($container, TableNames::class),
                         self::service($container, CanonicalEncoder::class),
                     ),
+                    new AuditRetentionEvidenceMigration(self::service($container, TableNames::class)),
                     new RecordEncryptionKeyRingMigration(self::service($container, TableNames::class)),
                     new CredentialLifecycleMigration(self::service($container, TableNames::class)),
                     new BusinessNumberSequenceMigration(self::service($container, TableNames::class)),
@@ -2712,6 +2733,7 @@ final class ContainerFactory
                     new StudioAuthoringIdentityMigration(self::service($container, TableNames::class)),
                     new AsyncTraceContextMigration(self::service($container, TableNames::class)),
                     new ExportSiteByteBudgetMigration(self::service($container, TableNames::class)),
+                    new OperatorDiagnosticsCapabilityMigration(self::service($container, TableNames::class)),
                 ],
                 self::acceptedHistoricalChecksums(),
             ), true);
@@ -5082,6 +5104,18 @@ final class ContainerFactory
             self::service($container, AdministratorRenderer::class),
             self::service($container, AutomationJobFormRegistry::class),
         ), true);
+        $container->share(AdministratorDiagnosticsHandler::class, static fn (
+            Container $container,
+        ): AdministratorDiagnosticsHandler => new AdministratorDiagnosticsHandler(
+            self::service($container, OperatorDiagnostics::class),
+            self::service($container, AdministratorRenderer::class),
+        ), true);
+        $container->share(OperatorDiagnosticsApiHandler::class, static fn (
+            Container $container,
+        ): OperatorDiagnosticsApiHandler => new OperatorDiagnosticsApiHandler(
+            self::service($container, OperatorDiagnostics::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
         $container->share(NavigationApiResponder::class, static fn (
             Container $container,
         ): NavigationApiResponder => new NavigationApiResponder(
@@ -5770,6 +5804,11 @@ final class ContainerFactory
             AdministratorAutomationHandler::class,
             'administrator.automation',
         ), 'automation.manage');
+        self::administratorRoute($application->get(
+            '/administrator/diagnostics',
+            AdministratorDiagnosticsHandler::class,
+            'administrator.diagnostics',
+        ), OperatorDiagnostics::CAPABILITY);
         self::administratorRoute($application->post(
             '/administrator/automation',
             [AdministratorCsrfMiddleware::class, AdministratorAutomationHandler::class],
@@ -6405,6 +6444,11 @@ final class ContainerFactory
             SiteSettingsApiHandler::class,
             'api.v1.settings.read',
         ), 'settings.manage');
+        self::apiRoute($application->get(
+            '/api/v1/diagnostics',
+            OperatorDiagnosticsApiHandler::class,
+            'api.v1.diagnostics.read',
+        ), OperatorDiagnostics::CAPABILITY);
         self::apiRoute($application->put(
             '/api/v1/settings',
             [
@@ -6831,6 +6875,12 @@ final class ContainerFactory
         ), true);
         $container->share(HealthCheckCommand::class, static fn (Container $container): HealthCheckCommand =>
             new HealthCheckCommand(self::service($container, ReadinessProbe::class)), true);
+        $container->share(OperatorDiagnosticsCommand::class, static fn (
+            Container $container,
+        ): OperatorDiagnosticsCommand => new OperatorDiagnosticsCommand(
+            self::service($container, OperatorDiagnostics::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(CreateAdministratorCommand::class, static fn (
             Container $container,
         ): CreateAdministratorCommand => new CreateAdministratorCommand(
@@ -7191,6 +7241,7 @@ final class ContainerFactory
                 self::service($container, MigrationStatusCommand::class),
                 self::service($container, RecoverMigrationLockCommand::class),
                 self::service($container, HealthCheckCommand::class),
+                self::service($container, OperatorDiagnosticsCommand::class),
                 self::service($container, CreateAdministratorCommand::class),
                 self::service($container, RecoverCredentialsCommand::class),
                 self::service($container, DemoAccessCommand::class),
@@ -7283,6 +7334,11 @@ final class ContainerFactory
                 self::service($container, ExportService::class),
                 self::service($container, ReportApiPresenter::class),
             ), true);
+        $container->share(OperatorDiagnosticsMcpHandlers::class, static fn (
+            Container $container,
+        ): OperatorDiagnosticsMcpHandlers => new OperatorDiagnosticsMcpHandlers(
+            self::service($container, OperatorDiagnostics::class),
+        ), true);
         $container->share(SessionStoreInterface::class, static fn (Container $container): SessionStoreInterface =>
             new FileSessionStore(
                 $root . '/storage/sessions/mcp',
@@ -7314,6 +7370,7 @@ final class ContainerFactory
                 models: self::service($container, ContentModelService::class),
                 compositions: self::service($container, StudioContentCompositionService::class),
                 blueprints: self::service($container, StudioMachineCompositionGateway::class),
+                diagnostics: self::service($container, OperatorDiagnosticsMcpHandlers::class),
             ), true);
         $container->share(KumweMcpServerFactory::class, static fn (Container $container): KumweMcpServerFactory =>
             new KumweMcpServerFactory(

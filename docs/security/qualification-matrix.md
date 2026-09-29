@@ -1,30 +1,19 @@
 # Security qualification matrix (P7-C)
 
-[`qualification-matrix.json`](qualification-matrix.json) is the automated-evidence half of roadmap package
-`P7-C` ([roadmap](../roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof)). It maps
-every area and sub-area the package names to the application tests that prove it. Each entry gives a
-`file::method` reference and the CI job that runs that test. The independent threat-led agent review is the
-other half of `P7-C`. It reviews the final code and is recorded separately.
+[`qualification-matrix.json`](qualification-matrix.json) preserves the automated-evidence map used for the
+historical `P7-C` review ([roadmap](../roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof)).
+Its `file::method` references and CI job assignments describe the reviewed revision. The independent
+threat-led agent review is recorded separately.
 
 Scanners in [`security.yml`](../../.github/workflows/security.yml) supplement these application authorization
 tests. They never substitute for them: gitleaks, Trivy and the dependency audit cannot see whether one tenant
 can read another's row.
 
-## How the matrix is enforced
+## Current verification
 
-`tests/Architecture/SecurityQualificationMatrixTest.php` runs in the quality job's architecture suite. It
-fails when:
-
-- an area or sub-area of the roadmap sentence is missing, or the matrix statement stops matching the roadmap;
-- a sub-area has no evidence and no `out_of_scope` entry, or its `out_of_scope` entry is not owned by an open
-  finding in [`findings.json`](../roadmap/findings.json) or does not give a real reason;
-- a referenced test file does not exist or does not declare the named method;
-- the named job does not actually run the test. The quality job runs the unit and architecture suites, the
-  database job runs the complete suite on MariaDB, MySQL and PostgreSQL, and the security job runs only
-  the files its PHPUnit step lists.
-
-When you add security evidence, add its reference to the matching sub-area. When you remove or rename a test
-the matrix cites, update the matrix in the same change.
+The application test suites verify security behavior directly. This historical map is retained for review
+provenance and is not a merge gate; test names and workflow assignments can evolve without maintaining a
+second inventory. See [`development.md`](../development.md) for the current commands and CI lanes.
 
 ## Areas
 

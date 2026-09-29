@@ -12,7 +12,8 @@ composer cs        # PSR-12 layout and line width, via PHP_CodeSniffer
 composer docs:api  # documentation-block completeness, via tools/verify-docblocks.php
 ```
 
-Both run inside `composer qa`, and both are required to pass before a change is merged.
+`composer cs` runs in the normal checks. Documentation tools are optional editing aids;
+documentation shape is not a merge gate.
 
 ## 1. Language baseline
 
@@ -40,9 +41,9 @@ Both run inside `composer qa`, and both are required to pass before a change is 
 
 ## 3. Documentation blocks
 
-Every class-like declaration, method, function, property, class constant, and enum case carries a
-documentation block. The format below is the Joomla-flavoured phpDocumentor style: an aligned,
-tag-ordered block that reads the same everywhere in the tree.
+Document public contracts, precise collection types and non-obvious behavior. A documentation block
+is not required for every member when the declaration already explains it. The format below is a
+consistent style for blocks that are useful; it is not a requirement to add boilerplate.
 
 ### 3.1 Canonical shape
 
@@ -74,7 +75,7 @@ Tags appear in this order, each group separated from the next by a `*`-only line
 4. `@throws`
 5. `@var`, `@deprecated`, `@see`, `@link`, `@internal`, `@since`
 
-`@since` is always last, and always present. The trailing group is not split further, so a property's
+When present, `@since` is last. The trailing group is not split further, so a property's
 `@var` and `@since` sit on consecutive lines.
 
 ### 3.3 Alignment
@@ -112,9 +113,8 @@ space and do not participate in the alignment calculation.
 
 ### 3.4 `@since`
 
-Every documentation block ends with `@since`. Members that exist as of the 2.0.0 documentation pass
-carry `@since  2.0.0`. Members added later carry the release they first appear in. Never change an
-existing `@since` value when editing a member — it records introduction, not last modification.
+Use `@since` when the introduction version matters to a public contract. Preserve existing values;
+they record introduction, not last modification. Internal implementation comments need no version tag.
 
 ### 3.5 `@param`
 
@@ -278,14 +278,10 @@ carries the description.
 
 ## 7. Tests
 
-- Every behaviour-bearing class gets focused unit tests; every infrastructure boundary gets integration
-  tests against real services.
-- Test classes and test methods carry documentation blocks under the same rules. A test block says what
-  behaviour is pinned, which is the part a future reader needs. `composer docs:tests` enforces this
-  against a shrinking record of the debt that existed when the gate was armed
-  ([`docs/quality/test-docblock-baseline.json`](quality/test-docblock-baseline.json)): anything the
-  record does not carry fails, and an entry cannot be deleted until the member it names is documented.
-  New tests are held to the rule in full.
+- Test changed behavior at its owner: reusable package behavior in the package repository, App composition,
+  authority, persistence and delivery in App. Prefer existing cases and focused regressions.
+- Give tests descriptive names. Add a comment for non-obvious setup or an invariant; per-method
+  documentation, coverage attribution and fixed coverage percentages are not required.
 - Security-sensitive changes — authentication, authorization, session, archive, extension, token,
   upload, MCP writes — carry adversarial tests alongside the happy path.
 
@@ -295,7 +291,7 @@ carries the description.
 php tools/verify-docblocks.php src            # completeness, per-violation detail
 php tools/verify-docblocks.php --summary src  # coverage counters only
 php tools/format-docblocks.php src            # apply the alignment rules
-composer qa                                   # the full gate
+composer qa                                   # the normal PHP checks
 ```
 
 `tools/verify-docblocks.php` exits non-zero when a documentable member is missing a block, a summary, a

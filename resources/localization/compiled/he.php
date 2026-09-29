@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2592 messages.
+ * Compiled interface message catalogue for he, carrying 2629 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2059,6 +2059,43 @@ return [
     'core.console.user_create_admin.description' => 'צרו מנהל מקובץ סיסמה מוגן.',
     'core.console.user_recover_credentials.description' => 'שבירת זכוכית: אפסו סיסמה, בטלו גורמי אימות שניים, או סיימו הפעלות מתוך המארח.',
     'core.console.wording.description' => 'הצגה, חיפוש, שמירה או משיכה של דריסות ניסוח.',
+    'core.diagnostics.backlog' => 'הצטברות',
+    'core.diagnostics.bounds' => 'כל פקודה מוגבלת ל־{timeout} אלפיות שנייה; כל מקור מחזיר עד {rows} שורות.',
+    'core.diagnostics.budget_exceeded' => 'האבחון חרג ממגבלת הזמן או התוצאות. יש לצמצם את העומס או לבדוק את מסד הנתונים ישירות.',
+    'core.diagnostics.contention' => 'תחרות על משאבים',
+    'core.diagnostics.description' => 'בדיקת תחרות על משאבים, תורים, עלויות שאילתות ושמירת נתונים.',
+    'core.diagnostics.empty' => 'לא נמצאו תצפיות במדגם זה.',
+    'core.diagnostics.field.backlog_approximate' => 'הצטברות משוערת',
+    'core.diagnostics.field.backlog_rows' => 'שורות שהצטברו',
+    'core.diagnostics.field.calls' => 'קריאות',
+    'core.diagnostics.field.capacity_rows' => 'קיבולת (שורות)',
+    'core.diagnostics.field.configured' => 'מוגדר',
+    'core.diagnostics.field.definition' => 'הגדרה',
+    'core.diagnostics.field.depth_lower_bound' => 'אורך תור (לפחות)',
+    'core.diagnostics.field.expiry_rows_per_second' => 'תפוגה (שורות/שנייה)',
+    'core.diagnostics.field.forecast_seconds_to_capacity' => 'תחזית עד למיצוי הקיבולת (שניות)',
+    'core.diagnostics.field.ingest_rows_per_second' => 'קליטה (שורות/שנייה)',
+    'core.diagnostics.field.last_drain_at' => 'פינוי אחרון',
+    'core.diagnostics.field.lock_class' => 'סוג נעילה',
+    'core.diagnostics.field.mean_ms' => 'זמן ממוצע (אלפיות שנייה)',
+    'core.diagnostics.field.net_growth_rows_per_second' => 'צמיחה נטו (שורות/שנייה)',
+    'core.diagnostics.field.oldest_age_seconds' => 'גיל הרשומה הוותיקה ביותר (שניות)',
+    'core.diagnostics.field.policy_cost' => 'מדידת מדיניות',
+    'core.diagnostics.field.source' => 'מקור',
+    'core.diagnostics.field.store' => 'יומן',
+    'core.diagnostics.field.stream' => 'זרם',
+    'core.diagnostics.field.sustained_drain_rows_per_second' => 'פינוי מתמשך (שורות/שנייה)',
+    'core.diagnostics.field.table_name' => 'טבלה',
+    'core.diagnostics.field.total_ms' => 'זמן כולל (אלפיות שנייה)',
+    'core.diagnostics.field.waiting' => 'ממתינים',
+    'core.diagnostics.policy_cost_included' => 'כלולה בעלות השאילתה',
+    'core.diagnostics.queues' => 'תורים',
+    'core.diagnostics.retention' => 'שמירת נתונים',
+    'core.diagnostics.sampled' => 'התוצאות הן מדגמים מוגבלים. ספירות התורים הן גבולות תחתונים; קצב לא ידוע אינו אפס.',
+    'core.diagnostics.slow' => 'שאילתות איטיות',
+    'core.diagnostics.title' => 'אבחון',
+    'core.diagnostics.unavailable' => 'מקור זה אינו זמין. יש לבדוק את הגישה למסד הנתונים ואת הפעלת נתוני המנוע.',
+    'core.diagnostics.unknown' => 'לא ידוע',
     'core.identity.password.change_refused' => 'לא ניתן היה לשנות את הסיסמה שלכם. בדקו את הסיסמה הנוכחית שלכם ובחרו סיסמה שונה בת 12 תווים לפחות.',
     'core.identity.password.confirmation_mismatch' => 'הסיסמה החדשה והאימות שלה אינם תואמים.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'ברירות מחדל של קבוצת הגישה',

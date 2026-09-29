@@ -2151,6 +2151,31 @@
             ]
         },
         {
+            "name": "administrator.diagnostics",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/diagnostics",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorDiagnosticsHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Application\\Diagnostics\\OperatorDiagnostics::read",
+                    "rest": [
+                        "readOperatorDiagnostics"
+                    ],
+                    "cli": [
+                        "app:diagnostics"
+                    ],
+                    "mcp": [
+                        "kumwe_operator_diagnostics_read"
+                    ],
+                    "note": "All surfaces select one fixed section and call the shared installation-authorized bounded reader."
+                }
+            ]
+        },
+        {
             "name": "administrator.extensions",
             "methods": [
                 "GET"

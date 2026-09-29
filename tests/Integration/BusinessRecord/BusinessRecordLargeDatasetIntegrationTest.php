@@ -11,12 +11,14 @@ use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
 use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
+use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordQueryCompiler;
 use Kumwe\Record\Query\AggregateFunction;
 use Kumwe\Record\Query\RecordAggregate;
 use Kumwe\Record\Query\RecordCursor;
 use Kumwe\Record\Query\RecordProjection;
 use Kumwe\Record\Query\RecordQuerySpecification;
 use Kumwe\Record\Query\RecordSort;
+use Kumwe\Record\Query\SortDirection;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;
@@ -26,6 +28,7 @@ use Ramsey\Uuid\Uuid;
 
 #[CoversClass(BusinessRecordService::class)]
 #[CoversClass(DoctrineBusinessRecordReadRepository::class)]
+#[CoversClass(DoctrineBusinessRecordQueryCompiler::class)]
 final class BusinessRecordLargeDatasetIntegrationTest extends TestCase
 {
     private const RECORD_COUNT = 225;
@@ -41,6 +44,8 @@ final class BusinessRecordLargeDatasetIntegrationTest extends TestCase
 
         $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $document = NeutralBusinessFixture::relationTargetDocument($suffix, Uuid::uuid7()->toString());
+        self::assertIsArray($document['fields']);
+        self::assertIsArray($document['fields'][1]);
         $document['fields'][1]['reportable'] = true;
         $document['fields'][] = [
             'handle' => 'bucket',
@@ -53,6 +58,14 @@ final class BusinessRecordLargeDatasetIntegrationTest extends TestCase
             'sortable' => true,
             'reportable' => true,
         ];
+        $document['fields'][] = [
+            'handle' => 'nullable_bucket',
+            'label' => 'Nullable bucket',
+            'type' => 'core.text',
+            'nullable' => true,
+            'length' => 32,
+            'sortable' => true,
+        ];
         $definition = NeutralBusinessFixture::install($container, $context, $document);
 
         $expectedRecordIds = [];
@@ -62,7 +75,11 @@ final class BusinessRecordLargeDatasetIntegrationTest extends TestCase
             $records->create(new CreateRecordCommand(
                 $context,
                 $definition->handle,
-                ['label' => sprintf('Large row %03d', $index), 'bucket' => 'shared'],
+                [
+                    'label' => sprintf('Large row %03d', $index),
+                    'bucket' => 'shared',
+                    'nullable_bucket' => $index % 2 === 0 ? 'shared' : null,
+                ],
                 NeutralBusinessFixture::idempotencyKey(sprintf('load-%s-%03d', substr($suffix, 0, 8), $index)),
                 recordId: $recordId,
             ));
@@ -154,6 +171,40 @@ final class BusinessRecordLargeDatasetIntegrationTest extends TestCase
         self::assertSame(7, $pageCount);
         self::assertCount(self::RECORD_COUNT, array_unique($actualRecordIds));
         self::assertSame($expectedRecordIds, $actualRecordIds);
+
+        // Native and explicit null placement must page identically, including descending identity ties.
+        $even = array_values(array_filter($expectedRecordIds, static fn (string $id): bool =>
+            hexdec(substr($id, -12)) % 2 === 1));
+        $odd = array_values(array_diff($expectedRecordIds, $even));
+        foreach (
+            [
+                [[new RecordSort('bucket', SortDirection::Descending)], array_reverse($expectedRecordIds)],
+                [[new RecordSort('nullable_bucket', SortDirection::Ascending, false)], [...$odd, ...$even]],
+                [[new RecordSort('nullable_bucket', SortDirection::Ascending, true)], [...$even, ...$odd]],
+                [[new RecordSort('nullable_bucket', SortDirection::Descending, false)],
+                    [...array_reverse($odd), ...array_reverse($even)]],
+                [[new RecordSort('nullable_bucket', SortDirection::Descending, true)],
+                    [...array_reverse($even), ...array_reverse($odd)]],
+                [[], null],
+            ] as [$ordering, $expected]
+        ) {
+            $cursor = null;
+            $actual = [];
+            do {
+                $page = $records->browse(new BrowseRecordsQuery(
+                    $context,
+                    $definition->handle,
+                    new RecordQuerySpecification(sorts: $ordering, after: $cursor, pageSize: self::PAGE_SIZE),
+                ));
+                array_push($actual, ...self::recordIds($page));
+                self::assertLessThanOrEqual(self::RECORD_COUNT, count($actual), 'A cursor must always advance.');
+                $cursor = $page->nextCursor;
+            } while ($cursor !== null);
+            self::assertCount(self::RECORD_COUNT, array_unique($actual));
+            if ($expected !== null) {
+                self::assertSame($expected, $actual);
+            }
+        }
     }
 
     private static function recordId(int $index): string

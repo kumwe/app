@@ -126,6 +126,7 @@ final readonly class KumweMcpHandlers
      *         and provision; null only in isolated tests that exercise no composition tool.
      * @param ?StudioMachineCompositionGateway $blueprints Machine entry to the composition screen's Studio host
      *         the Blueprint tools edit through; null only in isolated tests that exercise no Blueprint tool.
+     * @param ?OperatorDiagnosticsMcpHandlers $diagnostics Shared bounded operator reader; null only in isolated tests.
      *
      * @since  2.0.0
      */
@@ -155,6 +156,7 @@ final readonly class KumweMcpHandlers
         private ?ContentModelService $models = null,
         private ?StudioContentCompositionService $compositions = null,
         private ?StudioMachineCompositionGateway $blueprints = null,
+        private ?OperatorDiagnosticsMcpHandlers $diagnostics = null,
     ) {
     }
 
@@ -198,6 +200,7 @@ final readonly class KumweMcpHandlers
             models: $this->models,
             compositions: $this->compositions,
             blueprints: $this->blueprints,
+            diagnostics: $this->diagnostics,
         );
     }
 
@@ -277,7 +280,28 @@ final readonly class KumweMcpHandlers
             models: $this->models,
             compositions: $this->compositions,
             blueprints: $this->blueprints,
+            diagnostics: $this->diagnostics,
         );
+    }
+
+    /**
+     * Read one bounded installation diagnostic section under the shared operator authority.
+     *
+     * @param   string  $section  Fixed diagnostic question, defaulting to queue health.
+     *
+     * @return  array<string, mixed>  The same diagnostic document served by REST and CLI.
+     *
+     * @throws  InsufficientCapability  When the caller lacks operator diagnostics authority.
+     * @throws  InvalidArgumentException  When the section is invalid or the delegate is not composed.
+     *
+     * @since   2.0.0
+     */
+    public function readOperatorDiagnostics(string $section = 'queues'): array
+    {
+        $this->require('system.diagnostics.read');
+
+        return ($this->diagnostics ?? throw new InvalidArgumentException('Operator diagnostics are not composed.'))
+            ->read($this->context(), $section);
     }
 
     /**

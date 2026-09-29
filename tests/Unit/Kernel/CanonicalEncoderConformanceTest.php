@@ -5,30 +5,19 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Kernel;
 
 use DateTimeImmutable;
-use InvalidArgumentException;
 use Kumwe\App\Application\Automation\ChangePlan;
 use Kumwe\App\Application\Automation\ScheduleOccurrenceKey;
 use Kumwe\App\Kernel\NativeComputationFactory;
 use Kumwe\App\Tests\Support\NativeComputationContainer;
 use Kumwe\CanonicalJson\CanonicalEncoder;
-use Kumwe\CanonicalJson\Limits;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
-use stdClass;
 
 /**
- * Proves the App's composed canonical encoding: the container binding replays the profile corpus and keeps
- * every persisted digest family byte-identical to what the retired App encoder wrote.
+ * Keeps persisted App digests stable across the native encoder integration.
  *
- * The generic-v1 semantics and the 79-case corpus belong to `kumwe/canonical-json`, and the native encoder's
- * own conformance belongs to `kumwe/computation` and the Engine. What the App owns is the composition:
- * `NativeComputationFactory` binds `Kumwe\CanonicalJson\CanonicalEncoder` to the native encoder under the
- * admitted tuple, and idempotency records, outbox and projection envelopes, access-control snapshots, change
- * plans and schedule occurrence keys are digested through that binding. The first test drives the corpus
- * through the App's own tagged-node reader and the container encoder; the second holds the encoder to the
- * bytes and digests `Kumwe\App\Shared\Domain\CanonicalJson` produced for each family at commit `1c410ccd`,
- * immediately before the Computation cutover deleted it, so a stored digest still verifies after the switch.
+ * The canonical-json and computation packages own generic encoding and corpus conformance. These tests
+ * cover App payload families, change plans and schedule occurrence keys through the production binding.
  *
  * @since  2.0.0
  */
@@ -37,14 +26,6 @@ use stdClass;
 #[CoversClass(ScheduleOccurrenceKey::class)]
 final class CanonicalEncoderConformanceTest extends TestCase
 {
-    /**
-     * Installed corpus of the generic-v1 profile, relative to the repository.
-     *
-     * @var    string
-     * @since  2.0.0
-     */
-    private const string CORPUS = 'vendor/kumwe/canonical-json/resources/corpus/v1.json';
-
     /**
      * Bytes and digests the retired App encoder produced for one representative payload per family.
      *
@@ -171,58 +152,6 @@ final class CanonicalEncoderConformanceTest extends TestCase
     private const string OCCURRENCE_DIGEST = 'e62ee652a2ae35cd95f8c8c23aaf01027dcdcdb738bfaf1eef7c2f8519ef77fa';
 
     /**
-     * The container-bound encoder replays every corpus case, output bytes, digest and finding alike.
-     *
-     * Cases that name their own budgets are encoded through a package factory over the same admitted tuple,
-     * because the container binding carries the profile's default budgets.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testTheContainerEncoderReplaysEveryCorpusCaseByteForByte(): void
-    {
-        $corpus = json_decode(
-            (string) file_get_contents(dirname(__DIR__, 3) . '/' . self::CORPUS),
-            true,
-            64,
-            JSON_THROW_ON_ERROR,
-        );
-        self::assertIsArray($corpus);
-        self::assertSame('kumwe-canonical-json/generic-v1', $corpus['profile']);
-        self::assertIsArray($corpus['cases']);
-        self::assertCount(79, $corpus['cases']);
-        $encoder = NativeComputationContainer::encoder();
-        $accepted = 0;
-        $refused = 0;
-        foreach ($corpus['cases'] as $case) {
-            self::assertIsArray($case);
-            $id = $case['id'];
-            self::assertIsString($id);
-            $subject = isset($case['limits']) ? $this->boundedEncoder($case['limits']) : $encoder;
-            $value = self::decode($case['input']);
-            self::assertIsArray($case['expected']);
-            $expected = $case['expected'];
-            if (isset($expected['finding'])) {
-                foreach (['encode', 'digest'] as $operation) {
-                    try {
-                        $subject->{$operation}($value);
-                        self::fail(sprintf('Case %s was accepted by %s().', $id, $operation));
-                    } catch (InvalidArgumentException $exception) {
-                        self::assertSame($expected['finding'], $exception->getMessage(), $id);
-                    }
-                }
-                ++$refused;
-                continue;
-            }
-            self::assertSame($expected['output'], $subject->encode($value), $id);
-            self::assertSame($expected['sha256'], $subject->digest($value), $id);
-            ++$accepted;
-        }
-        self::assertSame([46, 33], [$accepted, $refused]);
-    }
-
-    /**
      * Every persisted digest family keeps the bytes and digests the retired App encoder wrote for it.
      *
      * @return  void
@@ -274,98 +203,5 @@ final class CanonicalEncoderConformanceTest extends TestCase
             new DateTimeImmutable('2026-08-04T12:00:00+00:00'),
             300,
         );
-    }
-
-    /**
-     * Build a native encoder over the admitted tuple with the budgets one corpus case names.
-     *
-     * @param   mixed  $limits  The case's `limits` member, overriding the named generic-v1 budgets.
-     *
-     * @return  CanonicalEncoder  Package encoder honouring those budgets.
-     *
-     * @since   2.0.0
-     */
-    private function boundedEncoder(mixed $limits): CanonicalEncoder
-    {
-        self::assertIsArray($limits);
-
-        return NativeComputationContainer::boundedEncoder(new Limits(...array_map(
-            static fn (mixed $budget): int => is_int($budget) ? $budget : throw new RuntimeException('Bad budget.'),
-            $limits,
-        )));
-    }
-
-    /**
-     * Expand one tagged corpus node into the PHP value the profile documents for it.
-     *
-     * @param   mixed  $input  Tagged node.
-     *
-     * @return  mixed  Expanded value; an `unsupported` node becomes an object the profile refuses.
-     *
-     * @since   2.0.0
-     */
-    private static function decode(mixed $input): mixed
-    {
-        self::assertIsArray($input);
-        $type = $input['type'] ?? null;
-        switch ($type) {
-            case 'null':
-                return null;
-            case 'bool':
-                self::assertIsBool($input['value']);
-
-                return $input['value'];
-            case 'int':
-                self::assertIsString($input['decimal']);
-                self::assertSame($input['decimal'], (string) (int) $input['decimal']);
-
-                return (int) $input['decimal'];
-            case 'float':
-                self::assertIsString($input['hex']);
-                $unpacked = unpack('E', (string) hex2bin($input['hex']));
-                self::assertIsArray($unpacked);
-                self::assertIsFloat($unpacked[1]);
-
-                return $unpacked[1];
-            case 'string':
-                self::assertIsString($input['base64']);
-                $bytes = base64_decode($input['base64'], true);
-                self::assertIsString($bytes);
-
-                return $bytes;
-            case 'array':
-                self::assertIsArray($input['entries']);
-                $result = [];
-                foreach ($input['entries'] as $entry) {
-                    self::assertIsArray($entry);
-                    $key = self::decode($entry['key']);
-                    self::assertTrue(is_int($key) || is_string($key));
-                    $result[$key] = self::decode($entry['value']);
-                }
-
-                return $result;
-            case 'unsupported':
-                return new stdClass();
-            case 'nested-list':
-                self::assertIsInt($input['depth']);
-                $value = self::decode($input['leaf']);
-                for ($index = 0; $index < $input['depth']; ++$index) {
-                    $value = [$value];
-                }
-
-                return $value;
-            case 'repeat-list':
-                self::assertIsInt($input['count']);
-
-                return array_fill(0, $input['count'], self::decode($input['value']));
-            case 'repeat-string':
-                self::assertIsInt($input['count']);
-                $byte = self::decode(['type' => 'string', 'base64' => $input['base64']]);
-                self::assertIsString($byte);
-
-                return str_repeat($byte, $input['count']);
-            default:
-                self::fail('Unknown corpus node type.');
-        }
     }
 }

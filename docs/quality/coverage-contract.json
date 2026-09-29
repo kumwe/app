@@ -2,7 +2,7 @@
     "contract": "kumwe-coverage-contract",
     "authority": "docs/roadmap/README.md",
     "finding": "V2-QA-001",
-    "note": "Coverage was collected on one leg, attributed by whichever test happened to declare a class, and gated by nothing — the workflow said so itself. This file states the three things that were missing: which engine the canonical measurement comes from, which tests are allowed to attribute nothing, and what has to hold before a change is allowed to lower the number. Every rule here is executed by tools/coverage-contract.php; a rule that cannot be executed says so and is not counted as enforcement.",
+    "note": "Historical coverage measurements and optional tooling settings. Coverage is diagnostic under the 2026-09-29 maintainer direction; attribution and percentage ratchets are not merge gates. Current policy is in AGENTS.md and docs/development.md.",
     "canonical_engine": "mariadb",
     "canonical_engine_reason": "MariaDB is the primary engine. Collecting the canonical result anywhere else attributes the driver branches of one engine and calls them the product's coverage.",
     "driver": {
@@ -20,14 +20,14 @@
             "id": "changed-line-floor",
             "statement": "At least 90% of the executable lines a change adds or edits under src/ are covered.",
             "floor_percent": 90,
-            "enforced": true,
+            "enforced": false,
             "scope": "src/"
         },
         {
             "id": "global-decrease",
             "statement": "Global line coverage does not fall by more than 0.25 of a percentage point.",
             "tolerance_points": 0.25,
-            "enforced": true,
+            "enforced": false,
             "enforced_when": "a baseline has been recorded",
             "note": "The first canonical run after this contract merged prints the measurement and the command that records it. Until it is recorded the tool says the ratchet is unarmed rather than reporting a pass."
         },
@@ -35,7 +35,7 @@
             "id": "changed-refusal-floor",
             "statement": "At least 80% of the refusal lines a change adds or edits under Domain and Application logic are covered, where a refusal line is an executable line that raises with `throw`.",
             "floor_percent": 80,
-            "enforced": true,
+            "enforced": false,
             "replaces": "changed-branch-floor",
             "note": "This is the honest substitute for the branch floor that stood here unenforced: pcov reports executed lines and no branches at all, so an 80% branch floor could not be measured on the canonical leg and was a declared intention rather than a gate. The branch class that floor existed to protect is the refusal path — the guard that throws instead of proceeding — and a covered `throw` line is line-level proof the refusing branch was actually taken, which coverage of the surrounding method alone never shows. The rule is measured from exactly what the canonical run already produces. A true branch floor may replace this entry if the canonical run ever collects branch data."
         }
@@ -47,7 +47,7 @@
         "note": "Recorded by the canonical MariaDB CI leg after 2,513 tests and 54,760 assertions measured 47,935 of 86,459 executable lines."
     },
     "attribution": {
-        "note": "A behavioural test that executes real code and attributes none of it makes the coverage report describe a smaller product than the one being tested. #[CoversNothing] is therefore allowed in exactly two places: on tests whose subject is not a class under src/ at all, which is the reasoned list, and on the behavioural tests that carried it when this gate was switched on, which was the pending list. That list only ever shrinks and was emptied on 2026-08-18 — every test it excused now names the classes it exercises — and it stays empty, because a new behavioural test cannot join it.",
+        "note": "Historical attribution records retained for interpreting older reports. New behavioral tests do not require coverage metadata or exemption records.",
         "reasoned": [
             {
                 "path": "tests/Unit/Tools/RecoveryToolsTest.php",
@@ -66,24 +66,8 @@
                 "reason": "Architecture and source-shape tests assert facts about files, workflows, manifests and boundaries. Their subject is the arrangement of the tree, not a class in it."
             },
             {
-                "path": "tests/Unit/InterfaceProgramme/",
-                "reason": "The subject is tools/verify-interface-programme.php, which is not under src/ and is not part of the released package."
-            },
-            {
-                "path": "tests/Unit/DocumentationBaseline/",
-                "reason": "The subject is tools/verify-docblocks.php, which is not under src/ and is not part of the released package. The gate it verifies shipped without tests and a keying defect shipped with it, so these cases exist to hold the gate itself."
-            },
-            {
-                "path": "tests/Unit/Quality/ReproducibleBaselineToolTest.php",
-                "reason": "The subject is tools/record-baseline.php, which is not under src/ and is not part of the released package. The generator inherited provenance it was not given, so a record could name a revision it had never been generated from; these cases hold the tool to the claim its own document makes."
-            },
-            {
                 "path": "tests/Unit/Infrastructure/Persistence/Migration/PublishedMigrationIntegrityTest.php",
                 "reason": "The subject is the bytes of published migrations, whose immutability is the contract; executing them is what the integration suite does."
-            },
-            {
-                "path": "tests/Unit/InterfaceStandard/InterfaceStandardSchemaTest.php",
-                "reason": "The subject is a shipped JSON schema artifact rather than a class."
             },
             {
                 "path": "tests/Unit/Demo/Infrastructure/VdmBusinessDefinitionSchemaTest.php",

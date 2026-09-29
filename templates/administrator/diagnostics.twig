@@ -1,0 +1,72 @@
+{% extends "layout.twig" %}
+{% block title %}{{ t('core.diagnostics.title') }}{% endblock %}
+{% block context_title %}{{ t('core.diagnostics.title') }}{% endblock %}
+{% block content %}
+{% set section_labels = {
+  'contention': t('core.diagnostics.contention'),
+  'queues': t('core.diagnostics.queues'),
+  'slow': t('core.diagnostics.slow'),
+  'backlog': t('core.diagnostics.backlog'),
+  'retention': t('core.diagnostics.retention')
+} %}
+{% set status_labels = {
+  'unavailable': t('core.diagnostics.unavailable'),
+  'budget_exceeded': t('core.diagnostics.budget_exceeded')
+} %}
+{% set field_labels = {
+  'table_name': t('core.diagnostics.field.table_name'),
+  'lock_class': t('core.diagnostics.field.lock_class'),
+  'waiting': t('core.diagnostics.field.waiting'),
+  'source': t('core.diagnostics.field.source'),
+  'stream': t('core.diagnostics.field.stream'),
+  'depth_lower_bound': t('core.diagnostics.field.depth_lower_bound'),
+  'oldest_age_seconds': t('core.diagnostics.field.oldest_age_seconds'),
+  'definition': t('core.diagnostics.field.definition'),
+  'policy_cost': t('core.diagnostics.field.policy_cost'),
+  'calls': t('core.diagnostics.field.calls'),
+  'mean_ms': t('core.diagnostics.field.mean_ms'),
+  'total_ms': t('core.diagnostics.field.total_ms'),
+  'store': t('core.diagnostics.field.store'),
+  'backlog_rows': t('core.diagnostics.field.backlog_rows'),
+  'backlog_approximate': t('core.diagnostics.field.backlog_approximate'),
+  'ingest_rows_per_second': t('core.diagnostics.field.ingest_rows_per_second'),
+  'sustained_drain_rows_per_second': t('core.diagnostics.field.sustained_drain_rows_per_second'),
+  'net_growth_rows_per_second': t('core.diagnostics.field.net_growth_rows_per_second'),
+  'capacity_rows': t('core.diagnostics.field.capacity_rows'),
+  'forecast_seconds_to_capacity': t('core.diagnostics.field.forecast_seconds_to_capacity'),
+  'configured': t('core.diagnostics.field.configured'),
+  'last_drain_at': t('core.diagnostics.field.last_drain_at'),
+  'expiry_rows_per_second': t('core.diagnostics.field.expiry_rows_per_second')
+} %}
+<div class="kis-phase-five" data-kis-surface="core.administrator.diagnostics">
+  {% include '@kis/page-header.twig' with {
+    title: t('core.diagnostics.title'),
+    purpose: t('core.diagnostics.description')
+  } only %}
+  <nav class="kis-phase-five-section-nav" aria-label="{{ t('core.diagnostics.title') }}">
+    {% for section in sections %}
+      <a href="/administrator/diagnostics?section={{ section }}"{% if section == diagnostic.section %} aria-current="page"{% endif %}>{{ section_labels[section] }}</a>
+    {% endfor %}
+  </nav>
+  <section class="panel panel-body stack">
+    <h2>{{ section_labels[diagnostic.section] }}</h2>
+    <p>{{ t('core.diagnostics.bounds', {timeout: diagnostic.statement_timeout_ms, rows: diagnostic.row_limit_per_source}) }}</p>
+    <p><time datetime="{{ diagnostic.observed_at }}">{{ diagnostic.observed_at }}</time></p>
+    {% if diagnostic.status != 'available' %}
+      <p role="status">{{ status_labels[diagnostic.status] }}</p>
+    {% elseif diagnostic.rows is empty %}
+      <p role="status">{{ t('core.diagnostics.empty') }}</p>
+    {% else %}
+      <p>{{ t('core.diagnostics.sampled') }}</p>
+      {% for row in diagnostic.rows %}
+        <dl class="panel panel-body">
+          {% for key, value in row %}
+            <dt>{{ field_labels[key] }}</dt>
+            <dd>{% if value is null %}{{ t('core.diagnostics.unknown') }}{% elseif value is same as(true) %}{{ t('core.administrator.business_fields.yes') }}{% elseif value is same as(false) %}{{ t('core.administrator.business_fields.no') }}{% elseif key == 'policy_cost' %}{{ t('core.diagnostics.policy_cost_included') }}{% else %}{{ value }}{% endif %}</dd>
+          {% endfor %}
+        </dl>
+      {% endfor %}
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

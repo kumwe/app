@@ -22771,4 +22771,43 @@
       </segment>
     </unit>
   </file>
+  <file id="core-operator-diagnostics">
+    <unit id="core.diagnostics.title"><segment><source>Diagnostics</source><target>诊断</target></segment></unit>
+    <unit id="core.diagnostics.description"><segment><source>Inspect contention, queues, query costs and retention.</source><target>检查锁争用、队列、查询成本和保留情况。</target></segment></unit>
+    <unit id="core.diagnostics.contention"><segment><source>Contention</source><target>锁争用</target></segment></unit>
+    <unit id="core.diagnostics.queues"><segment><source>Queues</source><target>队列</target></segment></unit>
+    <unit id="core.diagnostics.slow"><segment><source>Slow queries</source><target>慢查询</target></segment></unit>
+    <unit id="core.diagnostics.backlog"><segment><source>Backlog</source><target>积压</target></segment></unit>
+    <unit id="core.diagnostics.retention"><segment><source>Retention</source><target>数据保留</target></segment></unit>
+    <unit id="core.diagnostics.bounds"><segment><source>Each statement is limited to {timeout} ms; each source returns at most {rows} rows.</source><target>每条语句限时 {timeout} 毫秒；每个来源最多返回 {rows} 行。</target></segment></unit>
+    <unit id="core.diagnostics.unavailable"><segment><source>This source is unavailable. Check database access and whether engine statistics are enabled.</source><target>此来源不可用。请检查数据库访问权限及是否已启用引擎统计。</target></segment></unit>
+    <unit id="core.diagnostics.budget_exceeded"><segment><source>The diagnostic exceeded its time or result budget. Narrow the workload or inspect the database directly.</source><target>诊断超出了时间或结果限制。请减少工作负载或直接检查数据库。</target></segment></unit>
+    <unit id="core.diagnostics.empty"><segment><source>No observations were found in this sample.</source><target>此样本中未发现观测结果。</target></segment></unit>
+    <unit id="core.diagnostics.sampled"><segment><source>Results are bounded samples. Queue counts are lower bounds; an unknown rate is not zero.</source><target>结果为有限样本。队列计数是下限；未知速率不等于零。</target></segment></unit>
+    <unit id="core.diagnostics.unknown"><segment><source>Unknown</source><target>未知</target></segment></unit>
+    <unit id="core.diagnostics.field.table_name"><segment><source>Table</source><target>表</target></segment></unit>
+    <unit id="core.diagnostics.field.lock_class"><segment><source>Lock class</source><target>锁类别</target></segment></unit>
+    <unit id="core.diagnostics.field.waiting"><segment><source>Waiting</source><target>等待数</target></segment></unit>
+    <unit id="core.diagnostics.field.source"><segment><source>Source</source><target>来源</target></segment></unit>
+    <unit id="core.diagnostics.field.stream"><segment><source>Stream</source><target>数据流</target></segment></unit>
+    <unit id="core.diagnostics.field.depth_lower_bound"><segment><source>Queue depth (at least)</source><target>队列深度（至少）</target></segment></unit>
+    <unit id="core.diagnostics.field.oldest_age_seconds"><segment><source>Oldest age (seconds)</source><target>最早记录已等待时间（秒）</target></segment></unit>
+    <unit id="core.diagnostics.field.definition"><segment><source>Definition</source><target>定义</target></segment></unit>
+    <unit id="core.diagnostics.field.policy_cost"><segment><source>Policy measurement</source><target>策略测量</target></segment></unit>
+    <unit id="core.diagnostics.field.calls"><segment><source>Calls</source><target>调用次数</target></segment></unit>
+    <unit id="core.diagnostics.field.mean_ms"><segment><source>Mean time (ms)</source><target>平均时间（毫秒）</target></segment></unit>
+    <unit id="core.diagnostics.field.total_ms"><segment><source>Total time (ms)</source><target>总时间（毫秒）</target></segment></unit>
+    <unit id="core.diagnostics.field.store"><segment><source>Ledger</source><target>记录库</target></segment></unit>
+    <unit id="core.diagnostics.field.backlog_rows"><segment><source>Backlog rows</source><target>积压行数</target></segment></unit>
+    <unit id="core.diagnostics.field.backlog_approximate"><segment><source>Approximate backlog</source><target>近似积压量</target></segment></unit>
+    <unit id="core.diagnostics.field.ingest_rows_per_second"><segment><source>Ingest (rows/second)</source><target>写入速率（行/秒）</target></segment></unit>
+    <unit id="core.diagnostics.field.sustained_drain_rows_per_second"><segment><source>Sustained drain (rows/second)</source><target>持续清理速率（行/秒）</target></segment></unit>
+    <unit id="core.diagnostics.field.net_growth_rows_per_second"><segment><source>Net growth (rows/second)</source><target>净增长速率（行/秒）</target></segment></unit>
+    <unit id="core.diagnostics.field.capacity_rows"><segment><source>Capacity (rows)</source><target>容量（行）</target></segment></unit>
+    <unit id="core.diagnostics.field.forecast_seconds_to_capacity"><segment><source>Forecast to capacity (seconds)</source><target>预计达到容量所需时间（秒）</target></segment></unit>
+    <unit id="core.diagnostics.field.configured"><segment><source>Configured</source><target>已配置</target></segment></unit>
+    <unit id="core.diagnostics.field.last_drain_at"><segment><source>Last drain</source><target>上次清理</target></segment></unit>
+    <unit id="core.diagnostics.field.expiry_rows_per_second"><segment><source>Expiry (rows/second)</source><target>到期速率（行/秒）</target></segment></unit>
+    <unit id="core.diagnostics.policy_cost_included"><segment><source>Included in query cost</source><target>包含在查询成本中</target></segment></unit>
+  </file>
 </xliff>

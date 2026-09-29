@@ -228,6 +228,7 @@ async function save(
   page: Page,
   outcome: 'save-item' | 'save-as-new-type' | 'save-new-type-version',
   expectedConsequences: readonly string[] = [],
+  retainsEntryDraft = false,
 ): Promise<void> {
   const status = page.locator('[data-studio-launch-status]');
   const accepted = page.waitForResponse((response) => response.url().endsWith(`/administrator/studio/ports/authoring/${outcome}`));
@@ -244,7 +245,7 @@ async function save(
   }
   expect((await accepted).status(), `The host must accept ${outcome}.`).toBe(200);
   await expect(status).toHaveAttribute('data-studio-launch-state', 'saved', { timeout: 20_000 });
-  await expect(shellOf(page).locator('.dirty-summary')).toHaveAttribute('data-dirty', 'false');
+  await expect(shellOf(page).locator('.dirty-summary')).toHaveAttribute('data-dirty', String(retainsEntryDraft));
 }
 
 /** Insert one admitted block from the Blueprint palette by its exact type. */
@@ -274,8 +275,8 @@ async function rootTypes(shell: Locator): Promise<string[]> {
  *
  * STUDIO-PROD-001, 002, 003, 006, 007, 012 and 013: Content New opens Studio in place; the author starts
  * blank, defines a typed field through the explicit Model control, moves through every declared
- * presentation without losing unsaved work, saves the design as a new reusable type after confirming the
- * host's consequences, enters the item's values and saves the item, all without leaving the session.
+ * presentation without losing unsaved work, enters the item's values before saving the design as a new
+ * reusable type, then saves the retained item draft, all without leaving the session.
  */
 test('blank creation defines a typed field, saves a reusable type and saves its item in one session', async ({
   page,
@@ -314,13 +315,7 @@ test('blank creation defines a typed field, saves a reusable type and saves its 
   }
   await expect(shell.locator('li[data-field-path="summary"]')).toBeVisible();
 
-  await save(page, 'save-as-new-type', ['kumwe.app/new-content-type']);
-  const identity = await shell.locator('.contextual-identity p').innerText();
-  const modelId = /content-model:([0-9a-f-]{36})@/u.exec(identity)?.[1];
-  expect(modelId, 'The session must now name the accepted reusable type.').toBeDefined();
-  journey.modelId = modelId;
-  await expect(shell.locator('.contextual-workspace')).toHaveAttribute('data-start', 'blank');
-
+  // Reusable types exclude Entry values: the author may already have populated the draft when saving one.
   await mode(shell, 'content');
   journey.slug = `studio-journey-${Date.now().toString(36)}`;
   journey.summary = 'Composed in one contextual session.';
@@ -328,7 +323,21 @@ test('blank creation defines a typed field, saves a reusable type and saves its 
   await shell.getByRole('textbox', { name: 'Slug', exact: true }).fill(journey.slug);
   await shell.getByRole('textbox', { name: 'Summary', exact: true }).fill(journey.summary);
   await shell.getByRole('textbox', { name: 'Summary', exact: true }).press('Tab');
+  await shell.getByRole('button', { name: studio('presentation-maximized'), exact: true }).click();
+  await save(page, 'save-as-new-type', ['kumwe.app/new-content-type'], true);
+  const identity = await shell.locator('.contextual-identity p').innerText();
+  const modelId = /content-model:([0-9a-f-]{36})@/u.exec(identity)?.[1];
+  expect(modelId, 'The session must now name the accepted reusable type.').toBeDefined();
+  journey.modelId = modelId;
+  await expect(shell.locator('.contextual-workspace')).toHaveAttribute('data-start', 'blank');
+  await expect(shell.locator('.contextual-workspace')).toHaveAttribute('data-presentation', 'maximized');
+
+  await mode(shell, 'content');
+  await expect(shell.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue('Studio journey item');
+  await expect(shell.getByRole('textbox', { name: 'Slug', exact: true })).toHaveValue(journey.slug);
+  await expect(shell.getByRole('textbox', { name: 'Summary', exact: true })).toHaveValue(journey.summary);
   await save(page, 'save-item');
+  await expect(shell.locator('.contextual-workspace')).toHaveAttribute('data-presentation', 'maximized');
 
   // The accepted item's edit context is the return destination; returning needs no confirmation.
   await shell.locator('.contextual-return-button').click();
@@ -430,8 +439,8 @@ test('a layout change with an extension block saves an immutable successor type 
 
   // A core field block bound, through the explicit inspector control, to the type's typed field.
   await insertBlock(shell, 'core/field-text');
-  const binding = inspector.locator('select', { has: shell.page().locator('option[value=\'["data_summary"]\']') });
-  await binding.selectOption(JSON.stringify(['data_summary']));
+  const binding = inspector.locator('select', { has: shell.page().locator('option[value=\'["summary"]\']') });
+  await binding.selectOption(JSON.stringify(['summary']));
 
   // The admitted manifest-six extension block, configured through the same non-drag inspector control.
   await insertBlock(shell, EXTENSION_BLOCK);

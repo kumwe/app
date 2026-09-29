@@ -31,6 +31,13 @@ final class OpenApiContractCompilerTest extends TestCase
         /** @var array<string, mixed> $document */
         $document = json_decode($compiled->json, true, 64, JSON_THROW_ON_ERROR);
 
+        $diagnostics = $document['paths']['/api/v1/diagnostics']['get'];
+        self::assertSame('readOperatorDiagnostics', $diagnostics['operationId']);
+        self::assertSame(['system.diagnostics.read'], $diagnostics['x-kumwe-required-capabilities']);
+        self::assertSame(
+            ['contention', 'queues', 'slow', 'backlog', 'retention'],
+            $diagnostics['parameters'][0]['schema']['enum'],
+        );
         $path = $document['paths']['/api/v1/business/operations/{operation}'];
         self::assertSame('operation', $path['parameters'][0]['name']);
         self::assertSame(8, $path['parameters'][0]['schema']['minLength']);

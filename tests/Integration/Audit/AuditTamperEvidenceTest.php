@@ -14,14 +14,20 @@ use Kumwe\App\Application\Automation\Job\EnforceAuditRetentionHandler;
 use Kumwe\App\Application\Automation\Job\RecordAuditAnchorHandler;
 use Kumwe\App\Application\Automation\Job\VerifyAuditTrailHandler;
 use Kumwe\Audit\Application\AuditMetadataRedactor;
+use Kumwe\Audit\Application\AuditTrailExport;
+use Kumwe\Audit\Application\AuditTrailExporter;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Audit\Infrastructure\Persistence\AuditAppendOnlyGuard;
+use Kumwe\App\Audit\Infrastructure\Persistence\AuditRetentionGuard;
+use Kumwe\Audit\Domain\AuditAnchorDigest;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditAnchorWriter;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRetentionService;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditTrailExporter;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditTrailVerifier;
 use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditArchiveStorage;
+use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditArchiveVerifier;
+use Kumwe\App\Infrastructure\Persistence\Migration\AuditRetentionEvidenceMigration;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\App\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\CoreSchemaMigration;
@@ -41,6 +47,9 @@ use Ramsey\Uuid\Uuid;
 
 #[CoversClass(AuditTamperEvidenceMigration::class)]
 #[CoversClass(AuditAppendOnlyGuard::class)]
+#[CoversClass(AuditRetentionGuard::class)]
+#[CoversClass(AuditRetentionEvidenceMigration::class)]
+#[CoversClass(FilesystemAuditArchiveVerifier::class)]
 #[CoversClass(DoctrineAuditRecorder::class)]
 #[CoversClass(DoctrineAuditAnchorWriter::class)]
 #[CoversClass(DoctrineAuditTrailVerifier::class)]
@@ -85,12 +94,20 @@ final class AuditTamperEvidenceTest extends TestCase
         (new InstallationGlobalAutomationMigration($this->tables))->up($this->database);
         $migration = new AuditTamperEvidenceMigration($this->tables, $this->encoder);
         $migration->up($this->database);
+        (new AuditRetentionEvidenceMigration($this->tables))->up($this->database);
+        (new AuditRetentionEvidenceMigration($this->tables))->up($this->database);
         // The migration declares itself repeatable, so a replayed attempt must be a no-op.
         $migration->up($this->database);
     }
 
     protected function tearDown(): void
     {
+        foreach (glob($this->archiveRoot . '/retention-proofs/*') ?: [] as $file) {
+            unlink($file);
+        }
+        if (is_dir($this->archiveRoot . '/retention-proofs')) {
+            rmdir($this->archiveRoot . '/retention-proofs');
+        }
         foreach (glob($this->archiveRoot . '/*') ?: [] as $file) {
             unlink($file);
         }
@@ -118,6 +135,196 @@ final class AuditTamperEvidenceTest extends TestCase
         self::assertTrue($report->intact());
         self::assertSame(5, $report->eventsVerified);
         self::assertSame(5, $report->headPosition);
+    }
+
+    /**
+     * Refuses complete erasure and an unsealed-tail deletion even with the retention session flag open.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRetentionFlagCannotEraseUnsealedEvidence(): void
+    {
+        $this->record(2);
+        try {
+            $this->database->transactional(fn (): mixed => AuditAppendOnlyGuard::withPruneAllowed(
+                $this->database,
+                $this->tables,
+                fn (): int|string => $this->database->executeStatement(
+                    'DELETE FROM ' . $this->tables->quoted('audit_events'),
+                ),
+            ));
+            self::fail('A runtime deletion must leave immutable, externally verifiable retention evidence.');
+        } catch (\Doctrine\DBAL\Exception) {
+            self::assertSame(2, (int) $this->database->fetchOne(
+                'SELECT COUNT(*) FROM ' . $this->tables->quoted('audit_events'),
+            ));
+        }
+        self::assertTrue($this->verifier()->verify($this->context())->guarded());
+    }
+
+    /**
+     * A correctly hashed forged prune cannot hide deletion or remove the immutable claim that exposes it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testForgedPruneCannotHideEvidenceErasure(): void
+    {
+        $this->record(3);
+        $this->clock->advance('+2 hours');
+        $this->anchorWriter()->anchor($this->context());
+        $anchor = $this->database->fetchAssociative(
+            'SELECT * FROM ' . $this->tables->quoted('audit_anchors') . ' WHERE sequence = 1',
+        );
+        self::assertNotFalse($anchor);
+        $rolling = (string) $anchor['rolling_digest'];
+        $previous = (string) $anchor['digest'];
+        $checksum = str_repeat('0', 64);
+        $at = '2026-08-13 12:00:00';
+        $this->database->insert($this->tables->raw('audit_anchors'), [
+            'id' => Uuid::uuid7()->toString(),
+            'sequence' => 2,
+            'kind' => 'prune',
+            'from_position' => 1,
+            'to_position' => 3,
+            'row_count' => 3,
+            'rolling_digest' => $rolling,
+            'previous_digest' => $previous,
+            'digest' => AuditAnchorDigest::compute(
+                2,
+                'prune',
+                1,
+                3,
+                3,
+                $rolling,
+                $previous,
+                $checksum,
+                $at,
+                $this->encoder,
+            ),
+            'archive_sha256' => $checksum,
+            'created_at' => $at,
+        ]);
+        $this->database->transactional(fn (): mixed => AuditAppendOnlyGuard::withPruneAllowed(
+            $this->database,
+            $this->tables,
+            fn (): int|string => $this->database->executeStatement(
+                'DELETE FROM ' . $this->tables->quoted('audit_events') . ' WHERE position <= 3',
+            ),
+        ));
+        self::assertSame(
+            'anchor.prune.evidence.unavailable',
+            $this->verifier()->verify($this->context())->firstDivergence?->code,
+        );
+        foreach (['DELETE FROM %s', "UPDATE %s SET archive_sha256 = 'changed'"] as $statement) {
+            try {
+                $this->database->executeStatement(sprintf($statement, $this->tables->quoted('audit_anchors')));
+                self::fail('The database principal must not erase or rewrite anchor and prune claims.');
+            } catch (\Doctrine\DBAL\Exception) {
+                self::assertSame(2, (int) $this->database->fetchOne(
+                    'SELECT COUNT(*) FROM ' . $this->tables->quoted('audit_anchors'),
+                ));
+            }
+        }
+        self::assertFalse($this->verifier()->verify($this->context())->intact());
+    }
+
+    /**
+     * Honest retention remains verifiable only while its exact private receipt and archive are available.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRetainedEvidenceCannotDisappearOrChangeSilently(): void
+    {
+        $this->record(3);
+        $this->clock->advance('+40 days');
+        $this->anchorWriter()->anchor($this->context());
+        $retained = $this->retention()->prune($this->context(), 30);
+        self::assertTrue($this->verifier()->verify($this->context())->guarded());
+        $path = $this->archiveRoot . '/' . $retained->archiveKey;
+        $original = file_get_contents($path);
+        self::assertIsString($original);
+        file_put_contents($path, $original . "changed\n");
+        self::assertSame(
+            'anchor.prune.evidence.unavailable',
+            $this->verifier()->verify($this->context())->firstDivergence?->code,
+        );
+        file_put_contents($path, $original);
+        self::assertTrue($this->verifier()->verify($this->context())->guarded());
+        unlink($path);
+        self::assertFalse($this->verifier()->verify($this->context())->intact());
+        file_put_contents($path, $original);
+        foreach (glob($this->archiveRoot . '/retention-proofs/*') ?: [] as $receipt) {
+            unlink($receipt);
+        }
+        self::assertTrue(
+            $this->verifier()->verify($this->context())->guarded(),
+            'Historical retention remains valid when exact archived events reproduce the original sealed ranges.',
+        );
+        unlink($path);
+        self::assertFalse($this->verifier()->verify($this->context())->intact());
+    }
+
+    /**
+     * Refuses a new row inserted into a sealed gap between preflight verification and archive creation.
+     *
+     * The exporter callback deterministically models the READ COMMITTED interleaving while all archive,
+     * retention and verification behavior uses the production implementations.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRetentionCannotLaunderAnInsertionAfterPreflightVerification(): void
+    {
+        $this->record(3);
+        AuditTamperHarness::disableGuards($this->database, $this->tables);
+        foreach ([[4, 3], [3, 2]] as [$to, $from]) {
+            $this->database->executeStatement(
+                'UPDATE ' . $this->tables->quoted('audit_events') . ' SET position = ? WHERE position = ?',
+                [$to, $from],
+            );
+        }
+        AuditTamperHarness::enableGuards($this->database, $this->tables);
+        $this->clock->advance('+40 days');
+        $this->anchorWriter()->anchor($this->context());
+        self::assertTrue($this->verifier()->verify($this->context())->guarded());
+        $realExporter = $this->exporter();
+        $exporter = $this->createMock(AuditTrailExporter::class);
+        $exporter->expects(self::once())->method('export')->willReturnCallback(function (
+            ExecutionContext $context,
+            ?int $from,
+            ?int $to,
+        ) use ($realExporter): AuditTrailExport {
+            $row = $this->database->fetchAssociative(
+                'SELECT * FROM ' . $this->tables->quoted('audit_events') . ' WHERE position = 1',
+            );
+            self::assertNotFalse($row);
+            $row['id'] = Uuid::uuid7()->toString();
+            $row['position'] = 2;
+            $row['digest'] = str_repeat('0', 64);
+            $this->database->insert($this->tables->raw('audit_events'), $row);
+
+            return $realExporter->export($context, $from, $to);
+        });
+        try {
+            $this->retention($exporter)->prune($this->context(), 30);
+            self::fail('A newly computed prune fold must not replace the original sealed evidence.');
+        } catch (\RuntimeException $exception) {
+            self::assertStringContainsString('original immutable anchors', $exception->getMessage());
+        }
+        self::assertSame(3, (int) $this->database->fetchOne(
+            'SELECT COUNT(*) FROM ' . $this->tables->quoted('audit_events') . ' WHERE position <= 4',
+        ));
+        self::assertSame(0, (int) $this->database->fetchOne(
+            'SELECT COUNT(*) FROM ' . $this->tables->quoted('audit_anchors') . " WHERE kind = 'prune'",
+        ));
+        self::assertTrue($this->verifier()->verify($this->context())->guarded());
     }
 
     public function testTheDatabaseRefusesUpdatesAndUnguardedDeletes(): void
@@ -208,6 +415,7 @@ final class AuditTamperEvidenceTest extends TestCase
         $this->record(4);
         $this->clock->advance('+2 hours');
         $this->anchorWriter()->anchor($this->context());
+        AuditTamperHarness::disableGuards($this->database, $this->tables);
         $this->database->insert($this->tables->raw('audit_events'), [
             'id' => Uuid::uuid7()->toString(),
             'occurred_at' => '2026-08-13 09:00:00',
@@ -237,6 +445,7 @@ final class AuditTamperEvidenceTest extends TestCase
         $this->record(3);
         $this->clock->advance('+2 hours');
         $this->anchorWriter()->anchor($this->context());
+        AuditTamperHarness::disableGuards($this->database, $this->tables);
         $this->database->executeStatement(sprintf(
             'UPDATE %s SET row_count = row_count - 1 WHERE sequence = 1',
             $this->tables->quoted('audit_anchors'),
@@ -501,6 +710,7 @@ final class AuditTamperEvidenceTest extends TestCase
             $this->tables,
             new AllowingAuditAuthorization(),
             $this->encoder,
+            new FilesystemAuditArchiveVerifier($this->archiveRoot),
         );
     }
 
@@ -530,17 +740,19 @@ final class AuditTamperEvidenceTest extends TestCase
         );
     }
 
-    private function retention(): DoctrineAuditRetentionService
+    private function retention(?AuditTrailExporter $exporter = null): DoctrineAuditRetentionService
     {
         return new DoctrineAuditRetentionService(
             $this->database,
             $this->tables,
             $this->transactions,
-            $this->exporter(),
+            $exporter ?? $this->exporter(),
             $this->recorder,
             $this->clock,
             new AllowingAuditAuthorization(),
             $this->encoder,
+            new FilesystemAuditArchiveVerifier($this->archiveRoot),
+            $this->verifier(),
         );
     }
 

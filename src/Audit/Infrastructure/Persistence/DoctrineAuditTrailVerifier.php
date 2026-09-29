@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Audit\Infrastructure\Persistence;
 
+use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditArchiveVerifier;
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
 use Kumwe\Access\AuthorizationGateway;
@@ -42,8 +43,8 @@ use Throwable;
  * answer in the report. The question is put to the catalog on each run rather than read from anything
  * the migration recorded, so the report stays true after a dump is restored onto a server that never
  * accepted the triggers, after a DBA grants the privilege that was missing, and after someone drops
- * them. Enforcement is prevention and this walk is detection; a report that only said "intact" would let
- * an installation with no prevention at all look exactly like one that has it.
+ * them. Missing event or ledger guards prevent an intact verdict even for an empty trail. Every prune
+ * must also reproduce its protected archive evidence; database hashes alone cannot authorize erasure.
  *
  * @since  2.0.0
  */
@@ -64,10 +65,11 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
     /**
      * Bind the verifier to its connection, table map, authorization gateway and canonical encoder.
      *
-     * @param  Connection            $database       Connection the audit tables live on.
-     * @param  TableNames            $tables         Resolver for prefixed physical table names.
-     * @param  AuthorizationGateway  $authorization  Decides whether the caller may verify the trail.
-     * @param  CanonicalEncoder      $encoder        Host-bound encoder every stored digest is recomputed with.
+     * @param  Connection                       $database       Connection the audit tables live on.
+     * @param  TableNames                       $tables         Resolver for prefixed physical table names.
+     * @param  AuthorizationGateway             $authorization  Decides whether the caller may verify the trail.
+     * @param CanonicalEncoder $encoder Host-bound encoder every stored digest is recomputed with.
+     * @param  ?FilesystemAuditArchiveVerifier  $archives       Private evidence required for every prune claim.
      *
      * @since  2.0.0
      */
@@ -76,6 +78,7 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
         private TableNames $tables,
         private AuthorizationGateway $authorization,
         private CanonicalEncoder $encoder,
+        private ?FilesystemAuditArchiveVerifier $archives = null,
     ) {
     }
 
@@ -108,7 +111,9 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
             'SELECT MAX(position) FROM %s',
             $this->tables->quoted('audit_events'),
         )), 'trail head position') ?? 0;
-        $enforcement = AuditAppendOnlyGuard::state($this->database, $this->tables);
+        $enforcement = AuditAppendOnlyGuard::installed($this->database, $this->tables)
+            && AuditRetentionGuard::installed($this->database, $this->tables)
+            ? AuditEnforcementState::Active : AuditEnforcementState::NotInstalled;
         try {
             $ledger = AuditLedger::all($this->database, $this->tables);
         } catch (RuntimeException $exception) {
@@ -133,7 +138,22 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
             return new AuditVerificationReport(0, count($ledger), $head, $enforcement, $rangeFinding);
         }
 
-        return $this->walk($ledger, $prunedThrough, $head, $batchSize, $enforcement);
+        $report = $this->walk($ledger, $prunedThrough, $head, $batchSize, $enforcement);
+        if ($report->intact() && !$enforcement->installed()) {
+            return new AuditVerificationReport(
+                $report->eventsVerified,
+                $report->anchorsVerified,
+                $head,
+                $enforcement,
+                new AuditVerificationFinding(
+                    'audit.enforcement.unavailable',
+                    0,
+                    'Required immutable ledger and audit deletion guards are unavailable; continuity cannot be proven.',
+                ),
+            );
+        }
+
+        return $report;
     }
 
     /**
@@ -209,8 +229,27 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
                     $entry->id,
                 );
             }
+            if ($entry->kind === 'prune') {
+                try {
+                    if ($this->archives === null) {
+                        throw new RuntimeException('The protected audit archive verifier is unavailable.');
+                    }
+                    $this->archives->assertPruned($entry, array_values(array_filter(
+                        $sealed,
+                        static fn (AuditLedgerEntry $anchor): bool => $anchor->fromPosition >= $entry->fromPosition
+                            && $anchor->toPosition <= $entry->toPosition,
+                    )));
+                } catch (RuntimeException $exception) {
+                    return new AuditVerificationFinding(
+                        'anchor.prune.evidence.unavailable',
+                        $entry->fromPosition,
+                        $exception->getMessage(),
+                        $entry->id,
+                    );
+                }
+            }
             if ($entry->kind === 'anchor') {
-                $sealed[$entry->toPosition] = true;
+                $sealed[$entry->toPosition] = $entry;
             }
             $previousDigest = $entry->digest;
             $expected[$entry->kind] = $entry->toPosition + 1;

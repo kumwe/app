@@ -10,10 +10,8 @@ use Kumwe\App\Kernel\Container;
 use Kumwe\App\Kernel\NativeComputationFactory;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CanonicalJson\CanonicalEncoder;
-use Kumwe\CanonicalJson\Limits;
 use Kumwe\Computation\NativeAdapter;
 use Kumwe\Computation\NativeAdapterFactory;
-use Kumwe\Computation\NativeCanonicalEncoderFactory;
 use Kumwe\Computation\NativeCompatibility;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
@@ -26,9 +24,8 @@ use RuntimeException;
  * are bound to the admitted `ext-kumwe_engine` build exactly as `NativeComputationFactoryTest` is. This
  * support class boots `NativeComputationFactory::register()` on an empty container from the process
  * environment and hands out the shared services; without the extension it fails closed, which is the
- * documented sandbox outcome rather than a fallback. A test that must hold plans of its own, or encode under
- * budgets other than the container's, takes an isolated package service over its own runtime so the shared
- * plan pool stays untouched.
+ * documented sandbox outcome rather than a fallback. Tests that hold plans of their own take an isolated
+ * package adapter so the shared plan pool stays untouched.
  *
  * @since  2.0.0
  */
@@ -117,57 +114,39 @@ final class NativeComputationContainer
      */
     public static function isolatedAdapter(): NativeAdapter
     {
-        return (new NativeAdapterFactory())(self::psr(null));
+        return (new NativeAdapterFactory())(self::psr());
     }
 
     /**
-     * A package encoder over a runtime of its own, honouring the given canonical budgets.
+     * The minimal PSR-11 container the package adapter factory reads the tuple from.
      *
-     * @param   Limits  $limits  Budgets the encoder enforces instead of the profile defaults.
-     *
-     * @return  CanonicalEncoder  Freshly built encoder admitted against the same tuple.
+     * @return  ContainerInterface  Container answering only for the admitted tuple.
      *
      * @since   2.0.0
      */
-    public static function boundedEncoder(Limits $limits): CanonicalEncoder
+    private static function psr(): ContainerInterface
     {
-        return (new NativeCanonicalEncoderFactory())(self::psr($limits));
-    }
-
-    /**
-     * The minimal PSR-11 container the package factories read the tuple and optional budgets from.
-     *
-     * @param   ?Limits  $limits  Budgets to expose, or null to leave the profile defaults in force.
-     *
-     * @return  ContainerInterface  Container answering only for the tuple and the budgets.
-     *
-     * @since   2.0.0
-     */
-    private static function psr(?Limits $limits): ContainerInterface
-    {
-        return new class (self::compatibility(), $limits) implements ContainerInterface {
+        return new class (self::compatibility()) implements ContainerInterface {
             /**
-             * Hold the tuple and the optional budgets the package factories read.
+             * Hold the tuple the package adapter factory reads.
              *
              * @param   NativeCompatibility  $compatibility  Admitted tuple.
-             * @param   ?Limits              $limits         Budgets, when the caller supplies them.
              *
              * @since   2.0.0
              */
             public function __construct(
                 private readonly NativeCompatibility $compatibility,
-                private readonly ?Limits $limits,
             ) {
             }
 
             /**
-             * Resolve the tuple or the budgets.
+             * Resolve the admitted tuple.
              *
              * @param   string  $id  Requested service.
              *
-             * @return  mixed  The tuple or the budgets.
+             * @return  mixed  The admitted tuple.
              *
-             * @throws  RuntimeException  When the service is not one of the two.
+             * @throws  RuntimeException  When the requested service is not the tuple.
              *
              * @since   2.0.0
              */
@@ -175,9 +154,6 @@ final class NativeComputationContainer
             {
                 if ($id === NativeCompatibility::class) {
                     return $this->compatibility;
-                }
-                if ($id === Limits::class && $this->limits !== null) {
-                    return $this->limits;
                 }
 
                 throw new RuntimeException('The native computation fixture container does not supply ' . $id . '.');
@@ -194,7 +170,7 @@ final class NativeComputationContainer
              */
             public function has(string $id): bool
             {
-                return $id === NativeCompatibility::class || ($id === Limits::class && $this->limits !== null);
+                return $id === NativeCompatibility::class;
             }
         };
     }

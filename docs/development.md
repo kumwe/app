@@ -31,81 +31,34 @@ page and menu item to prove customization preservation. For VDM, prove an untouc
 customized definition is refused, new manifest operations may be appended, and changed or removed applied operations
 and policies fail closed.
 
-## The quality contract
+## Checks and feedback
 
-[`docs/quality/contract.json`](quality/contract.json) is the single definition of every check this
-repository runs and of the lane — local, merge, nightly, release — each one runs in. Each entry names its
-owner, its purpose, the artifact it produces, its cadence and the workflow and job that carries it. Read it
-rather than reading four workflows and inferring the union.
+Use `composer qa` for the normal PHP checks, and focused PHPUnit/browser cases while implementing.
+The Composer scripts and workflow files show the executable commands. Historical inventories and
+coverage percentages are not merge gates.
 
-`composer qa` is still the entry point a contributor uses, and it no longer restates the list: `composer
-quality:contract` fails when a check declared for the local lane is missing from `qa`, when `qa` runs a
-check the contract does not declare, when a check names a workflow or job that does not exist, or when the
-job declared to carry a command no longer contains it. Nightly and release execute manifest-owned checks
-through `php tools/quality-contract.php --run --cadence=nightly|release`; a check with an explicit binding
-for that lane is delegated to the named provisioned job and is not run a second time by the generic process.
-Adding a gate therefore means adding it to the contract and assigning any special runtime requirements to
-the workflow job that provides them; the build says so if the two drift.
+Ordinary code changes run static/semantic checks and unit tests once, host integration and functional
+tests on the three supported databases in parallel, and desktop/mobile Chromium on MariaDB. Changes
+that only edit prose do not boot runtime matrices. Obsolete runs are cancelled when a new commit arrives.
 
-```bash
-composer quality:contract                                # the contract matches what is executed
-php tools/quality-contract.php --run --cadence=nightly   # execute one lane end to end
-```
+Scheduled/manual qualification runs the wider locale/browser matrix, repeat and reverse-order database
+checks, recovery and deployment acceptance. Packaging, recovery and performance changes also select their
+relevant bounded checks. Release verification still checks the exact artifact identities and signatures.
 
-Individual checks:
+`composer test:database` runs integration and functional suites. `composer test:idempotency` is available
+for changes affecting restart/replay behavior; it is not a requirement for an unrelated UI edit.
+`composer test:artifact` checks packaging, autoloading, archive and key-material behavior.
 
-```bash
-composer architecture:policy      # textual predicates and the semantic dependency graph
-composer architecture:dependencies
-composer quality:contract
-composer coverage:attribution
-composer docs:api
-composer openapi:check
-composer translation:check
-composer translation:strings
-composer translation:quality
-composer assets:direction
-composer cs
-composer analyse
-composer test:unit
-composer test:integration
-composer test:idempotency -- --engine=mariadb
-composer test:artifact
-composer security:audit
-composer security:secrets
-npm run test:browser
-```
+Package repositories own reusable algorithm, value and schema tests. App tests prove its wiring,
+authorization, persistence, delivery and extension lifecycle. Do not copy a package corpus or assert
+source strings when an existing behavioral test already covers the host result.
+`npm run check` verifies App schemas, assets, localization and exact Studio dependency wiring; its release check
+already verifies the materialized Studio catalog. Full upstream corpus replay remains available explicitly as
+`npm run check:studio-corpus` when investigating a dependency upgrade.
 
-`composer architecture:policy` now evaluates every dependency edge in `src/` against the layer graph in
-[`docs/architecture/layers.json`](architecture/layers.json), not only the four textual predicates it used to
-run. Edges that already pointed the wrong way are recorded in
-[`docs/architecture/dependency-baseline.json`](architecture/dependency-baseline.json) with an owner, the
-finding that removes them and an expiry. The baseline only ever shrinks: a new violation fails immediately,
-an entry that no longer violates fails as stale so it has to be deleted, and an entry past its expiry fails
-outright.
-
-`composer test:idempotency` runs the integration suite again against the database the previous run left
-behind and judges the result against
-[`docs/quality/idempotency-baseline.json`](quality/idempotency-baseline.json). The formerly recorded six
-second-pass failures have been removed and the baseline is empty. CI now appends both declared passes to the
-ordinary integration run: `repeat` reuses the database in declaration order, then `reverse` lists the same
-integration classes in reverse while preserving the methods' declaration order. This proves three consecutive
-runs against one database on MariaDB, MySQL and PostgreSQL. Any new failure, stale exemption or expired entry
-fails the gate. Run it after any change to a test that installs a definition, contribution or extension.
-
-`composer test:artifact` is the deployed-artifact lane. It builds the released selection, installs it with
-`--no-dev` and an authoritative classmap, seals the tree, and runs the regression cases in
-[`docs/quality/deployed-artifact-cases.json`](quality/deployed-artifact-cases.json) inside it — the four
-defects the last programme found only in production deployment acceptance. It needs no database and no
-containers, so run it locally before you push anything that touches packaging, autoloading, archive reading
-or key material.
-
-`composer security:secrets` is the same pinned gitleaks scan the security workflow runs, and it reads
-the branch's history rather than its working tree: a secret-shaped literal introduced by an earlier
-commit still fails after a later commit changes it, so fixing one means rewriting the commit that
-introduced it. It requires a Docker daemon and fails loudly without one, which is why it is not part of
-`composer qa` — that suite is documented above as running inside the application container, where no
-daemon is available.
+`composer architecture:policy` checks dependency direction. `composer security:audit` checks locked
+dependencies; `composer security:secrets` checks repository history. The latter needs Docker locally.
+Optional documentation/report generators remain editing aids, not a second definition of readiness.
 
 For a change that touches a template, a stylesheet or a user-facing string, recompile the message
 catalogues and re-run the translation gates. `composer translation:compile` rewrites
@@ -181,36 +134,17 @@ they run before `composer install` and inside minimal images.
 
 ## Test ownership
 
-- Add focused unit tests for every Kumwe-owned class with meaningful branching or invariants.
-- Test repositories, migrations, transaction boundaries, locks, queues, and concurrency against real database services rather than database mocks.
-- Test administrator and API authorization both positively and negatively for every capability.
-- Test content, navigation, settings, identity, and extensions through their shared application services and through the relevant delivery surfaces.
-- Test extension archives with traversal, links, duplicate paths, expansion limits, invalid manifests, compatibility failures, unknown keys, bad signatures, migration failures, and interrupted activation.
-- Test worker retries, permanent failure classification, lease expiry, duplicate schedule occurrences, and restart behavior.
+Add a focused regression when a changed behavior needs protection. Keep real-database tests for
+transactions, locking, migrations, retries and recovery, and positive/negative authorization tests at
+the shared application boundary. Existing user journeys should cover the visible result.
 
-Coverage is a missing-test signal, not the release decision. New code must keep the configured floor, while
-security policies and state transitions require explicit behavior and mutation-resistant assertions.
-
-What "the configured floor" means is in [`docs/quality/coverage-contract.json`](quality/coverage-contract.json),
-and `composer coverage:attribution` and `composer coverage:ratchet` execute it. Three things are worth knowing
-before you write a test:
-
-- **The canonical measurement is MariaDB.** It is the primary engine, and measuring anywhere else attributes
-  one engine's driver branches and calls the result the product's coverage.
-- **A behavioural test attributes what it exercises.** `#[CoversNothing]` is allowed on tests whose subject is
-  not a class under `src/` — architecture and source-shape tests, template renders, shipped schemas — and on
-  the behavioural tests that already carried it when the gate was switched on. That second list carries an
-  owner and an expiry, only ever shrinks, and a new behavioural test cannot join it.
-- **The ratchet judges your change, not the average.** At least 90% of the executable lines a change adds or
-  edits under `src/` must be covered, and the global figure may not fall by more than a quarter of a point.
-  The branch floor `pcov` could never measure has been replaced by one it can: at least 80% of the refusal
-  lines — executable `throw` lines — a change adds or edits under Domain and Application logic must have
-  been executed, because a covered `throw` line is line-level proof the refusing branch was actually taken.
-  The contract entry records what it replaced and why, so the gate never looks stronger than it is.
+Packages own their reusable behavior; App owns host integration. Remove duplicate package cases rather
+than maintaining two copies. Do not require a test for each trivial member or a source-code fingerprint.
+Coverage reports help find gaps; they do not impose a percentage or attribution paperwork.
 
 ## Full deployment contract
 
-Pull-request CI must do more than run PHPUnit. For each supported database it:
+Scheduled and release qualification exercises the deployed product on each supported database:
 
 1. builds the PHP 8.5 application and production web images from locked dependencies;
 2. starts a clean database and Redis service;
@@ -251,5 +185,5 @@ Backup/restore tooling must be exercised for every supported database engine. Si
   the reason beside it, never a path or a rule.
 - Update OpenAPI and task documentation with behavior changes.
 - Update the [architecture guide](architecture/README.md) only when an invariant or stable interface changes; do not add temporary progress notes.
-- Run the narrowest test while developing, then the complete local quality suite and at least the default MariaDB deployment.
+- Run the focused tests while developing, then the normal checks and any additional lane relevant to the change.
 - Include the risk, migration, compatibility, and recovery implications in the pull-request description.

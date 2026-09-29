@@ -7,16 +7,46 @@ name: Observability drills
 
 on:
   pull_request:
+    paths:
+      - '.github/workflows/observability.yml'
+      - 'config/observability.php'
+      - 'deploy/observability/**'
+      - 'src/Infrastructure/Observability/**'
+      - 'src/Infrastructure/Automation/**'
+      - 'src/Application/Automation/**'
+      - 'src/BusinessIntegration/**'
+      - 'src/BusinessReporting/**'
+      - 'tools/*alert*'
+      - 'tools/synthetic-probe.php'
+      - 'tests/Integration/Infrastructure/*Observability*'
+      - 'tests/Unit/Observability/**'
+      - 'composer.lock'
   push:
     branches: [master]
+    paths:
+      - '.github/workflows/observability.yml'
+      - 'config/observability.php'
+      - 'deploy/observability/**'
+      - 'src/Infrastructure/Observability/**'
+      - 'src/Infrastructure/Automation/**'
+      - 'src/Application/Automation/**'
+      - 'src/BusinessIntegration/**'
+      - 'src/BusinessReporting/**'
+      - 'tools/*alert*'
+      - 'tools/synthetic-probe.php'
+      - 'tests/Integration/Infrastructure/*Observability*'
+      - 'tests/Unit/Observability/**'
+      - 'composer.lock'
   merge_group:
+  schedule:
+    - cron: '37 2 * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: observability-${{ github.workflow }}-${{ github.ref }}
+  group: observability-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:

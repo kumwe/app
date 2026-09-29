@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Architecture;
 
-use DateTimeImmutable;
-use Kumwe\Record\Model\BusinessRecordReplayWindow;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -21,10 +19,8 @@ use SplFileInfo;
  * `Kumwe\Record\Value\ClientAssertedInstant`, whose grammar, UTC normalisation and range refusals
  * kumwe/record-values proves; what App owns, and what is pinned here, is the boundary around it: which paths
  * may carry the claim, that no path deciding ordering, expiry, period assignment or numbering can read it,
- * and that the replay horizon runs from the server's own instant. The replay window itself is
- * `Kumwe\Record\Model\BusinessRecordReplayWindow`, owned by kumwe/record-model, so the deciding paths listed
- * here are the App-owned ones; the horizon assertion constructs the package window and measures it from
- * the server's claim instant.
+ * and that the deciding paths use server-owned time. Replay-window arithmetic is covered by
+ * kumwe/record-model's own tests.
  *
  * @since  2.0.0
  */
@@ -116,30 +112,6 @@ final class ClientAssertedInstantBoundaryTest extends TestCase
             $carriers,
             $naming,
             'A client-asserted instant reached code that is not declared as one of its carriers.',
-        );
-    }
-
-    /**
-     * The replay horizon runs from the server's claim instant, so a client cannot lengthen its own window.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testTheReplayHorizonIsMeasuredFromTheServersOwnInstant(): void
-    {
-        $window = new BusinessRecordReplayWindow(
-            BusinessRecordReplayWindow::MINIMUM_REPLAY_SECONDS,
-            BusinessRecordReplayWindow::MINIMUM_REPLAY_SECONDS * 2,
-        );
-        $claimedAt = new DateTimeImmutable('2026-08-14T00:00:00+00:00');
-
-        self::assertTrue($window->admitsReplay($claimedAt, new DateTimeImmutable('2026-08-14T00:59:59+00:00')));
-        self::assertFalse($window->admitsReplay($claimedAt, new DateTimeImmutable('2026-08-14T01:00:00+00:00')));
-        self::assertSame(
-            '2026-08-14T02:00:00+00:00',
-            $window->expiryFrom($claimedAt)->format('Y-m-d\TH:i:sP'),
-            'Retention must outlast replay so a late repeat meets a claim rather than an empty ledger.',
         );
     }
 }

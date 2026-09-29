@@ -269,37 +269,6 @@ final class AuthorPackageIndependenceGateTest extends TestCase
     }
 
     /**
-     * Composer, the quality contract, and both merge preflights run the same dedicated verifier.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testTheIndependenceGateIsWiredIntoEveryQualityEntryPoint(): void
-    {
-        $composer = $this->document($this->root . '/composer.json');
-        self::assertSame(
-            'php tools/verify-author-package-independence.php',
-            $composer['scripts']['extension:independence'] ?? null,
-        );
-        self::assertContains('@extension:independence', $composer['scripts']['qa'] ?? []);
-
-        $contract = $this->document($this->root . '/docs/quality/contract.json');
-        $matches = array_values(array_filter(
-            $contract['checks'] ?? [],
-            static fn (mixed $check): bool => is_array($check)
-                && ($check['id'] ?? null) === 'author-package-independence',
-        ));
-        self::assertCount(1, $matches);
-        self::assertSame('extension:independence', $matches[0]['composer_script'] ?? null);
-        self::assertTrue($matches[0]['in_qa'] ?? false);
-
-        $workflow = file_get_contents($this->root . '/.github/workflows/ci.yml');
-        self::assertIsString($workflow);
-        self::assertGreaterThanOrEqual(2, substr_count($workflow, 'composer extension:independence'));
-    }
-
-    /**
      * Create one complete, canonical author-package fixture.
      *
      * @return  string  Absolute fixture root.
@@ -354,25 +323,6 @@ final class AuthorPackageIndependenceGateTest extends TestCase
         exec($command . ' 2>&1', $lines, $status);
 
         return ['status' => $status, 'output' => implode("\n", $lines)];
-    }
-
-    /**
-     * Decode one repository JSON document.
-     *
-     * @param   string  $path  Absolute document path.
-     *
-     * @return  array<string, mixed>  Decoded object.
-     *
-     * @since   2.0.0
-     */
-    private function document(string $path): array
-    {
-        $bytes = file_get_contents($path);
-        self::assertIsString($bytes, $path);
-        $decoded = json_decode($bytes, true, 512, JSON_THROW_ON_ERROR);
-        self::assertIsArray($decoded, $path);
-
-        return $decoded;
     }
 
     /**

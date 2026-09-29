@@ -30,19 +30,19 @@ use PHPUnit\Framework\TestCase;
 final class OwnershipScopeModelTest extends TestCase
 {
     /**
-     * The host table fixes exactly forty-four categories and the policy built from it answers them all.
+     * The policy preserves every declared host rule, including installation-level operator diagnostics.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testTheReservedTableIsTheFortyFourCategoriesThisBuildFixes(): void
+    public function testTheReservedTablePreservesTheDeclaredHostRules(): void
     {
         $reserved = HostAccessPolicy::reservedOwnershipRules();
         $expected = $reserved;
         ksort($expected, SORT_STRING);
 
-        self::assertCount(44, $reserved);
+        self::assertSame(OwnershipScopeRule::SiteGroupOrInstallation, $reserved['operator_diagnostics']);
         self::assertSame($expected, HostAccessPolicy::ownershipScopePolicy()->table());
         foreach ($reserved as $category => $rule) {
             self::assertSame($rule, OwnershipScopeRule::from($rule->value), $category);

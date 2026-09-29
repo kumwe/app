@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2592 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2629 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2059,6 +2059,43 @@ return [
     'core.console.user_create_admin.description' => 'Create an administrator from a protected password file.',
     'core.console.user_recover_credentials.description' => 'Break-glass: reset a password, retire second factors, or end sessions from the host.',
     'core.console.wording.description' => 'List, search, save or withdraw wording overrides.',
+    'core.diagnostics.backlog' => 'Backlog',
+    'core.diagnostics.bounds' => 'Each statement is limited to {timeout} ms; each source returns at most {rows} rows.',
+    'core.diagnostics.budget_exceeded' => 'The diagnostic exceeded its time or result budget. Narrow the workload or inspect the database directly.',
+    'core.diagnostics.contention' => 'Contention',
+    'core.diagnostics.description' => 'Inspect contention, queues, query costs and retention.',
+    'core.diagnostics.empty' => 'No observations were found in this sample.',
+    'core.diagnostics.field.backlog_approximate' => 'Approximate backlog',
+    'core.diagnostics.field.backlog_rows' => 'Backlog rows',
+    'core.diagnostics.field.calls' => 'Calls',
+    'core.diagnostics.field.capacity_rows' => 'Capacity (rows)',
+    'core.diagnostics.field.configured' => 'Configured',
+    'core.diagnostics.field.definition' => 'Definition',
+    'core.diagnostics.field.depth_lower_bound' => 'Queue depth (at least)',
+    'core.diagnostics.field.expiry_rows_per_second' => 'Expiry (rows/second)',
+    'core.diagnostics.field.forecast_seconds_to_capacity' => 'Forecast to capacity (seconds)',
+    'core.diagnostics.field.ingest_rows_per_second' => 'Ingest (rows/second)',
+    'core.diagnostics.field.last_drain_at' => 'Last drain',
+    'core.diagnostics.field.lock_class' => 'Lock class',
+    'core.diagnostics.field.mean_ms' => 'Mean time (ms)',
+    'core.diagnostics.field.net_growth_rows_per_second' => 'Net growth (rows/second)',
+    'core.diagnostics.field.oldest_age_seconds' => 'Oldest age (seconds)',
+    'core.diagnostics.field.policy_cost' => 'Policy measurement',
+    'core.diagnostics.field.source' => 'Source',
+    'core.diagnostics.field.store' => 'Ledger',
+    'core.diagnostics.field.stream' => 'Stream',
+    'core.diagnostics.field.sustained_drain_rows_per_second' => 'Sustained drain (rows/second)',
+    'core.diagnostics.field.table_name' => 'Table',
+    'core.diagnostics.field.total_ms' => 'Total time (ms)',
+    'core.diagnostics.field.waiting' => 'Waiting',
+    'core.diagnostics.policy_cost_included' => 'Included in query cost',
+    'core.diagnostics.queues' => 'Queues',
+    'core.diagnostics.retention' => 'Retention',
+    'core.diagnostics.sampled' => 'Results are bounded samples. Queue counts are lower bounds; an unknown rate is not zero.',
+    'core.diagnostics.slow' => 'Slow queries',
+    'core.diagnostics.title' => 'Diagnostics',
+    'core.diagnostics.unavailable' => 'This source is unavailable. Check database access and whether engine statistics are enabled.',
+    'core.diagnostics.unknown' => 'Unknown',
     'core.identity.password.change_refused' => 'Your password could not be changed. Check your current password and choose a different password with at least 12 characters.',
     'core.identity.password.confirmation_mismatch' => 'The new password and its confirmation do not match.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'Access-group defaults',

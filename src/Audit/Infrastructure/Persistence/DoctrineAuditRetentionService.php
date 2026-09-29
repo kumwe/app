@@ -17,6 +17,7 @@ use Kumwe\App\Audit\Application\AuditRetentionResult;
 use Kumwe\App\Audit\Application\AuditRetentionService;
 use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditArchiveVerifier;
 use Kumwe\Audit\Application\AuditTrailExporter;
+use Kumwe\Audit\Application\AuditTrailVerifier;
 use Kumwe\Audit\Domain\AuditAnchorDigest;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\Access\Capability;
@@ -40,11 +41,9 @@ use RuntimeException;
  * drives it simply does not call when retention is unconfigured, which is why an installation that never
  * sets a window keeps its trail forever.
  *
- * None of that order depends on the triggers actually being installed. On a server that refused them the
- * window `AuditAppendOnlyGuard::withPruneAllowed()` opens is a no-op, and every step that carries the
- * evidence — the archive, the checksum, the chained prune mark, the row count reconciliation — runs
- * exactly as it does on a guarded server. Retention is therefore correct in both postures, and the
- * post-delete count check still fails the pass closed if the range was not removed exactly.
+ * Immutable ledger guards and private archive receipts are required. DML-only database credentials cannot
+ * erase both the rows and their prune claims, or manufacture private evidence for a forged retention mark.
+ * A rollback can leave an unreferenced archive or receipt; it never authorizes deletion or hides a row.
  *
  * @since  2.0.0
  */
@@ -62,7 +61,8 @@ final readonly class DoctrineAuditRetentionService implements AuditRetentionServ
      * @param  AuthorizationGateway             $authorization  Decides whether the caller may manage the trail.
      * @param CanonicalEncoder $encoder Host-bound encoder every prune-mark digest is computed with.
      * @param  ?FilesystemAuditArchiveVerifier  $verifier       Re-reads the archive and refuses the prune unless it
-     *         is restorable; null only where an installation stores archives outside the private filesystem.
+     *         is restorable; absence refuses retention rather than trusting database-only claims.
+     * @param ?AuditTrailVerifier $trailVerifier Verifies sealed evidence before retention can preserve it.
      *
      * @since  2.0.0
      */
@@ -76,6 +76,7 @@ final readonly class DoctrineAuditRetentionService implements AuditRetentionServ
         private AuthorizationGateway $authorization,
         private CanonicalEncoder $encoder,
         private ?FilesystemAuditArchiveVerifier $verifier = null,
+        private ?AuditTrailVerifier $trailVerifier = null,
     ) {
     }
 
@@ -108,18 +109,51 @@ final readonly class DoctrineAuditRetentionService implements AuditRetentionServ
         $cutoff = $now->modify(sprintf('-%d days', $retentionDays));
 
         return $this->transactions->transactional(function () use ($context, $now, $cutoff): AuditRetentionResult {
+            if ($this->verifier === null || $this->trailVerifier === null) {
+                throw new RuntimeException('Audit retention requires a protected archive verifier.');
+            }
+            $report = $this->trailVerifier->verify($context);
+            if (!$report->guarded()) {
+                throw new RuntimeException('Audit retention requires an intact trail and its immutable guards.');
+            }
             $from = AuditLedger::boundary($this->database, $this->tables, 'prune') + 1;
             $to = $this->prunableThrough($cutoff);
             if ($to === null || $to < $from) {
                 return new AuditRetentionResult(0);
             }
             $export = $this->exporter->export($context, $from, $to);
-            $this->verifier?->assertRestorable($export->archive, $from, $to, $export->eventCount);
+            $this->verifier->assertRestorable($export->archive, $from, $to, $export->eventCount);
             [$count, $rolling] = $this->fold($from, $to);
             $tail = AuditLedger::tail($this->database, $this->tables);
             $sequence = ($tail->sequence ?? 0) + 1;
             $markId = Uuid::uuid7()->toString();
             $createdAt = $now->format('Y-m-d H:i:s');
+            $digest = AuditAnchorDigest::compute(
+                $sequence,
+                'prune',
+                $from,
+                $to,
+                $count,
+                $rolling,
+                $tail?->digest,
+                $export->archive->checksum,
+                $createdAt,
+                $this->encoder,
+            );
+            $this->verifier->recordPrune(
+                $markId,
+                $digest,
+                $export->archive,
+                $from,
+                $to,
+                $count,
+                $rolling,
+                array_values(array_filter(
+                    AuditLedger::all($this->database, $this->tables),
+                    static fn (AuditLedgerEntry $anchor): bool => $anchor->kind === 'anchor'
+                        && $anchor->fromPosition >= $from && $anchor->toPosition <= $to,
+                )),
+            );
             $this->database->insert($this->tables->raw('audit_anchors'), [
                 'id' => $markId,
                 'sequence' => $sequence,
@@ -129,18 +163,7 @@ final readonly class DoctrineAuditRetentionService implements AuditRetentionServ
                 'row_count' => $count,
                 'rolling_digest' => $rolling,
                 'previous_digest' => $tail?->digest,
-                'digest' => AuditAnchorDigest::compute(
-                    $sequence,
-                    'prune',
-                    $from,
-                    $to,
-                    $count,
-                    $rolling,
-                    $tail?->digest,
-                    $export->archive->checksum,
-                    $createdAt,
-                    $this->encoder,
-                ),
+                'digest' => $digest,
                 'archive_sha256' => $export->archive->checksum,
                 'created_at' => new DateTimeImmutable($createdAt),
             ], ['created_at' => Types::DATETIME_IMMUTABLE]);

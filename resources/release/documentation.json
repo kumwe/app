@@ -1,11 +1,7 @@
 {
   "kind": "kumwe-release-documentation",
   "version": "1.0.0",
-  "verification": [
-    "docs:api", "extension:contract", "extension:independence", "cli:contract", "mcp:contract",
-    "machine:parity", "studio:corpus", "studio:dependencies", "kumwe:capability-index-check",
-    "interface:programme", "observability:rules", "openapi:check"
-  ],
+  "verification": ["extension:independence","machine:parity","studio:dependencies","observability:rules","openapi:check"],
   "references": [
     {
       "id": "extension-manifest-spi-migration",

@@ -22771,4 +22771,43 @@
       </segment>
     </unit>
   </file>
+  <file id="core-operator-diagnostics">
+    <unit id="core.diagnostics.title"><segment><source>Diagnostics</source><target>Diagnóstico</target></segment></unit>
+    <unit id="core.diagnostics.description"><segment><source>Inspect contention, queues, query costs and retention.</source><target>Inspeccionar contención, colas, costes de consultas y retención.</target></segment></unit>
+    <unit id="core.diagnostics.contention"><segment><source>Contention</source><target>Contención</target></segment></unit>
+    <unit id="core.diagnostics.queues"><segment><source>Queues</source><target>Colas</target></segment></unit>
+    <unit id="core.diagnostics.slow"><segment><source>Slow queries</source><target>Consultas lentas</target></segment></unit>
+    <unit id="core.diagnostics.backlog"><segment><source>Backlog</source><target>Acumulación</target></segment></unit>
+    <unit id="core.diagnostics.retention"><segment><source>Retention</source><target>Retención</target></segment></unit>
+    <unit id="core.diagnostics.bounds"><segment><source>Each statement is limited to {timeout} ms; each source returns at most {rows} rows.</source><target>Cada instrucción está limitada a {timeout} ms; cada fuente devuelve como máximo {rows} filas.</target></segment></unit>
+    <unit id="core.diagnostics.unavailable"><segment><source>This source is unavailable. Check database access and whether engine statistics are enabled.</source><target>Esta fuente no está disponible. Compruebe el acceso a la base de datos y si las estadísticas están activadas.</target></segment></unit>
+    <unit id="core.diagnostics.budget_exceeded"><segment><source>The diagnostic exceeded its time or result budget. Narrow the workload or inspect the database directly.</source><target>El diagnóstico superó su límite de tiempo o resultados. Reduzca la carga o inspeccione directamente la base de datos.</target></segment></unit>
+    <unit id="core.diagnostics.empty"><segment><source>No observations were found in this sample.</source><target>No se encontraron observaciones en esta muestra.</target></segment></unit>
+    <unit id="core.diagnostics.sampled"><segment><source>Results are bounded samples. Queue counts are lower bounds; an unknown rate is not zero.</source><target>Los resultados son muestras limitadas. Los recuentos de colas son límites inferiores; una tasa desconocida no es cero.</target></segment></unit>
+    <unit id="core.diagnostics.unknown"><segment><source>Unknown</source><target>Desconocido</target></segment></unit>
+    <unit id="core.diagnostics.field.table_name"><segment><source>Table</source><target>Tabla</target></segment></unit>
+    <unit id="core.diagnostics.field.lock_class"><segment><source>Lock class</source><target>Clase de bloqueo</target></segment></unit>
+    <unit id="core.diagnostics.field.waiting"><segment><source>Waiting</source><target>En espera</target></segment></unit>
+    <unit id="core.diagnostics.field.source"><segment><source>Source</source><target>Fuente</target></segment></unit>
+    <unit id="core.diagnostics.field.stream"><segment><source>Stream</source><target>Flujo</target></segment></unit>
+    <unit id="core.diagnostics.field.depth_lower_bound"><segment><source>Queue depth (at least)</source><target>Tamaño de cola (mínimo)</target></segment></unit>
+    <unit id="core.diagnostics.field.oldest_age_seconds"><segment><source>Oldest age (seconds)</source><target>Antigüedad máxima (segundos)</target></segment></unit>
+    <unit id="core.diagnostics.field.definition"><segment><source>Definition</source><target>Definición</target></segment></unit>
+    <unit id="core.diagnostics.field.policy_cost"><segment><source>Policy measurement</source><target>Medición de políticas</target></segment></unit>
+    <unit id="core.diagnostics.field.calls"><segment><source>Calls</source><target>Llamadas</target></segment></unit>
+    <unit id="core.diagnostics.field.mean_ms"><segment><source>Mean time (ms)</source><target>Tiempo medio (ms)</target></segment></unit>
+    <unit id="core.diagnostics.field.total_ms"><segment><source>Total time (ms)</source><target>Tiempo total (ms)</target></segment></unit>
+    <unit id="core.diagnostics.field.store"><segment><source>Ledger</source><target>Registro</target></segment></unit>
+    <unit id="core.diagnostics.field.backlog_rows"><segment><source>Backlog rows</source><target>Filas acumuladas</target></segment></unit>
+    <unit id="core.diagnostics.field.backlog_approximate"><segment><source>Approximate backlog</source><target>Acumulación aproximada</target></segment></unit>
+    <unit id="core.diagnostics.field.ingest_rows_per_second"><segment><source>Ingest (rows/second)</source><target>Entrada (filas/segundo)</target></segment></unit>
+    <unit id="core.diagnostics.field.sustained_drain_rows_per_second"><segment><source>Sustained drain (rows/second)</source><target>Eliminación sostenida (filas/segundo)</target></segment></unit>
+    <unit id="core.diagnostics.field.net_growth_rows_per_second"><segment><source>Net growth (rows/second)</source><target>Crecimiento neto (filas/segundo)</target></segment></unit>
+    <unit id="core.diagnostics.field.capacity_rows"><segment><source>Capacity (rows)</source><target>Capacidad (filas)</target></segment></unit>
+    <unit id="core.diagnostics.field.forecast_seconds_to_capacity"><segment><source>Forecast to capacity (seconds)</source><target>Previsión hasta la capacidad (segundos)</target></segment></unit>
+    <unit id="core.diagnostics.field.configured"><segment><source>Configured</source><target>Configurado</target></segment></unit>
+    <unit id="core.diagnostics.field.last_drain_at"><segment><source>Last drain</source><target>Última eliminación</target></segment></unit>
+    <unit id="core.diagnostics.field.expiry_rows_per_second"><segment><source>Expiry (rows/second)</source><target>Caducidad (filas/segundo)</target></segment></unit>
+    <unit id="core.diagnostics.policy_cost_included"><segment><source>Included in query cost</source><target>Incluida en el coste de la consulta</target></segment></unit>
+  </file>
 </xliff>
