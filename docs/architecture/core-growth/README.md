@@ -1,9 +1,10 @@
 # Core Growth Records
 
-A Core Growth Record is App saying, on record, why a piece of reusable-looking behaviour stays in App
-instead of moving to the Kumwe package that would own it. `composer kumwe:core-growth-check` reads these
-records; without an approved one, growth in a portable layer fails the build. The gate is explained in the
-[governance guide](../governance/README.md) section 2; this page is how to write the record.
+This page describes the retired inventory process and preserves the meaning of historical records.
+Since the September 29 maintainer direction, ordinary changes require no Core Growth Record, approval
+entry or baseline update. Follow [AGENTS.md](../../../AGENTS.md): use the owning package, keep App's
+integration small, and explain a non-obvious ownership choice briefly in the PR. The optional inventory
+tools remain available for investigation; they are not build or merge gates.
 
 ## When a record is required
 
@@ -131,14 +132,8 @@ reviewer, set the decision date, and re-record the baseline. State that the deci
 mandate. Do not invent a human review event or use a human's identity for an agent's review. Keep a record
 pending when the technical ownership question remains unresolved; the mandate does not waive the gate.
 
-A human collaborator can also approve through a pull-request review. The `Core growth approval` workflow
-(`.github/workflows/core-growth-approval.yml`) runs on every submitted review: when a human collaborator
-with write access approves a same-repository pull request, every `decision: pending` record whose
-`pull_request` names that pull request is set to `approved` with the reviewer's login and the review date,
-the baseline is re-recorded with `composer kumwe:core-growth-record`, and the result is committed to the
-pull-request branch under the reviewer's own identity. A review by a bot, by a read-only account, or on a
-pull request without a pending record changes nothing. A reviewer may still do the same by hand: set the
-three fields, re-record, and commit them together.
+The former automatic approval workflow has been removed. Approving a PR no longer writes inventory
+records under the reviewer's identity, creates another commit or redispatches the test workflows.
 
 ### After writing it
 

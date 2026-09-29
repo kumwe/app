@@ -14,9 +14,8 @@
 # sandbox allows, skips what it cannot reach, and ends with a capability
 # report telling the agent exactly which verification tiers work here:
 #
-#   Tier 0  dependency-free gates      php tools/verify-*.php, roadmap checks
 #   Tier 1  static + unit lane         composer cs / analyse / test:unit + architecture
-#   Tier 2  database-backed lane       composer test / test:integration (MariaDB + Redis)
+#   Tier 2  database-backed lane       composer test:database (MariaDB + Redis)
 #   Front   frontend lane              npm run check && npm run build
 #
 # Outbound domains this script may need are listed in tools/agent-egress.txt.
@@ -91,7 +90,7 @@ PHP_VERSION="$("$PHP_BIN" -r 'echo PHP_VERSION;' 2>/dev/null || echo none)"
 PLATFORM_FLAG=""
 case "$PHP_VERSION" in
     8.5.*|8.6.*|9.*) note "PHP $PHP_VERSION matches the platform requirement." ;;
-    none) note "No PHP binary found; nothing beyond Tier 0 documentation checks can run." ;;
+    none) note "No PHP binary found; PHP checks are unavailable until PHP 8.5 is installed." ;;
     *)
         PLATFORM_FLAG="--ignore-platform-req=php"
         note "PHP $PHP_VERSION < 8.5: composer will run with $PLATFORM_FLAG. Unit, architecture, functional and almost all integration tests pass, but the extension-admission integration tests (about nine) correctly REFUSE under PHP < 8.5 because extension manifests demand it. For those, allow the packages.sury.org line in tools/agent-egress.txt and install php8.5."
@@ -406,14 +405,13 @@ fi
 
 # ---------------------------------------------------------------------- report
 say "Capability report"
-printf '   Tier 0 (dependency-free doc/roadmap gates)   %s\n' "yes"
 printf '   Tier 1 (static + unit + architecture lane)   %s\n' "$TIER1"
 printf '   Tier 2 (database-backed integration lane)    %s\n' "$TIER2"
 printf '   Frontend lane (npm run check / build)        %s\n' "$FRONTEND"
 printf '\n'
-printf '   Always available:  php tools/verify-docblocks.php src && php tools/verify-roadmap.php\n'
-[ "$TIER1" = yes ] && printf '   Before any push:   composer qa   (baseline:check ... cs, analyse, test)\n'
-[ "$TIER2" = yes ] && printf '   Database lane:     . ./.agent-env && composer test:integration\n'
+[ "$TIER1" = yes ] && printf '   Static/unit lane:  . ./.agent-env && composer cs && composer analyse && vendor/bin/phpunit --testsuite unit,architecture\n'
+[ "$TIER2" = yes ] && printf '   Database lane:     . ./.agent-env && composer test:database\n'
+[ "$TIER2" = yes ] && printf '   Normal PHP checks: . ./.agent-env && composer qa\n'
 pg_ready && printf '   Cross-engine lane: DB_DRIVER=pgsql DB_PORT=5432 DB_SERVER_VERSION=16 with the same .agent-env\n'
 [ "$TIER1" = yes ] || printf '   BLOCKED: composer dependencies missing — see tools/agent-egress.txt.\n'
-printf '\n   Full gate reference: AGENTS.md section 6. Egress allowlist: tools/agent-egress.txt.\n'
+printf '\n   Check guidance: AGENTS.md, Setup and useful checks. Egress allowlist: tools/agent-egress.txt.\n'
