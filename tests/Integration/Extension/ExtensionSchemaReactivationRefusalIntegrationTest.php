@@ -15,6 +15,7 @@ use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Kernel\Container;
+use Kumwe\App\Kernel\ContainerFactory;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\MachineSurfaceHarness;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
@@ -65,7 +66,7 @@ final class ExtensionSchemaReactivationRefusalIntegrationTest extends TestCase
         $identifier = 'integration/reactivate_' . $marker;
         $archive = self::package($identifier, $marker);
         $installed = false;
-        $harness = null;
+        $harnesses = [];
 
         try {
             $extensions->install($archive, $context);
@@ -81,7 +82,6 @@ final class ExtensionSchemaReactivationRefusalIntegrationTest extends TestCase
             $trust->synchronizeRuntimeMaterialization();
 
             $container = TestKernelFactory::create($environment);
-            $harness = new MachineSurfaceHarness($container, 'extension-schema-reactivation');
             $before = self::state($container, $identifier, $definition);
             self::assertSame('disabled', $before['status']);
             self::assertFalse($before['owner_active']);
@@ -105,6 +105,10 @@ final class ExtensionSchemaReactivationRefusalIntegrationTest extends TestCase
             self::assertStringContainsString('synchronization plan', (string) $problem['detail']);
             self::assertSame($before, self::state($container, $identifier, $definition));
 
+            // Load a fresh application instance for each independent surface request.
+            $container = (new ContainerFactory())->create($environment);
+            $harness = new MachineSurfaceHarness($container, 'extension-schema-reactivation-rest');
+            $harnesses[] = $harness;
             $rest = $harness->rest(
                 $harness->token('rest', ['extensions.manage']),
                 'POST',
@@ -118,6 +122,9 @@ final class ExtensionSchemaReactivationRefusalIntegrationTest extends TestCase
             self::assertStringContainsString('synchronization plan', (string) ($rest['body']['detail'] ?? ''));
             self::assertSame($before, self::state($container, $identifier, $definition));
 
+            $container = (new ContainerFactory())->create($environment);
+            $harness = new MachineSurfaceHarness($container, 'extension-schema-reactivation-cli');
+            $harnesses[] = $harness;
             $cli = $harness->cli(
                 ActivateExtensionCommand::class,
                 $harness->token('cli', ['extensions.manage']),
@@ -127,6 +134,9 @@ final class ExtensionSchemaReactivationRefusalIntegrationTest extends TestCase
             self::assertSame('core.console.extension_activate.schema_plan_required', $cli['stderr']);
             self::assertSame($before, self::state($container, $identifier, $definition));
 
+            $container = (new ContainerFactory())->create($environment);
+            $harness = new MachineSurfaceHarness($container, 'extension-schema-reactivation-mcp');
+            $harnesses[] = $harness;
             $mcp = $harness->mcp($harness->token('mcp', ['extensions.manage']), 'kumwe_extension_activate', [
                 'operationId' => 'extension-reactivation-' . $marker,
                 'identifier' => $identifier,
@@ -138,7 +148,9 @@ final class ExtensionSchemaReactivationRefusalIntegrationTest extends TestCase
             self::assertFalse($mcp['value']['retryable'] ?? null);
             self::assertSame($before, self::state($container, $identifier, $definition));
         } finally {
-            $harness?->cleanup();
+            foreach ($harnesses as $harness) {
+                $harness->cleanup();
+            }
             if ($installed) {
                 $extensions->uninstall($identifier, $context);
             }

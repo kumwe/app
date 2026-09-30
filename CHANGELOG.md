@@ -16,6 +16,12 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ### #152 — Version 2 runtime completion
 
+- Accept simultaneous publication of an identical audit checkpoint without reporting a false storage
+  failure, and keep cursor SQL bindings aligned when a later nullable sort key has no remaining rows.
+  Report diagnostics' combined statement execution budget accurately; it excludes connection and
+  response overhead and does not impose a wall-clock test deadline. Give independent extension-refusal
+  requests fresh application instances while retaining runtime-generation and rollback checks.
+
 - Refuse reactivating an extension whose business schema needs an approved synchronization plan first,
   instead of answering HTTP 500. The extensions screen answers a 409 problem document with a localized
   explanation in all nine catalogues, REST answers `409 urn:kumwe:problem:business-schema-conflict`
@@ -28,8 +34,8 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
   viewports to one workspace pane at a time, run the catalogue and interface-translation gates' temporary
   directory cleanups only in the process that registered them, and withhold a fixture's active schema
   installation before the MCP parity test rejects its version. The Firefox/WebKit nightly on the branch
-  passes 270 of 272 journeys first time; the desktop WebKit keyboard-only Studio journey still needs a Studio
-  release that makes the block palette a single Tab stop (#152).
+  passes 270 of 272 journeys first time. Its desktop WebKit keyboard timeout and canvas retry remain
+  scheduled diagnostic findings; they do not prescribe an additional release or routine merge gate (#152).
 
 - Adopt Studio beta.9 with Producer 0.6.0 and Extension SDK 0.3.6 to preserve accepted server state across
   repeated saves and make the scrolling Outline and editing canvas accessible by keyboard. Pass the
@@ -51,8 +57,8 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
   bounded queries and retention observations; report unavailable engine statistics explicitly.
 
 - Deliver `P6-D`, `V2-OPS-001` and Gate B criterion 5 (`GB-5`) on that one diagnostics surface behind
-  `system.diagnostics.read`. Every answer now declares its engine, cost class, statement limit and the elapsed
-  ceiling that follows from the engine-enforced one-second statement timeout. Contention and slow-query
+  `system.diagnostics.read`. Every answer now declares its engine, cost class, statement limit and combined
+  statement execution budget from the engine-enforced one-second SELECT timeout. Contention and slow-query
   answers take an explicit PostgreSQL, MariaDB or MySQL branch, run nothing on another engine, and check that
   the performance schema and statement-digest consumer, or `pg_stat_statements`, are collecting before an
   empty table can read as an idle installation; an unavailable or over-budget answer names a fixed reason.

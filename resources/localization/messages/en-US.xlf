@@ -22936,6 +22936,6 @@
     <unit id="core.diagnostics.field.expiry_rows_per_second"><segment><source>Expiry (rows/second)</source><target>Expiry (rows/second)</target></segment></unit>
     <unit id="core.diagnostics.policy_cost_included"><segment><source>Included in query cost</source><target>Included in query cost</target></segment></unit>
     <unit id="core.diagnostics.statistics_off"><segment><source>The database is not collecting the statement statistics this answer reads. Enable them to measure it.</source><target>The database is not collecting the statement statistics this answer reads. Enable them to measure it.</target></segment></unit>
-    <unit id="core.diagnostics.cost"><segment><source>Statement limit: {statements}; time limit for the whole answer: {ceiling} ms.</source><target>Statement limit: {statements}; time limit for the whole answer: {ceiling} ms.</target></segment></unit>
+    <unit id="core.diagnostics.cost"><segment><source>Statement limit: {statements}; combined statement execution budget: {budget} ms.</source><target>Statement limit: {statements}; combined statement execution budget: {budget} ms.</target></segment></unit>
   </file>
 </xliff>

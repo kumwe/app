@@ -181,6 +181,7 @@ final class BusinessRecordLargeDatasetIntegrationTest extends TestCase
                 [[new RecordSort('bucket', SortDirection::Descending)], array_reverse($expectedRecordIds)],
                 [[new RecordSort('nullable_bucket', SortDirection::Ascending, false)], [...$odd, ...$even]],
                 [[new RecordSort('nullable_bucket', SortDirection::Ascending, true)], [...$even, ...$odd]],
+                [[new RecordSort('bucket'), new RecordSort('nullable_bucket')], [...$even, ...$odd]],
                 [[new RecordSort('nullable_bucket', SortDirection::Descending, false)],
                     [...array_reverse($odd), ...array_reverse($even)]],
                 [[new RecordSort('nullable_bucket', SortDirection::Descending, true)],

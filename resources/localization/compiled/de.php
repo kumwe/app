@@ -2065,7 +2065,7 @@ return [
     'core.diagnostics.bounds' => 'Jede Anweisung ist auf {timeout} ms begrenzt; jede Quelle liefert höchstens {rows} Zeilen.',
     'core.diagnostics.budget_exceeded' => 'Die Diagnose hat ihr Zeit- oder Ergebnisbudget überschritten. Arbeitslast eingrenzen oder Datenbank direkt prüfen.',
     'core.diagnostics.contention' => 'Sperrkonflikte',
-    'core.diagnostics.cost' => 'Anweisungslimit: {statements}; Zeitlimit für die gesamte Antwort: {ceiling} ms.',
+    'core.diagnostics.cost' => 'Anweisungslimit: {statements}; gemeinsames Zeitbudget für die Anweisungsausführung: {budget} ms.',
     'core.diagnostics.description' => 'Sperrkonflikte, Warteschlangen, Abfragekosten und Aufbewahrung prüfen.',
     'core.diagnostics.empty' => 'In dieser Stichprobe wurden keine Beobachtungen gefunden.',
     'core.diagnostics.field.backlog_approximate' => 'Geschätzter Rückstand',

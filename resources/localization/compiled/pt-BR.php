@@ -2065,7 +2065,7 @@ return [
     'core.diagnostics.bounds' => 'Cada instrução é limitada a {timeout} ms; cada fonte retorna no máximo {rows} linhas.',
     'core.diagnostics.budget_exceeded' => 'O diagnóstico excedeu o limite de tempo ou resultados. Reduza a carga ou inspecione o banco de dados diretamente.',
     'core.diagnostics.contention' => 'Contenção',
-    'core.diagnostics.cost' => 'Limite de instruções: {statements}; limite de tempo para a resposta inteira: {ceiling} ms.',
+    'core.diagnostics.cost' => 'Limite de instruções: {statements}; orçamento de tempo total para sua execução: {budget} ms.',
     'core.diagnostics.description' => 'Inspecionar contenção, filas, custos de consultas e retenção.',
     'core.diagnostics.empty' => 'Nenhuma observação foi encontrada nesta amostra.',
     'core.diagnostics.field.backlog_approximate' => 'Acúmulo aproximado',

@@ -1,6 +1,8 @@
 # Programme status
 
-Read this first. Then read [`README.md`](README.md) for the phase you are in.
+This is a historical programme record. The current maintainer direction in [`AGENTS.md`](../../AGENTS.md)
+and the checks on the current pull-request head govern delivery. Older open ledger entries and scheduled
+diagnostic results do not add merge prerequisites.
 
 **Exact machine-evidence candidate** [`67cf6c02`](https://github.com/kumwe/app/commit/67cf6c02360f8af4220f8bde7c24297854d45dad)
 
@@ -26,7 +28,7 @@ record is not thereby a new machine-evidence candidate.
 | **Current phase** | Gate A passed. Pull request #152 (`platform/v2-runtime-completion`) carries the Version 2 Beta 1 runtime and release qualification, Points 1 through 5. |
 | **In flight** | #152: the Studio journey and machine parity; Phase 5 scale; Phase 6 recovery and diagnostics; Phase 7 and `PL-G` security, interface, language and automation gaps. Every requirement is one entry of [`acceptance-record.json`](acceptance-record.json) with its runtime owner, tests, CI jobs, artifacts, decision, state and track; the phase board, open work, Gate B table and ledger snapshot below are generated from it and from [`findings.json`](findings.json). The 2026-09-28 reconciliation no longer assumes unpublished agent branches survive: integrated work awaiting qualification and missing runtime are explicitly distinguished in each outstanding note. |
 | **Next** | Complete the remaining runtime and failing workflow cases, qualify the exact Beta 1 artifacts, and mark #152 ready only after the required checks pass. The maintainer alone merges; publication follows the qualified release pipeline. Demo redesign and the Version 3 Flutter SDK remain separate. |
-| **Open decisions** | None for #152. [ADR 0021](decisions/0021-automated-acceptance-and-sampled-capacity.md) settles acceptance and capacity: automated workflow evidence plus the maintainer's merge once every required check is green is the sole acceptance record, with no human checkbox, manual browser, Safari or right-to-left review, or follow-up acceptance commit; capacity is estimated statistically from concurrent samples on workflow hardware. The Studio pin stays at `0.1.0-beta.3` with `kumwe/producer` `0.3.0`, because no Producer release re-pins a newer Studio. |
+| **Open decisions** | None for #152. [ADR 0021](decisions/0021-automated-acceptance-and-sampled-capacity.md) settles acceptance and capacity: automated workflow evidence plus the maintainer's merge once every required check is green is the sole acceptance record, with no human checkbox, manual browser, Safari or right-to-left review, or follow-up acceptance commit; capacity is estimated statistically from concurrent samples on workflow hardware. Commit `ada12fdb` adopts published Studio `0.1.0-beta.9`, `kumwe/producer` `0.6.0` and `kumwe/extension-sdk` `0.3.6`; its routine CI passed. Readiness after later commits depends on their current checks. |
 | **Gate A** | Passed on 2026-08-22. All 13 executable criteria are met; acceptance is recorded in [ADR 0010](decisions/0010-gate-a-assessment.md). |
 | **Gate B** | Not assessed. The criteria table below is generated from the acceptance record; ADR 0021 changes the acceptance method and does not declare Gate B passed. |
 
@@ -49,7 +51,7 @@ record, never this table. A phase with any open or pending entry cannot read as 
 | 5 — Enterprise scale | B | In progress — `P5-A`, `P5-B`, `P5-C`, `P5-D`, `P5-E`, `P5-F`, `P5-G`, `P5-I` delivered; `P5-H` open | — |
 | 6 — Continuity and introspection | B | In progress — `P6-D` delivered; `P6-A`, `P6-B`, `P6-C` open; 6 findings open | — |
 | 7 — Qualification | B | In progress — `P7-A`, `P7-D` delivered; `P7-B`, `P7-C`, `P7-E`, `P7-F`, `P7-G`, `P7-H`, `P7-I` open; 3 findings open; in flight on `agent/browser` | Final Phases 5, 6, PL-G and release-artifact evidence in #152 |
-| S — Studio contextual Content authoring | A, with a B integration | In progress — `S-A`, `S-B`, `S-C`, `S-D`, `S-E`, `S-F` delivered; `S-G` open; 1 finding open, 1 requirement open | A Producer release re-pinning Studio past `0.1.0-beta.3`; none exists (pin kept 2026-09-24) |
+| S — Studio contextual Content authoring | A, with a B integration | In progress — `S-A`, `S-B`, `S-C`, `S-D`, `S-E`, `S-F` delivered; `S-G` open; 1 finding open, 1 requirement open | Published Studio beta.9, Producer 0.6.0 and Extension SDK 0.3.6 adopted in `ada12fdb`; earlier package blocker resolved |
 | **Gate B** | | **Not assessed — criteria: 3 delivered, 0 pending integration, 9 open** | Final runtime, Studio, recovery, diagnostics and release qualification evidence; Beta 1 is a prerelease, not a stable Gate B declaration |
 | M — Maintainability | — | In progress — 2 findings open | Phase 3 seams settled. Blocks nothing. |
 | N — Native client platform contracts | — | Not started — Version 3 seed | Nothing in Version 2; blocks nothing. Decision D17, ADR 0009. |

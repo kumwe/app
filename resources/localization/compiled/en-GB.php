@@ -2065,7 +2065,7 @@ return [
     'core.diagnostics.bounds' => 'Each statement is limited to {timeout} ms; each source returns at most {rows} rows.',
     'core.diagnostics.budget_exceeded' => 'The diagnostic exceeded its time or result budget. Narrow the workload or inspect the database directly.',
     'core.diagnostics.contention' => 'Contention',
-    'core.diagnostics.cost' => 'Statement limit: {statements}; time limit for the whole answer: {ceiling} ms.',
+    'core.diagnostics.cost' => 'Statement limit: {statements}; combined statement execution budget: {budget} ms.',
     'core.diagnostics.description' => 'Inspect contention, queues, query costs and retention.',
     'core.diagnostics.empty' => 'No observations were found in this sample.',
     'core.diagnostics.field.backlog_approximate' => 'Approximate backlog',

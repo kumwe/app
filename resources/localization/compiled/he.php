@@ -2065,7 +2065,7 @@ return [
     'core.diagnostics.bounds' => 'כל פקודה מוגבלת ל־{timeout} אלפיות שנייה; כל מקור מחזיר עד {rows} שורות.',
     'core.diagnostics.budget_exceeded' => 'האבחון חרג ממגבלת הזמן או התוצאות. יש לצמצם את העומס או לבדוק את מסד הנתונים ישירות.',
     'core.diagnostics.contention' => 'תחרות על משאבים',
-    'core.diagnostics.cost' => 'מגבלת פקודות: {statements}; מגבלת זמן לתשובה כולה: {ceiling} אלפיות שנייה.',
+    'core.diagnostics.cost' => 'מגבלת פקודות: {statements}; תקציב זמן כולל לביצוע הפקודות: {budget} אלפיות שנייה.',
     'core.diagnostics.description' => 'בדיקת תחרות על משאבים, תורים, עלויות שאילתות ושמירת נתונים.',
     'core.diagnostics.empty' => 'לא נמצאו תצפיות במדגם זה.',
     'core.diagnostics.field.backlog_approximate' => 'הצטברות משוערת',
