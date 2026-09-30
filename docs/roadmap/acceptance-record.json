@@ -1334,19 +1334,27 @@
       "requirement": "An operator diagnostic surface behind its own capability answers contention, queue age, slow definitions, backlog slope and retention pace within cost and cardinality bounds.",
       "reference": "docs/roadmap/README.md#phase-6--continuity-recovery-and-operational-introspection",
       "runtime_owner": [
-        "src/Infrastructure/Observability"
+        "src/Application/Diagnostics/OperatorDiagnostics.php",
+        "src/Infrastructure/Observability/DoctrineOperatorDiagnostics.php"
       ],
-      "tests": [],
+      "tests": [
+        "tests/Unit/Infrastructure/Observability/OperatorDiagnosticsTest.php",
+        "tests/Unit/Infrastructure/Observability/OperatorDiagnosticsSurfacesTest.php",
+        "tests/Integration/Diagnostics/OperatorDiagnosticsIntegrationTest.php"
+      ],
       "workflows": [
+        ".github/workflows/ci.yml#quality",
         ".github/workflows/ci.yml#database"
       ],
-      "artifacts": [],
+      "artifacts": [
+        "docs/operations/monitoring.md"
+      ],
       "decision": "D6, ADR 0021",
-      "state": "open",
+      "state": "delivered",
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "The dedicated capability-gated operator diagnostics surface is absent from the PR head. Implement the five P6-D questions with declared costs, enforced timeouts, bounded results and shared GUI/REST/CLI/MCP authority; monitoring alone does not satisfy this requirement.",
+      "outstanding": null,
       "gate_b_criteria": [
         5
       ],
@@ -1583,21 +1591,29 @@
       "kind": "finding",
       "phase": "6",
       "requirement": "Operators can see where the running system is struggling through a costed, cardinality-bounded diagnostic surface distinct from monitoring.",
-      "reference": "docs/roadmap/findings.json#V2-OPS-001",
+      "reference": "docs/roadmap/README.md#phase-6--continuity-recovery-and-operational-introspection",
       "runtime_owner": [
-        "src/Infrastructure/Observability"
+        "src/Application/Diagnostics/OperatorDiagnostics.php",
+        "src/Infrastructure/Observability/DoctrineOperatorDiagnostics.php"
       ],
-      "tests": [],
+      "tests": [
+        "tests/Unit/Infrastructure/Observability/OperatorDiagnosticsTest.php",
+        "tests/Unit/Infrastructure/Observability/OperatorDiagnosticsSurfacesTest.php",
+        "tests/Integration/Diagnostics/OperatorDiagnosticsIntegrationTest.php"
+      ],
       "workflows": [
+        ".github/workflows/ci.yml#quality",
         ".github/workflows/ci.yml#database"
       ],
-      "artifacts": [],
+      "artifacts": [
+        "docs/operations/monitoring.md"
+      ],
       "decision": "D6, ADR 0021",
-      "state": "open",
+      "state": "delivered",
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "The dedicated operator diagnostics runtime remains to be integrated and qualified; existing monitoring is not its replacement.",
+      "outstanding": null,
       "gate_b_criteria": [
         1,
         5
@@ -2828,19 +2844,27 @@
       "requirement": "Operational diagnostics answer where the system is struggling, within the established cardinality discipline.",
       "reference": "docs/roadmap/README.md#gate-b--version-2-enterprise-release",
       "runtime_owner": [
-        "src/Infrastructure/Observability"
+        "src/Application/Diagnostics/OperatorDiagnostics.php",
+        "src/Infrastructure/Observability/DoctrineOperatorDiagnostics.php"
       ],
-      "tests": [],
+      "tests": [
+        "tests/Unit/Infrastructure/Observability/OperatorDiagnosticsTest.php",
+        "tests/Unit/Infrastructure/Observability/OperatorDiagnosticsSurfacesTest.php",
+        "tests/Integration/Diagnostics/OperatorDiagnosticsIntegrationTest.php"
+      ],
       "workflows": [
+        ".github/workflows/ci.yml#quality",
         ".github/workflows/ci.yml#database"
       ],
-      "artifacts": [],
+      "artifacts": [
+        "docs/operations/monitoring.md"
+      ],
       "decision": "D2, ADR 0021",
-      "state": "open",
+      "state": "delivered",
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Complete the dedicated operator diagnostics runtime and its five bounded diagnostic questions.",
+      "outstanding": null,
       "gate_b_criteria": [
         5
       ]
