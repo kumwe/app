@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 
+use Kumwe\App\Audit\Application\AuditCheckpoint;
+use Kumwe\App\Audit\Application\AuditContinuityReport;
+use Kumwe\App\Audit\Application\AuditContinuityVerifier;
+use Kumwe\App\Audit\Application\AuditRetentionAuthorityState;
 use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Audit\Application\AuditTrailExport;
 use Kumwe\Audit\Application\AuditTrailExporter;
-use Kumwe\Audit\Application\AuditTrailVerifier;
 use Kumwe\Audit\Domain\AuditEnforcementState;
 use Kumwe\Audit\Domain\AuditVerificationFinding;
 use Kumwe\Audit\Domain\AuditVerificationReport;
@@ -180,6 +183,76 @@ final class AuditConsoleCommandTest extends TestCase
     }
 
     /**
+     * Prove a runtime principal holding retention authority is reported as degraded prevention, not success.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testARuntimePrincipalHoldingRetentionAuthorityIsNotReportedAsEnforced(): void
+    {
+        $output = new CollectingConsoleOutput();
+        $command = new VerifyAuditTrailCommand(
+            new StubAuditTrailVerifier(
+                new AuditVerificationReport(12, 3, 12, AuditEnforcementState::Active),
+                AuditRetentionAuthorityState::NotSeparated,
+            ),
+            $this->authorizer(),
+        );
+
+        self::assertSame(2, $command->execute($this->options(), $output));
+        self::assertSame([], $output->lines);
+        self::assertStringContainsString('"retention_authority": "not_separated"', $output->errors[0]);
+    }
+
+    /**
+     * Prove a guarded verdict prints the checkpoint to retain and hands a supplied one to the verifier.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAGuardedVerdictPrintsItsCheckpointAndChecksASuppliedOne(): void
+    {
+        $output = new CollectingConsoleOutput();
+        $verifier = new StubAuditTrailVerifier(new AuditVerificationReport(12, 3, 12, AuditEnforcementState::Active));
+        $retained = $this->protectedFile((string) json_encode([
+            'intact' => true,
+            'checkpoint' => (new AuditCheckpoint(2, str_repeat('b', 64), 10))->toArray(),
+        ]));
+
+        self::assertSame(0, (new VerifyAuditTrailCommand($verifier, $this->authorizer()))->execute(
+            [...$this->options(), '--checkpoint-file=' . $retained],
+            $output,
+        ));
+        self::assertSame(2, $verifier->external?->ledgerSequence);
+        self::assertSame(10, $verifier->external->headPosition);
+        self::assertStringContainsString('"retention_authority": "separated"', $output->lines[0]);
+        self::assertStringContainsString('"head_position": 12', $output->lines[0]);
+        self::assertStringContainsString('"kumwe_audit_checkpoint": 1', $output->lines[0]);
+    }
+
+    /**
+     * Prove an unusable operator checkpoint fails the command before verification.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnUnusableCheckpointFileFailsBeforeVerification(): void
+    {
+        $output = new CollectingConsoleOutput();
+        $verifier = new StubAuditTrailVerifier(new AuditVerificationReport(12, 3, 12, AuditEnforcementState::Active));
+
+        self::assertSame(1, (new VerifyAuditTrailCommand($verifier, $this->authorizer()))->execute(
+            [...$this->options(), '--checkpoint-file=' . $this->protectedFile('{"ledger_sequence":-1}')],
+            $output,
+        ));
+        self::assertFalse($verifier->called);
+        self::assertStringContainsString('not a Kumwe audit checkpoint', $output->errors[0]);
+    }
+
+    /**
      * Prove the export prints the archive manifest rather than the archived bytes.
      *
      * @return  void
@@ -230,9 +303,23 @@ final class AuditConsoleCommandTest extends TestCase
      */
     private function tokenFile(): string
     {
+        return $this->protectedFile('console-token');
+    }
+
+    /**
+     * Write an owner-only file the console input readers accept.
+     *
+     * @param   string  $contents  Bytes to store.
+     *
+     * @return  string  Absolute path of the protected file.
+     *
+     * @since   2.0.0
+     */
+    private function protectedFile(string $contents): string
+    {
         $path = tempnam(sys_get_temp_dir(), 'kumwe-audit-token-');
         self::assertIsString($path);
-        file_put_contents($path, 'console-token');
+        file_put_contents($path, $contents);
         chmod($path, 0o600);
         $this->files[] = $path;
 
@@ -322,7 +409,7 @@ final class CollectingConsoleOutput implements Output
  *
  * @since  2.0.0
  */
-final class StubAuditTrailVerifier implements AuditTrailVerifier
+final class StubAuditTrailVerifier implements AuditContinuityVerifier
 {
     /**
      * Whether the command reached the verifier at all.
@@ -333,31 +420,52 @@ final class StubAuditTrailVerifier implements AuditTrailVerifier
     public bool $called = false;
 
     /**
+     * Operator checkpoint the command handed over, if any.
+     *
+     * @var    ?AuditCheckpoint
+     * @since  2.0.0
+     */
+    public ?AuditCheckpoint $external = null;
+
+    /**
      * Bind the fixed report this double answers with.
      *
-     * @param  AuditVerificationReport  $report  Report handed back to every call.
+     * @param  AuditVerificationReport       $report     Report handed back to every call.
+     * @param  AuditRetentionAuthorityState  $authority  Retention authority posture reported with it.
      *
      * @since  2.0.0
      */
-    public function __construct(private AuditVerificationReport $report)
-    {
+    public function __construct(
+        private AuditVerificationReport $report,
+        private AuditRetentionAuthorityState $authority = AuditRetentionAuthorityState::Separated,
+    ) {
     }
 
     /**
-     * Answer with the fixed report.
+     * Answer with the fixed report, reaching a checkpoint only for a guarded verdict.
      *
      * @param   ExecutionContext  $context    Ignored authorized context.
      * @param   int               $batchSize  Ignored walk batch size.
+     * @param   ?AuditCheckpoint  $external   Operator checkpoint, captured for assertions.
      *
-     * @return  AuditVerificationReport  The report this double was built with.
+     * @return  AuditContinuityReport  The report this double was built with.
      *
      * @since   2.0.0
      */
-    public function verify(ExecutionContext $context, int $batchSize = 1000): AuditVerificationReport
-    {
+    public function verifyContinuity(
+        ExecutionContext $context,
+        int $batchSize = 1000,
+        ?AuditCheckpoint $external = null,
+    ): AuditContinuityReport {
         $this->called = true;
+        $this->external = $external;
 
-        return $this->report;
+        return new AuditContinuityReport(
+            $this->report,
+            $this->authority,
+            $this->report->guarded() ? new AuditCheckpoint(0, null, $this->report->headPosition) : null,
+            $external,
+        );
     }
 }
 

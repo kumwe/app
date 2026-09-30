@@ -467,6 +467,70 @@ final class ConfigurationFactoryTest extends TestCase
         }
     }
 
+    /**
+     * The audit retention login is optional, file-backed like other secrets, and derives its own settings.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheAuditRetentionCredentialIsOptionalAndDerivesARetentionConnection(): void
+    {
+        $unconfigured = (new ConfigurationFactory())->create(new Environment($this->values()))->database;
+        self::assertFalse($unconfigured->hasAuditRetentionCredential());
+        try {
+            $unconfigured->forAuditRetention();
+            self::fail('No retention connection may be derived without its credential.');
+        } catch (\InvalidArgumentException $refusal) {
+            self::assertStringContainsString('No audit retention', $refusal->getMessage());
+        }
+        $file = tempnam(sys_get_temp_dir(), 'kumwe-retention-secret-');
+        self::assertIsString($file);
+        file_put_contents($file, "retention-secret\n");
+        try {
+            $values = $this->values();
+            $values['DB_AUDIT_RETENTION_USER'] = 'kumwe_retention';
+            $values['DB_AUDIT_RETENTION_PASSWORD_FILE'] = $file;
+            $database = (new ConfigurationFactory())->create(new Environment($values))->database;
+        } finally {
+            unlink($file);
+        }
+
+        self::assertTrue($database->hasAuditRetentionCredential());
+        $retention = $database->forAuditRetention();
+        self::assertSame('kumwe_retention', $retention->user);
+        self::assertSame('retention-secret', $retention->password);
+        self::assertSame($database->database, $retention->database);
+        self::assertSame($database->tablePrefix, $retention->tablePrefix);
+        self::assertFalse($retention->hasAuditRetentionCredential());
+    }
+
+    /**
+     * A retention login without its secret, a secret without a login, or an unsafe login name is refused.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnIncompleteOrUnsafeAuditRetentionCredentialIsRefused(): void
+    {
+        foreach (
+            [
+                ['DB_AUDIT_RETENTION_USER' => 'kumwe_retention'],
+                ['DB_AUDIT_RETENTION_PASSWORD' => 'secret'],
+                ['DB_AUDIT_RETENTION_USER' => "kumwe'; DROP", 'DB_AUDIT_RETENTION_PASSWORD' => 'secret'],
+                ['DB_AUDIT_RETENTION_USER' => 'kumwe@host', 'DB_AUDIT_RETENTION_PASSWORD' => 'secret'],
+            ] as $case
+        ) {
+            try {
+                (new ConfigurationFactory())->create(new Environment([...$this->values(), ...$case]));
+                self::fail('An unusable retention credential must be refused at boot.');
+            } catch (\InvalidArgumentException $refusal) {
+                self::assertStringContainsString('DB_AUDIT_RETENTION_USER', $refusal->getMessage());
+            }
+        }
+    }
+
     public function testASecretSuppliedBothInlineAndByFileIsRefused(): void
     {
         $file = tempnam(sys_get_temp_dir(), 'kumwe-record-key-');

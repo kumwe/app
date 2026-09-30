@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Delivery\Console\Command;
 
-use Kumwe\Audit\Application\AuditTrailVerifier;
+use Kumwe\App\Audit\Application\AuditCheckpoint;
+use Kumwe\App\Audit\Application\AuditContinuityVerifier;
 use Kumwe\App\Delivery\Console\Command;
 use Kumwe\App\Delivery\Console\Output;
 use Throwable;
@@ -26,7 +27,13 @@ use Throwable;
  * have been tampered with, but prevention is absent and a qualification sign-off has to say so. Exit `1`
  * is reserved for an actual divergence or a command that could not run. The degraded verdict is written
  * to the error stream for the same reason it does not exit zero: an operator skimming a deployment log
- * must not have to notice the absence of a field to learn that a control is missing.
+ * must not have to notice the absence of a field to learn that a control is missing. The same exit `2`
+ * reports a runtime database principal that itself holds audit retention authority.
+ *
+ * Hashes stored beside the trail cannot reveal that the trail and its ledger were erased or rolled back
+ * together. A guarded verdict therefore prints the `checkpoint` it reached, which the operator keeps
+ * off-host; `--checkpoint-file` supplies such a retained checkpoint back, and a trail that no longer
+ * reaches it, like one that no longer reaches the privately retained checkpoint, exits `1`.
  *
  * @since  2.0.0
  */
@@ -35,13 +42,13 @@ final readonly class VerifyAuditTrailCommand implements Command
     /**
      * Wire the verifier and the console authorizer this command runs behind.
      *
-     * @param  AuditTrailVerifier  $trail          Verifier that walks the chain and the anchor ledger.
-     * @param  ConsoleAuthorizer   $authorization  Turns `--site` and `--token-file` into an authorized context.
+     * @param  AuditContinuityVerifier  $trail          Verifier that walks the chain, ledger and checkpoints.
+     * @param  ConsoleAuthorizer        $authorization  Turns `--site` and `--token-file` into an authorized context.
      *
      * @since  2.0.0
      */
     public function __construct(
-        private AuditTrailVerifier $trail,
+        private AuditContinuityVerifier $trail,
         private ConsoleAuthorizer $authorization,
     ) {
     }
@@ -74,12 +81,13 @@ final readonly class VerifyAuditTrailCommand implements Command
      * Verify the trail and encode the verdict in the exit status.
      *
      * @param   list<string>  $arguments  `--name=value` options; `--site` and `--token-file` are required,
-     *          `--batch-size` is optional.
+     *          `--batch-size` and `--checkpoint-file` are optional.
      * @param   Output        $output     Sink the JSON verdict, or the failure message, is written to.
      *
      * @return  int  `0` when the trail verifies and append-only enforcement is installed, `2` when it
-     *          verifies but enforcement is absent on this server, `1` when the trail diverges or the
-     *          command could not run.
+     *          verifies but enforcement is absent or the runtime principal holds retention authority,
+     *          `1` when the trail diverges, no longer reaches a retained checkpoint, or the command
+     *          could not run.
      *
      * @since   2.0.0
      */
@@ -91,7 +99,13 @@ final readonly class VerifyAuditTrailCommand implements Command
             $batchSize = isset($options['batch-size'])
                 ? CommandInput::positiveInteger($options, 'batch-size')
                 : 1000;
-            $report = $this->trail->verify($context, $batchSize);
+            $external = isset($options['checkpoint-file'])
+                ? AuditCheckpoint::fromArray(CommandInput::protectedJsonObject(
+                    CommandInput::required($options, 'checkpoint-file'),
+                ))
+                : null;
+            $continuity = $this->trail->verifyContinuity($context, $batchSize, $external);
+            $report = $continuity->report;
             $divergence = $report->firstDivergence;
             $result = [
                 'intact' => $report->intact(),
@@ -100,6 +114,10 @@ final readonly class VerifyAuditTrailCommand implements Command
                 'anchors_verified' => $report->anchorsVerified,
                 'head_position' => $report->headPosition,
                 'enforcement_detail' => $report->enforcement->summary(),
+                'retention_authority' => $continuity->retentionAuthority->value,
+                'retention_authority_detail' => $continuity->retentionAuthority->summary(),
+                'retained_checkpoint' => $continuity->retained?->toArray(),
+                'checkpoint' => $continuity->checkpoint?->toArray(),
             ];
             if ($divergence !== null) {
                 $result['divergence'] = [
@@ -112,7 +130,7 @@ final readonly class VerifyAuditTrailCommand implements Command
 
                 return 1;
             }
-            if (!$report->enforcement->installed()) {
+            if (!$report->enforcement->installed() || $continuity->retentionAuthority->degradesPrevention()) {
                 $output->error(CommandInput::render($result));
 
                 return 2;

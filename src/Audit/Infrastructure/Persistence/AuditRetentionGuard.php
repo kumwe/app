@@ -141,7 +141,46 @@ final class AuditRetentionGuard
     }
 
     /**
+     * Name the table a MySQL or MariaDB trigger is defined on, as seen by the schema owner.
+     *
+     * MySQL and MariaDB show a trigger in `information_schema` only to accounts holding the `TRIGGER`
+     * privilege on its table, and that privilege would let an account drop the guard. Least-privilege
+     * runtime and retention accounts therefore ask the definer-rights routine `audit_guard_catalog()`,
+     * which only the schema owner can replace; the direct catalog query remains for installations that
+     * predate the routine and for accounts that may not execute it.
+     *
+     * @param   Connection  $database      MySQL or MariaDB connection.
+     * @param   TableNames  $tables        Prefix-aware physical names.
+     * @param   string      $physicalName  Physical trigger name.
+     *
+     * @return  ?string  Physical table the trigger guards, or null when no visible trigger has that name.
+     *
+     * @throws  \Doctrine\DBAL\Exception  When neither the routine nor the catalog can be read.
+     *
+     * @since   2.0.0
+     */
+    public static function mysqlTriggerTable(Connection $database, TableNames $tables, string $physicalName): ?string
+    {
+        try {
+            $table = $database->fetchOne(sprintf(
+                'SELECT %s(?)',
+                $database->quoteSingleIdentifier($tables->raw(AuditRetentionAuthority::CATALOG)),
+            ), [$physicalName]);
+        } catch (\Doctrine\DBAL\Exception) {
+            $table = $database->fetchOne(
+                'SELECT EVENT_OBJECT_TABLE FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE() '
+                . 'AND TRIGGER_NAME = ?',
+                [$physicalName],
+            );
+        }
+
+        return is_string($table) && $table !== '' ? $table : null;
+    }
+
+    /**
      * Look up a trigger on its expected table, including its enabled state on PostgreSQL.
+     *
+     * Shared with `AuditRetentionAuthority`, whose triggers are observed the same way.
      *
      * @param   Connection  $database  Connection to inspect.
      * @param   TableNames  $tables    Prefix-aware physical names.
@@ -152,15 +191,11 @@ final class AuditRetentionGuard
      *
      * @since   2.0.0
      */
-    private static function exists(Connection $database, TableNames $tables, string $name, string $table): bool
+    public static function exists(Connection $database, TableNames $tables, string $name, string $table): bool
     {
         $platform = $database->getDatabasePlatform();
         if ($platform instanceof AbstractMySQLPlatform) {
-            return $database->fetchOne(
-                'SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE() '
-                . 'AND TRIGGER_NAME = ? AND EVENT_OBJECT_TABLE = ?',
-                [$tables->raw($name), $tables->raw($table)],
-            ) !== false;
+            return self::mysqlTriggerTable($database, $tables, $tables->raw($name)) === $tables->raw($table);
         }
         if ($platform instanceof PostgreSQLPlatform) {
             return $database->fetchOne(

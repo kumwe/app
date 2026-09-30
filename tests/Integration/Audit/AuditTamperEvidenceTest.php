@@ -27,6 +27,9 @@ use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditTrailExporter;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditTrailVerifier;
 use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditArchiveStorage;
 use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditArchiveVerifier;
+use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditCheckpointStore;
+use Kumwe\App\Audit\Application\AuditCheckpoint;
+use Kumwe\App\Audit\Application\AuditRetentionAuthorityState;
 use Kumwe\App\Infrastructure\Persistence\Migration\AuditRetentionEvidenceMigration;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\App\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
@@ -50,6 +53,7 @@ use Ramsey\Uuid\Uuid;
 #[CoversClass(AuditRetentionGuard::class)]
 #[CoversClass(AuditRetentionEvidenceMigration::class)]
 #[CoversClass(FilesystemAuditArchiveVerifier::class)]
+#[CoversClass(FilesystemAuditCheckpointStore::class)]
 #[CoversClass(DoctrineAuditRecorder::class)]
 #[CoversClass(DoctrineAuditAnchorWriter::class)]
 #[CoversClass(DoctrineAuditTrailVerifier::class)]
@@ -325,6 +329,84 @@ final class AuditTamperEvidenceTest extends TestCase
             'SELECT COUNT(*) FROM ' . $this->tables->quoted('audit_anchors') . " WHERE kind = 'prune'",
         ));
         self::assertTrue($this->verifier()->verify($this->context())->guarded());
+    }
+
+    /**
+     * A retained checkpoint exposes a shortened trail, and is advanced only from committed, guarded state.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testARetainedCheckpointExposesAShortenedTrail(): void
+    {
+        $store = new FilesystemAuditCheckpointStore($this->archiveRoot . '/checkpoints');
+        $this->record(3);
+        $clean = $this->verifier($store)->verifyContinuity($this->context());
+        self::assertTrue($clean->report->guarded());
+        self::assertEquals(new AuditCheckpoint(0, null, 3), $store->retained());
+        self::assertSame(AuditRetentionAuthorityState::SinglePrincipal, $clean->retentionAuthority);
+
+        $this->database->beginTransaction();
+        $this->record(1);
+        self::assertTrue($this->verifier($store)->verifyContinuity($this->context())->report->guarded());
+        $this->database->rollBack();
+        self::assertEquals(
+            new AuditCheckpoint(0, null, 3),
+            $store->retained(),
+            'A mark observed inside a transaction that may still roll back is never retained.',
+        );
+
+        AuditTamperHarness::disableGuards($this->database, $this->tables);
+        $this->database->executeStatement(
+            'DELETE FROM ' . $this->tables->quoted('audit_events') . ' WHERE position = 3',
+        );
+        AuditTamperHarness::enableGuards($this->database, $this->tables);
+        $shortened = $this->verifier($store)->verifyContinuity($this->context());
+        self::assertSame('audit.checkpoint.head.regressed', $shortened->report->firstDivergence?->code);
+        self::assertSame(3, $shortened->report->firstDivergence->position);
+        self::assertNull($shortened->checkpoint);
+        self::assertTrue(
+            $this->verifier()->verify($this->context())->guarded(),
+            'Without the checkpoint, the shortened trail is indistinguishable from an intact one.',
+        );
+        self::assertSame('audit.checkpoint.head.regressed', $this->verifier()->verifyContinuity(
+            $this->context(),
+            1000,
+            new AuditCheckpoint(0, null, 3),
+        )->report->firstDivergence?->code);
+
+        file_put_contents($this->archiveRoot . '/checkpoints/' . sprintf('%020d-%020d.json', 9, 9), 'altered');
+        self::assertSame(
+            'audit.checkpoint.unreadable',
+            $this->verifier($store)->verify($this->context())->firstDivergence?->code,
+        );
+        unlink($this->archiveRoot . '/checkpoints/' . sprintf('%020d-%020d.json', 9, 9));
+        foreach (glob($this->archiveRoot . '/checkpoints/*') ?: [] as $file) {
+            unlink($file);
+        }
+        rmdir($this->archiveRoot . '/checkpoints');
+    }
+
+    /**
+     * A guarded verdict whose checkpoint cannot be retained fails instead of silently losing the mark.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnUnretainableCheckpointFailsVerification(): void
+    {
+        $this->record(1);
+        mkdir($this->archiveRoot, 0700, true);
+        file_put_contents($this->archiveRoot . '/occupied', 'not a directory');
+        try {
+            $this->verifier(new FilesystemAuditCheckpointStore($this->archiveRoot . '/occupied/checkpoints'))
+                ->verify($this->context());
+            self::fail('An unretainable checkpoint must fail verification.');
+        } catch (\RuntimeException $failure) {
+            self::assertStringContainsString('checkpoint directory cannot be created', $failure->getMessage());
+        }
     }
 
     public function testTheDatabaseRefusesUpdatesAndUnguardedDeletes(): void
@@ -703,7 +785,7 @@ final class AuditTamperEvidenceTest extends TestCase
         return $identifiers;
     }
 
-    private function verifier(): DoctrineAuditTrailVerifier
+    private function verifier(?FilesystemAuditCheckpointStore $checkpoints = null): DoctrineAuditTrailVerifier
     {
         return new DoctrineAuditTrailVerifier(
             $this->database,
@@ -711,6 +793,7 @@ final class AuditTamperEvidenceTest extends TestCase
             new AllowingAuditAuthorization(),
             $this->encoder,
             new FilesystemAuditArchiveVerifier($this->archiveRoot),
+            $checkpoints,
         );
     }
 

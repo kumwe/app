@@ -495,37 +495,108 @@ The host verifier exits `0` only when the evidence and required guards are intac
 
 | Exit | `append_only_enforcement` | Meaning |
 | --- | --- | --- |
-| `0` | `active` | The chain verified and the database is refusing rewrites. This is the intended posture. |
+| `0` | `active` | The chain verified, it still reaches every retained checkpoint, the database is refusing rewrites, and the runtime principal holds no retention authority. This is the intended posture. |
+| `2` | `active` | The evidence verified, but `retention_authority` is `not_separated`: the runtime database principal is itself the retention principal (or a PostgreSQL superuser), so prevention against it is void. Assign a separate retention login. |
 | `1` | `not_installed` | Required guards are absent. Continuity cannot be proven, even when the remaining rows hash correctly. |
-| `1` | either | Evidence diverged, an archive or receipt is unavailable, or verification could not run. The first finding identifies the affected evidence. |
+| `1` | either | Evidence diverged, the trail no longer reaches a retained checkpoint, an archive or receipt is unavailable, or verification could not run. The first finding identifies the affected evidence. |
 
 The enforcement field is read from the server's catalog on every run, not from anything the migration recorded, so
-it stays true after a restore onto a different server and after a DBA grants or revokes the privilege.
+it stays true after a restore onto a different server and after a DBA grants or revokes the privilege. The result
+also carries `retention_authority` (`separated`, `unassigned`, `not_separated` or `not_installed`), the
+`retained_checkpoint` it was checked against, and — only for a verdict that is intact and guarded — the
+`checkpoint` it reached.
 
-### Append-only enforcement and least-privilege accounts
+### Continuity checkpoints
 
-`UPDATE` on `audit_events` and both `UPDATE` and `DELETE` on `audit_anchors` are refused by database
-triggers. The anchor table includes retention marks, so those cannot be removed after deleting their events.
-An event deletion requires both the retention session flag and an immutable prune mark covering its position.
-A forged mark remains visible and fails verification unless the exact archived events survive in the private
-store and reproduce the original sealed ranges. PostgreSQL `TRUNCATE` is refused on both tables.
+Hashes, witness links and anchors all live in the same database as the trail. Something able to erase or roll back
+the trail *together with* its anchor ledger — an account with schema authority, a restore of an older backup, or a
+server without the guards — leaves a smaller trail that hashes correctly. Two checkpoints held outside the database
+close that gap:
 
-This protects against a database principal limited to ordinary application DML. A session variable alone is
-not authorization. The archive and its receipt are outside that principal's database permissions. Missing
-guards produce `audit.enforcement.unavailable`; missing or altered retention evidence produces
-`anchor.prune.evidence.unavailable`. Neither result is reported as an intact trail.
+- **Retained checkpoint.** After every intact and guarded verification that is not inside a database transaction,
+  the verifier publishes its high-water mark — the newest anchor-ledger sequence with its chained digest, and the
+  highest audit position present or archived — as a new `0600` file under
+  `storage/private/audit-archives/checkpoints/<installation>/`. Files are created exclusively and never rewritten
+  or removed by the application, and the highest one is the mark. Every later verification must still reach it:
+  a ledger that no longer holds that entry with that digest is `audit.checkpoint.ledger.regressed`, a trail below
+  that position is `audit.checkpoint.head.regressed`, and an unreadable newest checkpoint is
+  `audit.checkpoint.unreadable`. All three exit `1`.
+- **Operator checkpoint.** Copy the `checkpoint` member of a clean `audit:verify` result off-host, into custody the
+  application host cannot write (the same place as backup manifests). Supply it back with
+  `bin/kumwe audit:verify --site=<site> --token-file=<file> --checkpoint-file=<file>`; the file must be an
+  owner-only regular file holding either the checkpoint object or the whole saved result. A trail that no longer
+  reaches it exits `1`. This is the control that survives loss or compromise of the application host itself.
 
-An administrator or account with DDL, trigger ownership, or filesystem access can remove these controls.
-Do not claim protection against complete database or host administration compromise. In particular,
-`compose.production.yaml` currently shares a database identity between migration and runtime services;
-that identity retains schema privileges. Sites requiring the narrower DML threat boundary must separately
-restrict runtime credentials using a deployment setup that also accounts for authorized schema operations.
+Checkpoints detect; they do not prevent. A deliberate reinstall or an accepted restore to an earlier point is
+exactly what they report. Preserve the evidence and investigate first; only when the rollback is the accepted
+recovery, move that installation's checkpoint directory into the incident record and start a new operator
+checkpoint series from the next clean verdict. Never recreate a ledger over missing evidence.
 
-The new retention-evidence migration requires permission to install its guards; it fails if that protection
-cannot be installed. MySQL/MariaDB need `TRIGGER` and, with binary logging, the appropriate
-`log_bin_trust_function_creators` setting or administrative privilege. PostgreSQL needs trigger creation
-privileges on both tables and function creation privileges in their schema. Use the migration identity to
-supply these rights, and investigate a missing-guard finding before resuming retention.
+### Append-only enforcement, retention authority and least-privilege accounts
+
+`UPDATE` on `audit_events` and both `UPDATE` and `DELETE` on `audit_anchors` are refused by database triggers.
+PostgreSQL `TRUNCATE` is refused on both tables. Removing audit evidence additionally requires **retention
+authority**, which a session variable cannot grant: the `audit_retention_authority` and `audit_prune_authority`
+triggers refuse every `DELETE` on `audit_events` and every non-`anchor` row appended to `audit_anchors` unless the
+session is authenticated as the assigned retention principal. The principal is named by the routine
+`<prefix>audit_retention_principal()`, which only the schema owner can replace; the comparison uses the login the
+server authenticated (PostgreSQL `session_user`, which `SET ROLE` does not change; the user part of MySQL/MariaDB
+`USER()`), and reads no table a temporary table could shadow. A fresh installation names nobody, so **no session
+can delete audit evidence and retention refuses** until an operator assigns a principal. Retention also refuses
+while the runtime connection is itself the retention principal. Every deletion still needs an immutable prune mark
+covering it, and every mark still needs its private archive and receipt.
+
+Provision three database identities:
+
+| Identity | Used by | Privileges on the audit objects |
+| --- | --- | --- |
+| Migration (schema owner) | `bin/kumwe database:migrate` only | Owns the tables, triggers and routines. MySQL/MariaDB: `TRIGGER`, `CREATE ROUTINE`, `ALTER ROUTINE`, and with binary logging `log_bin_trust_function_creators` or the provider's equivalent. PostgreSQL: table ownership and `CREATE` on the schema. |
+| Runtime | web, worker and CLI processes | `SELECT, INSERT, UPDATE, DELETE` on the application tables including `audit_events` and `audit_anchors`; MySQL/MariaDB `EXECUTE` on the schema's routines (the verifier reads trigger state through the definer-rights `<prefix>audit_guard_catalog()`, because MySQL shows triggers only to accounts that could drop them). No `TRIGGER`, `CREATE ROUTINE`, `ALTER ROUTINE`, `DROP`, `ALTER`, `SUPER`, `CREATE TEMPORARY TABLES` or superuser. |
+| Audit retention | the retention pass only | `SELECT, INSERT, DELETE` on `audit_events`; `SELECT, INSERT` on `audit_anchors`; MySQL/MariaDB `EXECUTE` on the schema's routines; PostgreSQL `USAGE` on the schema. Nothing else. |
+
+Example for MySQL/MariaDB, run as an administrator (substitute the database, prefix, hosts and secrets):
+
+```sql
+CREATE USER 'kumwe_retention'@'app-host' IDENTIFIED BY '<secret>';
+GRANT SELECT, INSERT, DELETE ON kumwe.kumwe_audit_events TO 'kumwe_retention'@'app-host';
+GRANT SELECT, INSERT ON kumwe.kumwe_audit_anchors TO 'kumwe_retention'@'app-host';
+GRANT EXECUTE ON kumwe.* TO 'kumwe_retention'@'app-host';
+GRANT EXECUTE ON kumwe.* TO 'kumwe_runtime'@'app-host';
+```
+
+and for PostgreSQL:
+
+```sql
+CREATE ROLE kumwe_retention LOGIN PASSWORD '<secret>';
+GRANT USAGE ON SCHEMA public TO kumwe_retention;
+GRANT SELECT, INSERT, DELETE ON kumwe_audit_events TO kumwe_retention;
+GRANT SELECT, INSERT ON kumwe_audit_anchors TO kumwe_retention;
+```
+
+Then set `DB_AUDIT_RETENTION_USER` and `DB_AUDIT_RETENTION_PASSWORD` (or `DB_AUDIT_RETENTION_PASSWORD_FILE`) for both
+the migration run and the processes that run retention, and run `bin/kumwe database:migrate`: with the migration
+identity it assigns the configured login as the principal (an unset variable leaves any existing assignment alone).
+To assign or withdraw it by hand, replace the routine as the schema owner — for example on PostgreSQL
+`CREATE OR REPLACE FUNCTION public.kumwe_audit_retention_principal() RETURNS text LANGUAGE sql STABLE SET search_path
+= pg_catalog, pg_temp AS $$ SELECT 'kumwe_retention'::text $$;` — returning `NULL` withdraws retention from
+everybody. Only the retention pass opens the retention login, and only when it has an aged anchored range to prune,
+so a wrong retention credential fails retention alone. Confirm with `audit:verify` that `retention_authority` reads
+`separated`.
+
+This protects against a principal limited to the runtime grant above: setting `@kumwe_audit_prune` or
+`kumwe_audit_prune.enabled` itself, forging a correctly hashed prune mark, or deleting or rewriting the ledger is
+refused by the database. MySQL/MariaDB installations must not carry anonymous accounts, whose client-supplied name
+`USER()` would echo. An administrator, the schema owner, a PostgreSQL superuser, or an account with trigger or
+routine privileges, or with host or filesystem access, can remove these controls; the retained and operator
+checkpoints make such removal detectable, not impossible. `compose.production.yaml` currently shares one database
+identity between migration and runtime services; that identity retains schema privileges, so the prevention
+boundary above requires the separate identities in this table.
+
+The retention-evidence migration requires permission to install its guards and fails if that protection cannot be
+installed. The retention-authority migration records a recognized privilege refusal instead; verification then
+reports `audit.enforcement.unavailable` and `retention_authority: not_installed`, and retention refuses. Supply the
+missing privileges to the migration identity, rerun the repeatable migration, and investigate before resuming
+retention.
 
 ### Audit export and retention
 
@@ -540,8 +611,10 @@ zero, so an unconfigured installation keeps its trail unbounded. To enable it, s
 that schedule and enable it. A pass then archives and prunes only whole anchored ranges older than the window: it
 exports the range, chains a `prune` mark carrying the archive checksum and the range's rolling digest into the
 anchor ledger, deletes the rows through the guarded window, and records an `audit.trail.pruned` event — all in one
-transaction. Evidence is transformed into archived evidence, never silently destroyed. Keep the archives under the
-same custody as backups, including the `retention-proofs` subdirectory. Before deleting, retention verifies the
+transaction on the separate retention connection. Evidence is transformed into archived evidence, never silently
+destroyed. Without an assigned and separated retention principal the pass refuses as soon as a range is due. Keep
+the archives under the same custody as backups, including the `retention-proofs` and `checkpoints`
+subdirectories. Before deleting, retention verifies the
 existing trail, reads the archive back, and preserves a private receipt binding its checksum, file name and
 size to the exact prune digest. Before deletion and on every later verification, the archived ordered event
 digests must also reproduce the original immutable anchor ranges. A database-only forged prune, concurrent

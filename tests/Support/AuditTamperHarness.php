@@ -7,6 +7,7 @@ namespace Kumwe\App\Tests\Support;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Kumwe\App\Audit\Infrastructure\Persistence\AuditAppendOnlyGuard;
+use Kumwe\App\Audit\Infrastructure\Persistence\AuditRetentionAuthority;
 use Kumwe\App\Audit\Infrastructure\Persistence\AuditRetentionGuard;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 
@@ -33,6 +34,8 @@ final class AuditTamperHarness
             'audit_ledger_update' => 'audit_anchors',
             'audit_ledger_delete' => 'audit_anchors',
             'audit_ledger_truncate' => 'audit_anchors',
+            'audit_retention_authority' => 'audit_events',
+            'audit_prune_authority' => 'audit_anchors',
             ] as $trigger => $table
         ) {
             $name = $database->quoteSingleIdentifier($tables->raw($trigger));
@@ -53,6 +56,7 @@ final class AuditTamperHarness
     {
         AuditAppendOnlyGuard::install($database, $tables);
         AuditRetentionGuard::install($database, $tables);
+        AuditRetentionAuthority::install($database, $tables);
     }
 
     /**
@@ -120,7 +124,12 @@ final class AuditTamperHarness
         return false;
     }
 
-    /** Resets fixtures using test-only DDL authority; production retention cannot erase its own evidence. */
+    /**
+     * Resets fixtures using test-only DDL authority; production retention cannot erase its own evidence.
+     *
+     * The kernel's retained checkpoints describe the erased trail, so they are withdrawn with it: a
+     * deliberate fixture reset is exactly the rollback they would otherwise, correctly, report.
+     */
     public static function truncateTrail(Connection $database, TableNames $tables): void
     {
         self::disableGuards($database, $tables);
@@ -129,6 +138,15 @@ final class AuditTamperHarness
             $database->executeStatement(sprintf('DELETE FROM %s', $tables->quoted('audit_anchors')));
         } finally {
             self::enableGuards($database, $tables);
+        }
+        self::withdrawKernelCheckpoints();
+    }
+
+    /** Removes the checkpoints the test kernel's verifier retained beneath the repository storage root. */
+    public static function withdrawKernelCheckpoints(): void
+    {
+        foreach (glob(dirname(__DIR__, 2) . '/storage/private/audit-archives/checkpoints/*/*.json') ?: [] as $file) {
+            unlink($file);
         }
     }
 

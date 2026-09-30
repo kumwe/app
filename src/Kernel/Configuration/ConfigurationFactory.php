@@ -113,6 +113,8 @@ final class ConfigurationFactory
                 tablePrefix: $environment->string('DB_TABLE_PREFIX', 'kumwe_'),
                 sslMode: $environment->string('DB_SSLMODE', 'require'),
                 serverVersion: $environment->string('DB_SERVER_VERSION', $defaultServerVersion),
+                auditRetentionUser: $environment->optionalString('DB_AUDIT_RETENTION_USER') ?? '',
+                auditRetentionPassword: $this->fileBackedSecret($environment, 'DB_AUDIT_RETENTION_PASSWORD') ?? '',
             ),
             redis: new RedisConfiguration(
                 host: $environment->string('REDIS_HOST', 'redis'),

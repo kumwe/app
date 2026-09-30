@@ -247,3 +247,46 @@ ADR 0023 and correctly describes the ordinary actor test as a stepped applicatio
 The three functional scenarios and four security-matrix checks passed together on MariaDB: 7 tests,
 2,272 assertions. This is an implementation follow-up, not an independent re-review, full CI result or
 waiver of Finding 01. The original source finding above remains an accurate record of the reviewed head.
+
+## Implementation follow-up — Finding 01
+
+The coordinating implementation agents corrected Finding 01 in PR #152 after this review. This is an
+implementation record, not an independent re-review, a full CI result or a waiver; the source finding above
+remains an accurate record of the reviewed head.
+
+- **Retention authority is a database identity, not a session variable.** Migration
+  `20260930110000_audit_retention_authority` installs `audit_retention_authority` (`BEFORE DELETE` on
+  `audit_events`) and `audit_prune_authority` (`BEFORE INSERT` of any non-`anchor` row on `audit_anchors`).
+  Both refuse unless the session's authenticated login — PostgreSQL `session_user`, the user part of
+  MySQL/MariaDB `USER()` — equals the login named by `<prefix>audit_retention_principal()`, a routine only the
+  schema owner can replace. The comparison reads no table, so a session temporary table cannot shadow it; the
+  PostgreSQL trigger function is schema-qualified with a fixed `search_path`. Setting `@kumwe_audit_prune` or
+  `kumwe_audit_prune.enabled` remains necessary for the older guard but grants nothing on its own.
+- **Unassigned or unseparated means refusal.** A fresh installation names no principal, so no session may delete
+  audit evidence. `DoctrineAuditRetentionService` runs on a separately credentialed connection
+  (`DB_AUDIT_RETENTION_USER`/`_PASSWORD`, opened only for a due retention pass) and refuses before archiving unless
+  that connection is the principal and the runtime connection is not (a PostgreSQL superuser runtime is reported
+  `not_separated`). `database:migrate` assigns the configured login with the schema-owning identity.
+- **Least-privilege observation on MySQL/MariaDB.** Those servers show triggers only to accounts holding
+  `TRIGGER`, which would let them drop the guards. Verification now reads trigger state through the definer-rights
+  routine `<prefix>audit_guard_catalog()`, so a DML-plus-`EXECUTE` runtime or retention account observes the real
+  enforcement state instead of `not_installed`.
+- **Continuity outside the database.** After each intact, guarded verification outside a transaction the verifier
+  publishes an append-only private checkpoint (ledger sequence and digest, highest position present or archived)
+  that it can never lower, and `audit:verify` prints it for off-host custody. Later verification must still reach
+  the retained checkpoint and any `--checkpoint-file` the operator supplies; otherwise it reports
+  `audit.checkpoint.ledger.regressed` or `audit.checkpoint.head.regressed` and exits 1. `audit:verify` also reports
+  `retention_authority` and exits 2 when the runtime principal holds it.
+- **Adversarial evidence.** `AuditRetentionAuthorityIntegrationTest` creates a real DML-only login and a real
+  retention login through an administrative connection. The DML login, with the flag set, is refused deleting
+  events, forging a correctly hashed prune mark, and deleting or rewriting the ledger; complete trail and ledger
+  erasure (possible only with schema authority) fails against the retained and the operator checkpoint, including
+  through the console command; archived retention succeeds only as the separate retention login and refuses when
+  unassigned, on the runtime connection, or when not separated. It passed locally on MariaDB 10.11 and
+  PostgreSQL 16 (4 tests each); the MySQL 8.4 run is the CI database lane's, and is not claimed here.
+
+Residual boundary: accounts that can alter triggers or routines, database superusers, anonymous MySQL/MariaDB
+accounts and host or filesystem compromise remain outside the prevention boundary. For them the retained and
+operator checkpoints make erasure or rollback detectable, not impossible, and only while that custody is intact.
+The managed-service `CREATE TRIGGER` refusal remains a reported control condition. Accordingly, the `GM-AUD-02`
+residual no longer claims that tamper evidence holds unconditionally.

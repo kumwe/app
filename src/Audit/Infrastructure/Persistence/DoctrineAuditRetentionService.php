@@ -45,6 +45,11 @@ use RuntimeException;
  * erase both the rows and their prune claims, or manufacture private evidence for a forged retention mark.
  * A rollback can leave an unreferenced archive or receipt; it never authorizes deletion or hides a row.
  *
+ * The database accepts the prune mark and the deletion only from the separately assigned retention
+ * principal (`AuditRetentionAuthority`). This service therefore runs on a connection authenticated as that
+ * principal and refuses, before archiving anything, unless that holds and the ordinary runtime connection
+ * is not the same principal. An installation without an assigned principal keeps its whole trail.
+ *
  * @since  2.0.0
  */
 final readonly class DoctrineAuditRetentionService implements AuditRetentionService
@@ -63,6 +68,8 @@ final readonly class DoctrineAuditRetentionService implements AuditRetentionServ
      * @param  ?FilesystemAuditArchiveVerifier  $verifier       Re-reads the archive and refuses the prune unless it
      *         is restorable; absence refuses retention rather than trusting database-only claims.
      * @param ?AuditTrailVerifier $trailVerifier Verifies sealed evidence before retention can preserve it.
+     * @param ?Connection $runtime Ordinary application connection that must not itself hold retention
+     *         authority; null judges `$database` itself, which refuses on any engine with principals.
      *
      * @since  2.0.0
      */
@@ -77,6 +84,7 @@ final readonly class DoctrineAuditRetentionService implements AuditRetentionServ
         private CanonicalEncoder $encoder,
         private ?FilesystemAuditArchiveVerifier $verifier = null,
         private ?AuditTrailVerifier $trailVerifier = null,
+        private ?Connection $runtime = null,
     ) {
     }
 
@@ -121,6 +129,7 @@ final readonly class DoctrineAuditRetentionService implements AuditRetentionServ
             if ($to === null || $to < $from) {
                 return new AuditRetentionResult(0);
             }
+            $this->assertRetentionAuthority();
             $export = $this->exporter->export($context, $from, $to);
             $this->verifier->assertRestorable($export->archive, $from, $to, $export->eventCount);
             [$count, $rolling] = $this->fold($from, $to);
@@ -206,6 +215,35 @@ final readonly class DoctrineAuditRetentionService implements AuditRetentionServ
                 $sequence,
             );
         });
+    }
+
+    /**
+     * Refuse unless this connection is the retention principal and the runtime principal is not.
+     *
+     * The database enforces the same rule on every deletion; checking first turns a missing or misassigned
+     * principal into an explicit refusal before an archive is written, rather than a trigger failure after.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When retention authority is absent here or not separated from the runtime.
+     *
+     * @since   2.0.0
+     */
+    private function assertRetentionAuthority(): void
+    {
+        if (!AuditRetentionAuthority::sessionAuthorized($this->database, $this->tables)) {
+            throw new RuntimeException(
+                'Audit retention requires a connection authenticated as the assigned audit retention principal.',
+            );
+        }
+        $state = AuditRetentionAuthority::state($this->runtime ?? $this->database, $this->tables);
+        if (!$state->permitsRetention()) {
+            throw new RuntimeException(sprintf(
+                'Audit retention refuses to run while retention authority is not separated from the runtime '
+                . 'principal (%s).',
+                $state->value,
+            ));
+        }
     }
 
     /**

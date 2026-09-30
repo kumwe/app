@@ -1710,7 +1710,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Independent agent review is recorded in docs/security/reviews/2026-09-28-p7c-threat-review.md. Its high-severity audit retention bypass (P7C-20260928-01 / GM-AUD-02) requires remediation and three-engine adversarial proof. Finding 02 is corrected by the ADR 0023 functional recovery contract and matrix alignment (7 tests, 2,272 assertions); final combined CI and extension isolation obligations remain open.",
+      "outstanding": "Independent agent review is recorded in docs/security/reviews/2026-09-28-p7c-threat-review.md. Its high-severity audit retention bypass (P7C-20260928-01 / GM-AUD-02) is remediated by database-enforced retention authority and retained continuity checkpoints; the adversarial suite passes on MariaDB and PostgreSQL locally and its MySQL 8.4 run is outstanding in the CI database lane. Finding 02 is corrected by the ADR 0023 functional recovery contract and matrix alignment (7 tests, 2,272 assertions); final combined CI and extension isolation obligations remain open.",
       "gate_b_criteria": [
         1
       ],
@@ -2678,10 +2678,14 @@
       "requirement": "Append-only audit storage is enforced by the database where the server grants the privilege, and reported where it refuses.",
       "reference": "docs/roadmap/findings.json#GM-AUD-02",
       "runtime_owner": [
-        "src/Audit/Infrastructure/Persistence/AuditAppendOnlyGuard.php"
+        "src/Audit/Infrastructure/Persistence/AuditAppendOnlyGuard.php",
+        "src/Audit/Infrastructure/Persistence/AuditRetentionAuthority.php",
+        "src/Audit/Infrastructure/Persistence/DoctrineAuditTrailVerifier.php"
       ],
       "tests": [
-        "tests/Integration/Audit/AuditTamperEvidenceTest.php"
+        "tests/Integration/Audit/AuditTamperEvidenceTest.php",
+        "tests/Integration/Audit/AuditRetentionAuthorityIntegrationTest.php",
+        "tests/Unit/Audit/Infrastructure/Storage/FilesystemAuditCheckpointStoreTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
@@ -2692,7 +2696,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Conditional residual: a managed service that withholds CREATE TRIGGER leaves no database-level prevention, while tamper evidence holds unconditionally. Gate B criterion 1 needs its owner, detection method, compensating control, remediation path and review date recorded for the release-candidate assessment.",
+      "outstanding": "The P7C-20260928-01 retention bypass is remediated: only the separately assigned retention login may delete audit evidence, and verification checks retained and operator checkpoints; the MySQL 8.4 adversarial run is outstanding in the CI database lane. Conditional residual: a managed service that withholds CREATE TRIGGER leaves no database-level prevention and is reported as not_installed; tamper evidence then rests on the retained and operator checkpoints and their custody, not on database-local hashes. Gate B criterion 1 needs its owner, detection method, compensating control, remediation path and review date recorded for the release-candidate assessment.",
       "gate_b_criteria": [
         1
       ],
