@@ -7552,11 +7552,11 @@ final class ContainerFactory
     private static function studioContextualAuthoringQualification(): StudioContextualAuthoringQualification
     {
         return new StudioContextualAuthoringQualification(
-            '0.1.0-beta.7',
-            '136a13939051507f265e0b6b1c31995830b46ca784e0e28568e9d50371a88270',
-            '124f5277ddbd14d5ea7d5d5d8aa4e2124a4cf4c85a2fd02e810536df7bb297fb',
-            '937e0d1ac41bcc9b5e9c076d95ab152b14dac8bc13728332bc6e28d85c55ae51',
-            'sha256-KbYJ6mUGmLiASlEHwLfCGp1PbjSndWuNTSaRsoEHirk=',
+            '0.1.0-beta.9',
+            '3ccd07a3369c8edff7825583ea75c9e4e5bbf3cf786fd969bda83b7c920b7451',
+            'bd83d8d0aeb1889c823da9ed2118a37712889433fbbd0e737c1daf1136385000',
+            'e0bafece63dbc0fc300040e7682b203bff4a97402f07d8e5d6b8b344f9a7b711',
+            'sha256-q4Y2M9hYUwHHUJDb5BpjmiLsl1biZElXOWrruzdYZTs=',
         );
     }
 

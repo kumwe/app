@@ -27,18 +27,18 @@
     "test:browser:update": "playwright test --update-snapshots"
   },
   "dependencies": {
-    "@kumwe/studio": "0.1.0-beta.7",
-    "@kumwe/studio-core": "0.1.0-beta.7",
-    "@kumwe/studio-media": "0.1.0-beta.7",
-    "@kumwe/studio-preview": "0.1.0-beta.7",
-    "@kumwe/studio-protocol": "0.1.0-beta.7",
-    "@kumwe/studio-renderer-web": "0.1.0-beta.7",
-    "@kumwe/studio-rich-text": "0.1.0-beta.7",
+    "@kumwe/studio": "0.1.0-beta.9",
+    "@kumwe/studio-core": "0.1.0-beta.9",
+    "@kumwe/studio-media": "0.1.0-beta.9",
+    "@kumwe/studio-preview": "0.1.0-beta.9",
+    "@kumwe/studio-protocol": "0.1.0-beta.9",
+    "@kumwe/studio-renderer-web": "0.1.0-beta.9",
+    "@kumwe/studio-rich-text": "0.1.0-beta.9",
     "lit": "3.3.3"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
-    "@kumwe/studio-testkit": "0.1.0-beta.7",
+    "@kumwe/studio-testkit": "0.1.0-beta.9",
     "@playwright/test": "1.62.1",
     "@types/node": "26.2.0",
     "ajv": "^8.17.1",

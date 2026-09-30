@@ -1,4 +1,4 @@
-import { t as __vitePreload } from "./administrator-DJU_br3B.js";
+import { t as __vitePreload } from "./administrator-DG5TFL6y.js";
 import { i as coreLayoutInitialProperties, o as isCoreLayoutBlockType, t as computePreviewDraftDigest } from "./preview-identity-Bvgz1vbs.js";
 //#region assets/administrator/components/studio-launch.ts
 /**

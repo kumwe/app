@@ -1,6 +1,6 @@
 {
   "kind": "studio-core-catalog",
-  "release": "0.1.0-beta.7",
+  "release": "0.1.0-beta.9",
   "blocks": [
     {
       "type": "studio.core/accordion",

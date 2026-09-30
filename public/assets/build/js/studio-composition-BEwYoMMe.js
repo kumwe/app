@@ -1,5 +1,5 @@
 import { c as A$10, d as b$13, f as w$13, l as D$11, p as i$18, s as i$19, u as E$13 } from "./reveal-validation-BVQF1cmE.js";
-import { t as __vitePreload } from "./administrator-DJU_br3B.js";
+import { t as __vitePreload } from "./administrator-DG5TFL6y.js";
 import { a as createCoreLayoutBlockDefinitions, c as STUDIO_STALE_SESSION_GENERATION_DIAGNOSTIC_CODE, d as canonicalStringify, i as coreLayoutInitialProperties, l as STUDIO_WIRE_PROTOCOL_VERSION, n as CORE_LAYOUT_BLOCK_TYPES, o as isCoreLayoutBlockType, r as CORE_LAYOUT_THEME_CONTROLS, s as STUDIO_CONTRACT_VERSION, t as computePreviewDraftDigest, u as cloneContractValue } from "./preview-identity-Bvgz1vbs.js";
 //#region node_modules/@kumwe/studio-core/dist/binding-projection.js
 function projectBlueprintFieldBindings(t, i, a) {
@@ -17233,6 +17233,11 @@ var canvasWorkspaceStyles = i$18`
     scrollbar-gutter: stable;
   }
 
+  .outline:focus-visible {
+    outline: 0.1875rem solid var(--studio-primary);
+    outline-offset: -0.1875rem;
+  }
+
   .canvas {
     background: #eef1f6;
     grid-column: 2;
@@ -20618,7 +20623,11 @@ var KumweStudioElement = class extends i$19 {
                   </ul>`}
         </main>
 
-        <aside class="panel outline" aria-label=${this.#text(`studio.shell/outline-heading`)}>
+        <aside
+          class="panel outline"
+          aria-label=${this.#text(`studio.shell/outline-heading`)}
+          tabindex="0"
+        >
           <h2>${this.#text(`studio.shell/outline-heading`)}</h2>
           <p class="hint">${this.#text(`studio.shell/outline-hint`)}</p>
           ${i.length === 0 ? b$13`<p class="empty">${this.#text(`studio.shell/outline-empty`)}</p>` : b$13`<ul class="tree">
@@ -22792,6 +22801,8 @@ var KumweStudioElement = class extends i$19 {
         ${e && n !== `closed` ? b$13`
                 <div
                   class="preview-stage"
+                  role="group"
+                  aria-label=${this.#text(`studio.shell/preview-label`)}
                   tabindex="0"
                   @keydown=${(e) => {
 			this.#onPreviewStageKeydown(e);
@@ -23278,6 +23289,8 @@ var KumweStudioElement = class extends i$19 {
         </p>
         <div
           class="preview-stage"
+          role="group"
+          aria-label=${this.#text(`studio.shell/local-canvas-label`)}
           tabindex="0"
           @keydown=${(e) => {
 			this.#onPreviewStageKeydown(e);
@@ -24028,7 +24041,7 @@ async function setupStudioComposition() {
 	if (shell === null) return;
 	try {
 		const boot = JSON.parse(encoded.textContent ?? "");
-		if (boot.release !== "0.1.0-beta.7") throw new Error("Studio release binding mismatch.");
+		if (boot.release !== "0.1.0-beta.9") throw new Error("Studio release binding mismatch.");
 		const opened = await openHostSession(boot);
 		const advertised = new Set(opened.hostCapabilities);
 		const adapter = createStudioHttpHostAdapter(boot.endpoints.ports, {

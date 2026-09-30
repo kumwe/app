@@ -39,7 +39,7 @@ configuration, or HTML is not an App contract and does not cross the host bounda
 
 ## Current App truth
 
-The pinned coordinated Studio family is `0.1.0-beta.7`; exact package and corpus bytes are recorded by
+The pinned coordinated Studio family is `0.1.0-beta.9`; exact package and corpus bytes are recorded by
 [`resources/studio-contract/PIN.json`](../resources/studio-contract/PIN.json). The beta label describes that
 coordinated Studio package family; it does **not** by itself prove Kumwe App's integrated journey.
 

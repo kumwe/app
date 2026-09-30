@@ -607,7 +607,8 @@ test('the contextual shell is operable by keyboard alone with named controls in 
   const model = await focusStop(page);
   expect(model.name).toBe(studio('mode-model'));
   await expect(model.locator).toHaveAttribute('aria-selected', 'true');
-  await tabUntil(page, (stop) => stop.name === studio('field-identifier'), 20);
+  await tabUntil(page, (stop) => stop.name === studio('field-identifier'),
+    1 + await shell.locator('button, input, select, textarea, [tabindex]').count());
   await page.keyboard.type('caption');
   await tabUntil(page, (stop) => stop.name === studio('field-label'), 4);
   await page.keyboard.type('Caption');
@@ -617,7 +618,8 @@ test('the contextual shell is operable by keyboard alone with named controls in 
   await expect(shell.locator('.dirty-summary')).toHaveAttribute('data-dirty', 'true');
 
   // A block inserted from the palette with Enter: the explicit, non-drag insertion path.
-  await tabUntil(page, (stop) => stop.role === 'tab', 40, 'Shift+Tab');
+  await tabUntil(page, (stop) => stop.role === 'tab',
+    1 + await shell.locator('button, input, select, textarea, [tabindex]').count(), 'Shift+Tab');
   await page.keyboard.press('ArrowRight');
   const blueprint = await focusStop(page);
   expect(blueprint.name).toBe(studio('mode-blueprint'));

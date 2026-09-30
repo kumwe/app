@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "313b388f8308d3b7b3b6d405e0b451a0",
+    "content-hash": "66fc7bcf821db2331d90b690ba1edb2b",
     "packages": [
         {
             "name": "brick/math",
@@ -1000,16 +1000,16 @@
         },
         {
             "name": "kumwe/extension-sdk",
-            "version": "v0.3.4",
+            "version": "v0.3.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/kumwe/extension-sdk.git",
-                "reference": "0821b90277cbb0ad395b6d1486a683a644334415"
+                "reference": "d931fbce50c03df36080d31c9683f8db3f27429d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kumwe/extension-sdk/zipball/0821b90277cbb0ad395b6d1486a683a644334415",
-                "reference": "0821b90277cbb0ad395b6d1486a683a644334415",
+                "url": "https://api.github.com/repos/kumwe/extension-sdk/zipball/d931fbce50c03df36080d31c9683f8db3f27429d",
+                "reference": "d931fbce50c03df36080d31c9683f8db3f27429d",
                 "shasum": ""
             },
             "require": {
@@ -1029,7 +1029,7 @@
                 "kumwe/idempotency": "0.1.3",
                 "kumwe/integration": "0.2.4",
                 "kumwe/portal-contract": "0.2.2",
-                "kumwe/producer": "0.4.0",
+                "kumwe/producer": "0.6.0",
                 "kumwe/record-model": "0.1.4",
                 "kumwe/record-query": "0.1.4",
                 "kumwe/record-values": "0.1.4",
@@ -1066,7 +1066,7 @@
                 "issues": "https://github.com/kumwe/extension-sdk/issues",
                 "source": "https://github.com/kumwe/extension-sdk"
             },
-            "time": "2026-09-29T15:51:27+00:00"
+            "time": "2026-09-30T12:10:56+00:00"
         },
         {
             "name": "kumwe/idempotency",
@@ -1334,16 +1334,16 @@
         },
         {
             "name": "kumwe/producer",
-            "version": "v0.4.0",
+            "version": "v0.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/kumwe/producer.git",
-                "reference": "de7aff27866d59a2a15d1988f086168e107fc5d8"
+                "reference": "af6cec20ff5f91aa8dca1eec75460016ea962782"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kumwe/producer/zipball/de7aff27866d59a2a15d1988f086168e107fc5d8",
-                "reference": "de7aff27866d59a2a15d1988f086168e107fc5d8",
+                "url": "https://api.github.com/repos/kumwe/producer/zipball/af6cec20ff5f91aa8dca1eec75460016ea962782",
+                "reference": "af6cec20ff5f91aa8dca1eec75460016ea962782",
                 "shasum": ""
             },
             "require": {
@@ -1371,7 +1371,7 @@
                 "issues": "https://github.com/kumwe/producer/issues",
                 "source": "https://github.com/kumwe/producer"
             },
-            "time": "2026-09-29T15:30:35+00:00"
+            "time": "2026-09-30T12:02:24+00:00"
         },
         {
             "name": "kumwe/record-model",

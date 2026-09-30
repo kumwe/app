@@ -16,9 +16,11 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ### #152 — Version 2 runtime completion
 
-- Adopt Studio beta.7 with Producer 0.4.0 and Extension SDK 0.3.4 to preserve accepted server state across
-  repeated saves. Pass the host's translated messages when mounting Studio so the start chooser, editor
-  and save confirmation use the same interface language. Existing checks follow the installed records.
+- Adopt Studio beta.9 with Producer 0.6.0 and Extension SDK 0.3.6 to preserve accepted server state across
+  repeated saves and make the scrolling Outline and editing canvas accessible by keyboard. Pass the
+  host's translated messages when mounting Studio so the chooser, editor and save confirmation use the
+  same interface language. Existing browser journeys use responsive pane navigation, prepare their own
+  content and check stable node identities; localization checks no longer require fixed message counts.
 
 - Reduce the default PHP checks from 29 to 13. Run unit and architecture tests once, database behavior on
   each supported engine, and two routine Chromium projects. Move repeated database passes, wider browser
