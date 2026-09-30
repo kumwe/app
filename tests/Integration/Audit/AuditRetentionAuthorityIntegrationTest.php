@@ -348,6 +348,15 @@ final class AuditRetentionAuthorityIntegrationTest extends TestCase
         $synchronizer = $container->get(AuditRetentionPrincipalSynchronizer::class);
         self::assertInstanceOf(AuditRetentionPrincipalSynchronizer::class, $synchronizer);
         self::assertFalse($synchronizer->synchronize(), 'An assignment already in force is left alone.');
+        AuditTamperHarness::disableGuards($this->database, $this->tables);
+        try {
+            $synchronizer->synchronize();
+            self::fail('A principal must not be assigned while its guards are missing.');
+        } catch (\RuntimeException $refusal) {
+            self::assertStringContainsString('before its guards are installed', $refusal->getMessage());
+        } finally {
+            AuditTamperHarness::enableGuards($this->database, $this->tables);
+        }
         $retention = $container->get(AuditRetentionService::class);
         self::assertInstanceOf(DeferredAuditRetentionService::class, $retention);
         $runtime = $container->get(Connection::class);
