@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { message } from './support/interface-catalogue';
 import { expectNoDocumentOverflow } from './support/interface-diagnostics';
+import { openStudioPanel } from './support/studio-navigation';
 
 /**
  * Hebrew and Arabic laid out from the right, on the surfaces a visitor reaches without signing in.
@@ -219,6 +220,8 @@ test.describe('Right-to-left presentation', () => {
     if (await provision.isVisible()) await provision.click();
 
     const shell = page.locator('kumwe-studio');
+    // A narrow viewport shows one workspace pane at a time: insert from Blocks, then measure on the Canvas.
+    await openStudioPanel(shell, 'blocks', locale);
     const palette = shell.getByRole('complementary', {
       name: message(locale, 'core.studio.shell.palette-label'),
     });
@@ -226,6 +229,7 @@ test.describe('Right-to-left presentation', () => {
       .getByRole('button', { name: 'Section', exact: true });
     await expect(section).toBeVisible();
     await section.click();
+    await openStudioPanel(shell, 'canvas', locale);
     const frame = page.locator('iframe[data-studio-preview]').contentFrame();
     await expect(frame.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(frame.locator('[data-studio-preview-marker]').first()).toBeVisible();
@@ -241,6 +245,7 @@ test.describe('Right-to-left presentation', () => {
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.locator('html')).toHaveAttribute('lang', locale);
     await expectNoDocumentOverflow(page);
+    await openStudioPanel(shell, 'blocks', locale);
     await expect(palette).toHaveCSS('direction', 'rtl');
   });
 });
