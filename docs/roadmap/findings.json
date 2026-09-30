@@ -165,31 +165,6 @@
             "closure_sha": null
         },
         {
-            "id": "V2-OPS-001",
-            "title": "No runtime operational introspection: operators can see that the system is unhealthy but not where it is struggling",
-            "severity": "high",
-            "state": "in_progress",
-            "phase": "6",
-            "gate": "B",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "src/Infrastructure/Observability/MetricCatalog.php",
-                    "symbol": "the declared metric set",
-                    "note": "Wave 7 shipped monitoring: is it up, is it slow, is it erroring, is a queue deep. It did not ship diagnostics: which definition or policy is slow, which rows are contended, which queue is ageing and by how much, which retention stream is falling behind."
-                },
-                {
-                    "file": "docs/operations/monitoring.md",
-                    "symbol": "the signal list",
-                    "note": "The monitoring contract the diagnostics must sit beside without duplicating."
-                }
-            ],
-            "acceptance_test": "An operator-facing diagnostic surface, distinct from monitoring, answering: lock waits and contention hotspots by table and statement class; queue depth and oldest age by queue; slowest definitions and policies by measured cost class; backlog build-up by stream with its drain slope; and whether retention is keeping pace. Bounded by the same cardinality discipline Wave 7 established: never labelled by site, user, record, event or document identifier, or raw route. Every diagnostic states its cost and carries a timeout.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null,
-            "product_owner_decision": "Decision D6."
-        },
-        {
             "id": "V2-UX-001",
             "title": "Workflow acceptance of the interface standard's five archetype task journeys remains unexecuted",
             "severity": "medium",

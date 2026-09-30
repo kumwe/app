@@ -35,6 +35,16 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 - Add permission-controlled operator diagnostics to administrator, REST, CLI and MCP. Reuse existing
   bounded queries and retention observations; report unavailable engine statistics explicitly.
 
+- Deliver `P6-D`, `V2-OPS-001` and Gate B criterion 5 (`GB-5`) on that one diagnostics surface behind
+  `system.diagnostics.read`. Every answer now declares its engine, cost class, statement limit and the elapsed
+  ceiling that follows from the engine-enforced one-second statement timeout. Contention and slow-query
+  answers take an explicit PostgreSQL, MariaDB or MySQL branch, run nothing on another engine, and check that
+  the performance schema and statement-digest consumer, or `pg_stat_statements`, are collecting before an
+  empty table can read as an idle installation; an unavailable or over-budget answer names a fixed reason.
+  PostgreSQL row-lock waiters are attributed to the tables they hold. Tests drive every engine branch and
+  refusal, prove REST, console and MCP refuse a caller holding every other capability alike, and observe a
+  real lock wait on the database engines (`cea61fa9`, `4f591132`).
+
 - Require protected archive evidence and immutable retention claims before pruning audit events.
   Verify archived ranges against their original anchors, including concurrent changes during export.
   The protection applies to database DML access, not database or filesystem administration.
@@ -316,9 +326,8 @@ into this PR; the record keeps each unfinished requirement open. Beta 1 is a pre
 <!-- #152 in-flight streams. Each lands its entries above this comment, citing the acceptance-record
      identifiers it flips, when its branch merges into platform/v2-runtime-completion:
        agent/machine    Studio authoring over REST 1.1.0, CLI generation two and mcp-v2: MACHINE-STUDIO-PARITY
-       agent/recovery   recovery evidence map, deduplication measurement and runtime diagnostics:
-                        P6-A, P6-B, P6-C, P6-D, V2-DR-001, V2-DR-002, V2-DR-003, V2-DR-004, V2-OPS-001,
-                        GM-BAK-04, GM-BAK-08
+       agent/recovery   recovery evidence map and deduplication measurement:
+                        P6-A, P6-B, P6-C, V2-DR-001, V2-DR-002, V2-DR-003, V2-DR-004, GM-BAK-04, GM-BAK-08
        agent/browser    WebKit scheme repaint and translated right-to-left login baselines: V2-QA-014, PL-G,
                         V2-LNG-010 -->
 
