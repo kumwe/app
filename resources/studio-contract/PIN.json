@@ -1,59 +1,59 @@
 {
     "note": "Exact coordinated Studio release pin per kumwe/app#104 and D16/ADR 0007. Producer owns the PHP schema, browser-asset and testkit authorities and vendors nothing App consumes twice. App resolves the eight npm packages from the public npm registry at these exact versions (package.json pins them exactly; package-lock.json records the official registry tarball and its SHA-512 integrity) and loads the Studio browser module and enhancement runtime at run time from the configured npm CDN with the manifest SRI values Producer publishes. No package tarball is committed to this repository. A re-pin changes this record, package.json, package-lock.json and the Producer dependency atomically.",
     "release_record": {
-        "release": "0.1.0-beta.7",
+        "release": "0.1.0-beta.9",
         "file": "studio-release.json",
-        "sha256": "136a13939051507f265e0b6b1c31995830b46ca784e0e28568e9d50371a88270"
+        "sha256": "3ccd07a3369c8edff7825583ea75c9e4e5bbf3cf786fd969bda83b7c920b7451"
     },
     "registry": "https://registry.npmjs.org",
     "pinned": {
         "@kumwe/studio": {
-            "version": "0.1.0-beta.7",
-            "tarball": "https://registry.npmjs.org/@kumwe/studio/-/studio-0.1.0-beta.7.tgz",
-            "npm_tarball_sha256": "c8194895046130c894ec059ffdd17a95d9a30ba269ed51fb9c85ef4d069980ef",
-            "integrity": "sha512-fmGgy5GA/UPzy4I3rvzUdp6BzOTtNbH2e39LrIFid9rjdNJJ7Z8FBYiG4zTzTCBGYDoGKY4in2NJDSzXOoNTKg=="
+            "version": "0.1.0-beta.9",
+            "tarball": "https://registry.npmjs.org/@kumwe/studio/-/studio-0.1.0-beta.9.tgz",
+            "npm_tarball_sha256": "d6fd1945598d6759e881180baed8b4af9b894876c52582aae6f2453c618f8eec",
+            "integrity": "sha512-mCsilUPCLJE5pXz4xPjsyXLrNjTMM01JyJaLHDmwICmm/tRyiqzWXcN7gTyjk29rfjfo829sMmJ+Fm0inkDbzg=="
         },
         "@kumwe/studio-core": {
-            "version": "0.1.0-beta.7",
-            "tarball": "https://registry.npmjs.org/@kumwe/studio-core/-/studio-core-0.1.0-beta.7.tgz",
-            "npm_tarball_sha256": "1a91aec6297b7ad37fae39100b7d8a034556b2fcdb94e7c04ec00bc9f1d8cfd8",
-            "integrity": "sha512-Fmz7dykdMHmIhMUr7MWOILQHL41vab9UD4uesOYpj1Em2zRUA+3eWC3upkxByKAjTD6cTJvp+M0f1vZRuWcUcA=="
+            "version": "0.1.0-beta.9",
+            "tarball": "https://registry.npmjs.org/@kumwe/studio-core/-/studio-core-0.1.0-beta.9.tgz",
+            "npm_tarball_sha256": "097d003f2de198aa80c8e9085085510112b536319d005c9e22af0e2912e2a847",
+            "integrity": "sha512-oLMCRihuVFXLtVaU0Po8mtG2kuU8IC3lP27q9MgTpzxqWJ7c/64NNKknrLzYl9GfNaYPnTkDYIFsSPwxRaRG3A=="
         },
         "@kumwe/studio-media": {
-            "version": "0.1.0-beta.7",
-            "tarball": "https://registry.npmjs.org/@kumwe/studio-media/-/studio-media-0.1.0-beta.7.tgz",
-            "npm_tarball_sha256": "e10734574a4f356ab0437a68171db22ede217e4b02e4bda7532af5d24d8a3a34",
-            "integrity": "sha512-KFgd38o0HjK4rErevCOU7lWXvhwGDVhvZTMscUhr7lH0ZwctM5S6C2Hafxh15A10VZs4pytwSYQOXz3tBdHHCg=="
+            "version": "0.1.0-beta.9",
+            "tarball": "https://registry.npmjs.org/@kumwe/studio-media/-/studio-media-0.1.0-beta.9.tgz",
+            "npm_tarball_sha256": "22066834f7d43d6322a67be3802dd60b565d2b960c44f7072e50a62a608c0ce7",
+            "integrity": "sha512-fQDhfao5U+fJfXSNqzrRpTEzgQXVfdyp8+FJhFffBBCPMdWuuLMJAhQNRBzKWNlGUmHcphOxeEHarxn3LSxORw=="
         },
         "@kumwe/studio-preview": {
-            "version": "0.1.0-beta.7",
-            "tarball": "https://registry.npmjs.org/@kumwe/studio-preview/-/studio-preview-0.1.0-beta.7.tgz",
-            "npm_tarball_sha256": "faf2d77625b2cba90207fa1ddd3d23de8bff2d0039b258d1925bab853296577b",
-            "integrity": "sha512-vEh9zr/IRqxjM9CJSiV12X5D8mVcD2Q3rf2/JoHTBf7Q/ZWKgOfKNz8InWX/KEdpDvzKYL/WKDM5sJ7c7wMbyw=="
+            "version": "0.1.0-beta.9",
+            "tarball": "https://registry.npmjs.org/@kumwe/studio-preview/-/studio-preview-0.1.0-beta.9.tgz",
+            "npm_tarball_sha256": "e92dac757f4f367553518dea042513cae182b881fff6dad5e4c91529f524368d",
+            "integrity": "sha512-dSCdWnH2xKnmd1vF1bWCnnIsx/sGTfwh4DTz2IJOwjfFPLGoavSF8VvX6cAmJH0V0LFa9/XQyBYXPHkNSanIqQ=="
         },
         "@kumwe/studio-protocol": {
-            "version": "0.1.0-beta.7",
-            "tarball": "https://registry.npmjs.org/@kumwe/studio-protocol/-/studio-protocol-0.1.0-beta.7.tgz",
-            "npm_tarball_sha256": "f5b3ce9e430e538580653cf5395e59279a3615e2c8869dcdb3f167beee4a5c4d",
-            "integrity": "sha512-Ilj8K7RgPIpSRaCdR/XM0t4owkm2I58YYP6B0FRiIhg68j7lnPi7qv+0f/zdo8hu/hnczb9/JILPGxCH4ATbEA=="
+            "version": "0.1.0-beta.9",
+            "tarball": "https://registry.npmjs.org/@kumwe/studio-protocol/-/studio-protocol-0.1.0-beta.9.tgz",
+            "npm_tarball_sha256": "dae19ab604b300cac34bf95459e4b99a7659f7a35843ce382230d4180ef0e316",
+            "integrity": "sha512-SyvgEYzPkqJMz3H7Hn/8tX5n2fiHY+HfaV1kzc9r+1n6cUCpXhqYJ0HlV77iPNoVmwwhqDE7DF5U8zzDQwLfIA=="
         },
         "@kumwe/studio-renderer-web": {
-            "version": "0.1.0-beta.7",
-            "tarball": "https://registry.npmjs.org/@kumwe/studio-renderer-web/-/studio-renderer-web-0.1.0-beta.7.tgz",
-            "npm_tarball_sha256": "50be1b250553a74aadc136e4d29b48281ded749d960df68a3c173f003e762455",
-            "integrity": "sha512-G2EVZqgqnTdFOAtGZ/nmvtW7Fg329M9AM/ohtMyqV7k08itwPU7tmUY636YM8p05BWbg4Z9MU+H7G6kagYclGA=="
+            "version": "0.1.0-beta.9",
+            "tarball": "https://registry.npmjs.org/@kumwe/studio-renderer-web/-/studio-renderer-web-0.1.0-beta.9.tgz",
+            "npm_tarball_sha256": "6fc3ddbdcdb2b36c8f37b6b8239769a1a0f72cc8f6745cd0342bdce39ce86bfe",
+            "integrity": "sha512-5nbX520EO/CuUHl33X+zJ53+aSWxGpbEUd6ClGpVPzeqBP1Y4SawLDkcOokp4g3cb5mPEjcWgmJurosFMn9wyg=="
         },
         "@kumwe/studio-rich-text": {
-            "version": "0.1.0-beta.7",
-            "tarball": "https://registry.npmjs.org/@kumwe/studio-rich-text/-/studio-rich-text-0.1.0-beta.7.tgz",
-            "npm_tarball_sha256": "a06d3c970864608656722f56a598a53a89e67896046a9ec8b47cb743095af06f",
-            "integrity": "sha512-m763O1nw+bY5bTUUibTaefGwzlb56EIKQaQtqvxjkS9cjSpFxMFJ0Zz/HrrZclb2e05xtshWqlUNRyFXetat1g=="
+            "version": "0.1.0-beta.9",
+            "tarball": "https://registry.npmjs.org/@kumwe/studio-rich-text/-/studio-rich-text-0.1.0-beta.9.tgz",
+            "npm_tarball_sha256": "cbf6cc3d28b38457c2da11db8c53031b901da3d429a0b62ef6c3ad2fb6d7fd73",
+            "integrity": "sha512-MIMQHw03oj3XVM5FTvBopvn9f4RtjtTxre4PG45v4AWloN/XVA+3+su1z5A8Z4F8cp49LI9aEWIfVnCx5VOTXg=="
         },
         "@kumwe/studio-testkit": {
-            "version": "0.1.0-beta.7",
-            "tarball": "https://registry.npmjs.org/@kumwe/studio-testkit/-/studio-testkit-0.1.0-beta.7.tgz",
-            "npm_tarball_sha256": "2ae548c0bab868e642c38aa0d86afd0476d8d06682a6fe601a0018588a90a7df",
-            "integrity": "sha512-PLpK/i3ziXeKZM3cMDvz3NIReC5HVmAiICT5hZxfOFRXpBUoyBG+MOCmB4A4t5Vh7sUDXtAMnAD3VN4o4gjA/Q=="
+            "version": "0.1.0-beta.9",
+            "tarball": "https://registry.npmjs.org/@kumwe/studio-testkit/-/studio-testkit-0.1.0-beta.9.tgz",
+            "npm_tarball_sha256": "7c17f650e38b9d725b9a9f58377177c0f2b6accc7ca898f1251135f7ee764849",
+            "integrity": "sha512-piwmVQnysJWS0sK5Vrj9kWJsFweYjbkzkYK7ZE+waw2YUc/lnThUKgTVMgV9LpwqirAGtyiflnlLxkyfRTRnVA=="
         }
     }
 }
