@@ -3,8 +3,8 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "aa0cfbe803e41d836a0e4b67b2f42120dfefc37a",
-    "recorded_at": "2026-09-28",
+    "commit": "ada12fdb792ff6fd06c3ceb57bebdbabd2bc99cf",
+    "recorded_at": "2026-09-30",
     "recorded_from": [],
     "toolchain": {
         "php": "^8.5",
@@ -22,32 +22,32 @@
             "ext-sodium",
             "ext-zip"
         ],
-        "composer_lock_sha256": "27becef4e8f6728795b30c5aab8e4c4b547e202135044e42600b89808c86240b",
-        "package_lock_sha256": "c833e93a58b61a43dc5e652872127907ef975e8faa5734ae842616798abcad5e"
+        "composer_lock_sha256": "c5356d75713069b2e94418ff712200cdf9c82c0ad7b3ab97ae99b0f09b95658e",
+        "package_lock_sha256": "197499c26eb752ff0d00140285177b6e39682428f5f5b566e053f283b4b8290e"
     },
     "tests": {
         "architecture": {
-            "files": 65,
-            "test_methods": 369
+            "files": 56,
+            "test_methods": 296
         },
         "functional": {
             "files": 19,
             "test_methods": 57
         },
         "integration": {
-            "files": 170,
-            "test_methods": 608
+            "files": 171,
+            "test_methods": 619
         },
         "unit": {
-            "files": 505,
-            "test_methods": 2571
+            "files": 497,
+            "test_methods": 2491
         }
     },
     "coverage": {
         "canonical_engine": "mariadb",
         "ratchets": 3,
         "recorded_line_coverage_percent": 55.44,
-        "reasoned_attribution_rules": 21,
+        "reasoned_attribution_rules": 17,
         "tests_owing_attribution": 0
     },
     "surfaces": {
@@ -126,6 +126,11 @@
                 "method": "GET",
                 "path": "/administrator/content/new",
                 "name": "administrator.content.new"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/diagnostics",
+                "name": "administrator.diagnostics"
             },
             {
                 "method": "GET",
@@ -316,6 +321,11 @@
                 "method": "GET",
                 "path": "/api/v1/content/{id}",
                 "name": "api.v1.content.read"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/diagnostics",
+                "name": "api.v1.diagnostics.read"
             },
             {
                 "method": "GET",
@@ -530,6 +540,7 @@
         ],
         "console_commands": [
             "access",
+            "app:diagnostics",
             "app:health",
             "audit:export",
             "audit:verify",
@@ -587,8 +598,8 @@
         "openapi": {
             "title": "Kumwe App API",
             "version": "1.1.0",
-            "paths": 109,
-            "operations": 142
+            "paths": 110,
+            "operations": 143
         },
         "migrations": [
             "20260807170000_database_driven_presentation",
@@ -632,7 +643,9 @@
             "20260924060000_studio_content_authoring_start",
             "20260924130000_async_trace_context",
             "20260924140000_export_site_byte_budget",
-            "20260928090000_studio_authoring_identity"
+            "20260928090000_studio_authoring_identity",
+            "20260929010000_operator_diagnostics_capability",
+            "20260929120000_audit_retention_evidence"
         ]
     },
     "quarantine": {
@@ -667,7 +680,7 @@
         "recorded_exemptions": {
             "dependency-graph": 62,
             "idempotency": 0,
-            "test-documentation": 3121
+            "test-documentation": 3116
         }
     }
 }
