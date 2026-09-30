@@ -5,19 +5,24 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Integration\Mcp;
 
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Delivery\Console\Command\ManageContentCommand;
 use Kumwe\App\Delivery\Console\Command\ManageContentModelsCommand;
 use Kumwe\App\Infrastructure\Mcp\BusinessMcpHandlers;
 use Kumwe\App\Infrastructure\Mcp\KumweMcpHandlers;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Navigation\Application\NavigationService;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\MachineSurfaceHarness;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;
+use Kumwe\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\CanonicalJson\CanonicalEncoder;
+use Kumwe\Transaction\Contract\TransactionManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -350,6 +355,9 @@ final class EditorialMcpEquivalenceIntegrationTest extends TestCase
         self::assertStringContainsString($ownerRecord, (string) json_encode($mcpRelation['value']));
 
         foreach (['supersede' => $target, 'reject' => $owner] as $action => $retired) {
+            if ($action === 'reject') {
+                self::withholdInstallation($container, $retired->id);
+            }
             $result = $harness->mcp($mcp, 'kumwe_business_definition_' . $action, [
                 'operationId' => 'definitions-parity-' . $action . '-' . $suffix,
                 'handle' => $retired->handle,
@@ -362,5 +370,37 @@ final class EditorialMcpEquivalenceIntegrationTest extends TestCase
                 $result['value']['status'],
             );
         }
+    }
+
+    /**
+     * Withhold a fixture's active schema installation before its published version is rejected.
+     *
+     * A rejected version under an active installation is a state the runtime refuses for the whole site:
+     * every generated surface, the OpenAPI generation and the demo export stop at "An active installed
+     * definition disagrees with its immutable catalog version." The integration fixture scope withdraws its
+     * definitions in exactly this order at process shutdown; a test that rejects one mid-run must do the same,
+     * or every later test on the shared site inherits the refusal.
+     *
+     * @param   Container  $container     Kernel under test.
+     * @param   string     $definitionId  Definition whose installation is withheld.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private static function withholdInstallation(Container $container, string $definitionId): void
+    {
+        $installations = $container->get(BusinessSchemaInstallationRepository::class);
+        $transactions = $container->get(TransactionManager::class);
+        $clock = $container->get(ClockInterface::class);
+        self::assertInstanceOf(BusinessSchemaInstallationRepository::class, $installations);
+        self::assertInstanceOf(TransactionManager::class, $transactions);
+        self::assertInstanceOf(ClockInterface::class, $clock);
+        $transactions->transactional(static function () use ($installations, $clock, $definitionId): void {
+            $installation = $installations->find($definitionId);
+            self::assertNotNull($installation);
+            self::assertSame(SchemaInstallationStatus::Active, $installation->status);
+            $installations->save($installation->disable($clock->now()));
+        });
     }
 }
