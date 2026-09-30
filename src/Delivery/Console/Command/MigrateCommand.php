@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Delivery\Console\Command;
 
 use Kumwe\App\Application\Authorization\SystemPrincipal;
+use Kumwe\App\Audit\Application\AuditRetentionPrincipalAssignment;
 use Kumwe\App\Delivery\Console\Command;
 use Kumwe\App\Delivery\Console\Output;
 use Kumwe\App\Demo\Application\DemoProfileReconciler;
@@ -31,10 +32,12 @@ final readonly class MigrateCommand implements Command
     /**
      * Wire the migration runner, the runtime publisher, and the authority both are called with.
      *
-     * @param  MigrationRunner              $runner      Applies the forward-only migration plan.
-     * @param  DemoProfileReconciler        $profiles    Reconciles the frozen demo selections after schema work.
-     * @param  ExtensionRuntimeMapCompiler  $extensions  Republishes and materializes the runtime map after.
-     * @param  SystemPrincipal              $system      Mints the migration context each run authorizes with.
+     * @param  MigrationRunner                     $runner          Applies the forward-only migration plan.
+     * @param DemoProfileReconciler $profiles Reconciles the frozen demo selections after schema work.
+     * @param  ExtensionRuntimeMapCompiler         $extensions      Republishes and materializes the runtime map after.
+     * @param SystemPrincipal $system Mints the migration context each run authorizes with.
+     * @param  ?AuditRetentionPrincipalAssignment  $auditRetention  Names the configured audit retention
+     *         login in the database with the migration identity, which alone may change it.
      *
      * @since  2.0.0
      */
@@ -43,6 +46,7 @@ final readonly class MigrateCommand implements Command
         private DemoProfileReconciler $profiles,
         private ExtensionRuntimeMapCompiler $extensions,
         private SystemPrincipal $system,
+        private ?AuditRetentionPrincipalAssignment $auditRetention = null,
     ) {
     }
 
@@ -109,6 +113,7 @@ final readonly class MigrateCommand implements Command
                 'collation' => (string) $result->collation,
             ]);
         }
+        $this->auditRetention?->synchronize();
         foreach ($this->profiles->reconcile() as $line) {
             $output->line($line);
         }

@@ -125,6 +125,11 @@ use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRetentionService;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditTrailExporter;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditTrailVerifier;
+use Kumwe\App\Audit\Infrastructure\Persistence\AuditRetentionPrincipalSynchronizer;
+use Kumwe\App\Audit\Infrastructure\Persistence\DeferredAuditRetentionService;
+use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditCheckpointStore;
+use Kumwe\App\Audit\Application\AuditContinuityVerifier;
+use Kumwe\App\Audit\Application\AuditRetentionPrincipalAssignment;
 use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditArchiveStorage;
 use Kumwe\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContractAdmission;
@@ -744,6 +749,7 @@ use Kumwe\App\Infrastructure\Persistence\Migration\InstallationGlobalAutomationM
 use Kumwe\App\Infrastructure\Persistence\Migration\InterfacePresentationPreferenceMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\AuditRetentionEvidenceMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\AuditRetentionAuthorityMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\RecordEncryptionKeyRingMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\InterfaceMessageOverrideMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\ResourceOwnershipScopeMigration;
@@ -1921,14 +1927,34 @@ final class ContainerFactory
                 self::service($container, AuthorizationGateway::class),
                 self::service($container, CanonicalEncoder::class),
             ), true);
-        $container->share(AuditTrailVerifier::class, static fn (Container $container): AuditTrailVerifier =>
-            new DoctrineAuditTrailVerifier(
-                self::service($container, Connection::class),
-                self::service($container, TableNames::class),
-                self::service($container, AuthorizationGateway::class),
-                self::service($container, CanonicalEncoder::class),
-                new FilesystemAuditArchiveVerifier($root . '/storage/private/audit-archives'),
-            ), true);
+        $auditArchives = $root . '/storage/private/audit-archives';
+        $container->share(AuditRetentionPrincipalSynchronizer::class, static fn (
+            Container $container,
+        ): AuditRetentionPrincipalSynchronizer => new AuditRetentionPrincipalSynchronizer(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            $databaseConfiguration->auditRetentionUser,
+        ), true);
+        $container->alias(AuditRetentionPrincipalAssignment::class, AuditRetentionPrincipalSynchronizer::class);
+        $auditCheckpoints = static fn (): FilesystemAuditCheckpointStore =>
+            FilesystemAuditCheckpointStore::forInstallation(
+                $auditArchives,
+                $databaseConfiguration->driver,
+                $databaseConfiguration->database,
+                $databaseConfiguration->tablePrefix,
+            );
+        $container->share(DoctrineAuditTrailVerifier::class, static fn (
+            Container $container,
+        ): DoctrineAuditTrailVerifier => new DoctrineAuditTrailVerifier(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, CanonicalEncoder::class),
+            new FilesystemAuditArchiveVerifier($auditArchives),
+            $auditCheckpoints(),
+        ), true);
+        $container->alias(AuditTrailVerifier::class, DoctrineAuditTrailVerifier::class);
+        $container->alias(AuditContinuityVerifier::class, DoctrineAuditTrailVerifier::class);
         $container->share(AuditTrailExporter::class, static fn (Container $container): AuditTrailExporter =>
             new DoctrineAuditTrailExporter(
                 self::service($container, Connection::class),
@@ -1939,19 +1965,78 @@ final class ContainerFactory
                 self::service($container, ClockInterface::class),
                 self::service($container, AuthorizationGateway::class),
             ), true);
-        $container->share(AuditRetentionService::class, static fn (Container $container): AuditRetentionService =>
-            new DoctrineAuditRetentionService(
-                self::service($container, Connection::class),
-                self::service($container, TableNames::class),
-                self::service($container, TransactionManager::class),
-                self::service($container, AuditTrailExporter::class),
-                self::service($container, AuditRecorder::class),
-                self::service($container, ClockInterface::class),
-                self::service($container, AuthorizationGateway::class),
-                self::service($container, CanonicalEncoder::class),
-                new FilesystemAuditArchiveVerifier($root . '/storage/private/audit-archives'),
-                self::service($container, AuditTrailVerifier::class),
-            ), true);
+        // Retention deletes through a separate database login the triggers name; the runtime connection is
+        // passed only so the service can refuse when the runtime principal is that same login.
+        $container->share(AuditRetentionService::class, static function (
+            Container $container,
+        ) use (
+            $auditArchives,
+            $auditCheckpoints,
+            $databaseConfiguration,
+        ): AuditRetentionService {
+            $runtime = self::service($container, Connection::class);
+            if (!$databaseConfiguration->hasAuditRetentionCredential()) {
+                return new DoctrineAuditRetentionService(
+                    $runtime,
+                    self::service($container, TableNames::class),
+                    self::service($container, TransactionManager::class),
+                    self::service($container, AuditTrailExporter::class),
+                    self::service($container, AuditRecorder::class),
+                    self::service($container, ClockInterface::class),
+                    self::service($container, AuthorizationGateway::class),
+                    self::service($container, CanonicalEncoder::class),
+                    new FilesystemAuditArchiveVerifier($auditArchives),
+                    self::service($container, AuditTrailVerifier::class),
+                    $runtime,
+                );
+            }
+
+            return new DeferredAuditRetentionService(static function () use (
+                $container,
+                $runtime,
+                $auditArchives,
+                $auditCheckpoints,
+                $databaseConfiguration,
+            ): AuditRetentionService {
+                $database = (new DoctrineConnectionFactory($databaseConfiguration->forAuditRetention()))->create();
+                $tables = new TableNames($database, $databaseConfiguration->tablePrefix);
+                $transactions = new DoctrineTransactionManager($database);
+                $encoder = self::service($container, CanonicalEncoder::class);
+                $clock = self::service($container, ClockInterface::class);
+                $authorization = self::service($container, AuthorizationGateway::class);
+                $recorder = new DoctrineAuditRecorder($database, $tables, $encoder);
+                $archives = new FilesystemAuditArchiveVerifier($auditArchives);
+
+                return new DoctrineAuditRetentionService(
+                    $database,
+                    $tables,
+                    $transactions,
+                    new DoctrineAuditTrailExporter(
+                        $database,
+                        $tables,
+                        $transactions,
+                        self::service($container, AuditArchiveStorage::class),
+                        $recorder,
+                        $clock,
+                        $authorization,
+                    ),
+                    $recorder,
+                    $clock,
+                    $authorization,
+                    $encoder,
+                    $archives,
+                    new DoctrineAuditTrailVerifier(
+                        $database,
+                        $tables,
+                        $authorization,
+                        $encoder,
+                        $archives,
+                        $auditCheckpoints(),
+                    ),
+                    $runtime,
+                );
+            });
+        }, true);
         $container->share(ContentRepository::class, static fn (Container $container): ContentRepository =>
             new DoctrineContentRepository(
                 self::service($container, Connection::class),
@@ -2734,6 +2819,7 @@ final class ContainerFactory
                     new AsyncTraceContextMigration(self::service($container, TableNames::class)),
                     new ExportSiteByteBudgetMigration(self::service($container, TableNames::class)),
                     new OperatorDiagnosticsCapabilityMigration(self::service($container, TableNames::class)),
+                    new AuditRetentionAuthorityMigration(self::service($container, TableNames::class)),
                 ],
                 self::acceptedHistoricalChecksums(),
             ), true);
@@ -6849,6 +6935,7 @@ final class ContainerFactory
                 self::service($container, DemoProfileReconciler::class),
                 self::service($container, ExtensionRuntimeMapCompiler::class),
                 SystemPrincipal::issue($provenance, SystemIdentity::Migration),
+                self::service($container, AuditRetentionPrincipalAssignment::class),
             ), true);
         $container->share(MaterializeExtensionRuntimeCommand::class, static fn (
             Container $container,
@@ -7151,7 +7238,7 @@ final class ContainerFactory
         $container->share(VerifyAuditTrailCommand::class, static fn (
             Container $container,
         ): VerifyAuditTrailCommand => new VerifyAuditTrailCommand(
-            self::service($container, AuditTrailVerifier::class),
+            self::service($container, AuditContinuityVerifier::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
         $container->share(ExportAuditTrailCommand::class, static fn (

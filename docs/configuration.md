@@ -144,6 +144,14 @@ from right to left and stops at the first untrusted address; malformed or ambigu
 
 `DB_NAME`, `DB_USER`, and `DB_PASSWORD` identify the database. Production containers load the password from `DB_PASSWORD_FILE`. `DB_SSLMODE` accepts `disable`, `prefer`, `require`, `verify-ca`, or `verify-full`; public or cross-network database connections should use certificate verification.
 
+`DB_AUDIT_RETENTION_USER` and `DB_AUDIT_RETENTION_PASSWORD` (or `DB_AUDIT_RETENTION_PASSWORD_FILE`) name the separate
+database login that alone may archive and delete aged audit evidence. Both are optional and must be set together;
+the login is a plain name of letters, digits, `_`, `.`, `$` and `-`. When they are unset nothing ever removes audit
+evidence: the database refuses every audit deletion until a retention principal is assigned, and an enabled
+retention schedule fails as soon as a range is due. `database:migrate` assigns the configured login in the
+database, and only the retention pass connects with it. The grants and the verification of the separation are in
+[monitoring](operations/monitoring.md#append-only-enforcement-retention-authority-and-least-privilege-accounts).
+
 The table prefix is a canonical lowercase identifier of at most 28 bytes. It starts with a letter, separates
 segments with one underscore, and ends in one underscore (for example, `tenant_eu_`). This preserves prefix
 identity and leaves room for every core table within the portable 63-byte identifier limit. The database account
@@ -167,6 +175,6 @@ The supplied Compose deployment tracks the supported Redis 8 line for easy updat
 
 The production entrypoint recognizes `APP_SECRET_FILE`, `EXTENSION_RUNTIME_SIGNING_KEY_FILE`, `DB_PASSWORD_FILE`, and `REDIS_PASSWORD_FILE`. Each file must be readable only by the deployment service, contain exactly one non-empty secret, and remain outside the repository and release package. The entrypoint loads the value into the process and unsets the file-variable name before launching PHP.
 
-The application itself resolves `APP_SECRET_FILE`, `RECORD_ENCRYPTION_KEY_FILE`, `RECORD_ENCRYPTION_PREVIOUS_KEYS_FILE`, `RECORD_ENCRYPTION_LEGACY_SECRET_FILE`, and `EXTENSION_RUNTIME_PREVIOUS_KEYS_FILE`, so a bare-metal or systemd deployment gets the same mounted-secret discipline without an entrypoint of its own. Each path must be absolute, a readable regular file, and not a symbolic link. Supplying both a variable and its `_FILE` companion is refused at boot rather than resolved by precedence. Record-key provisioning and the rotation procedure are described in [business security](business-security.md#record-encryption-key-lifecycle).
+The application itself resolves `APP_SECRET_FILE`, `DB_AUDIT_RETENTION_PASSWORD_FILE`, `RECORD_ENCRYPTION_KEY_FILE`, `RECORD_ENCRYPTION_PREVIOUS_KEYS_FILE`, `RECORD_ENCRYPTION_LEGACY_SECRET_FILE`, and `EXTENSION_RUNTIME_PREVIOUS_KEYS_FILE`, so a bare-metal or systemd deployment gets the same mounted-secret discipline without an entrypoint of its own. Each path must be absolute, a readable regular file, and not a symbolic link. Supplying both a variable and its `_FILE` companion is refused at boot rather than resolved by precedence. Record-key provisioning and the rotation procedure are described in [business security](business-security.md#record-encryption-key-lifecycle).
 
 After changing process configuration, replace the affected web and worker containers. After changing administrator settings, no container restart is required.

@@ -228,15 +228,23 @@
         },
         {
             "id": "GM-AUD-02",
-            "title": "Audit retention authority does not yet resist a compromised database writer",
+            "title": "Audit retention authority and continuity must resist a compromised database writer",
             "severity": "high",
-            "state": "open",
+            "state": "in_progress",
             "phase": "evidence",
             "origin": "gap-matrix",
             "source_anchors": [
                 {
                     "file": "src/Audit/Infrastructure/Persistence/AuditAppendOnlyGuard.php",
                     "symbol": "AuditAppendOnlyGuard"
+                },
+                {
+                    "file": "src/Audit/Infrastructure/Persistence/AuditRetentionAuthority.php",
+                    "symbol": "AuditRetentionAuthority"
+                },
+                {
+                    "file": "src/Audit/Infrastructure/Storage/FilesystemAuditCheckpointStore.php",
+                    "symbol": "FilesystemAuditCheckpointStore"
                 },
                 {
                     "file": "docs/security/reviews/2026-09-28-p7c-threat-review.md",
@@ -246,7 +254,7 @@
             "acceptance_test": "A real runtime DML principal cannot authorize audit-event or anchor deletion by setting the retention session flag. Qualified separate retention authority preserves archived-range evidence; independently protected checkpoints detect disappearance or rollback. Exercise legitimate retention and adversarial erasure on MariaDB, MySQL and PostgreSQL. Fresh verification reports missing or invalid enforcement rather than a clean verdict.",
             "owner": "Kumwe platform agents",
             "closure_sha": null,
-            "residual": "Independent review P7C-20260928-01 demonstrated full event and anchor erasure through the caller-settable prune flag on MariaDB while the verifier reported intact and active. Database-local hashes do not provide unconditional tamper evidence. The platform owns remediation and regression evidence; deployment operators own the required privilege separation and independent checkpoint/archive custody. The managed-service CREATE TRIGGER limitation remains a separate explicit control condition."
+            "residual": "Remediated in PR #152 pending the three-engine CI proof: deletion of audit events and every non-anchor ledger row is refused by triggers unless the session is authenticated as the separately assigned retention login, which only the schema owner can name; the retention session flag grants nothing, an unassigned installation refuses every deletion, and retention refuses unless the runtime login is separate. Verification checks an append-only private checkpoint and an optional operator-retained checkpoint, so erasure or rollback of trail and ledger together is reported (exit 1). Adversarial tests with real DML-only and retention logins pass on MariaDB 10.11 and PostgreSQL 16 locally; MySQL 8.4 runs in the CI database lane. Tamper evidence is bounded by the threat model: it holds against a principal limited to the documented runtime grant; against the schema owner, a database superuser, an anonymous MySQL account or host/filesystem compromise, database-local hashes prove nothing on their own and only the retained and operator checkpoints detect erasure, and only while that custody is intact. Deployment operators own the three-identity privilege separation and off-host checkpoint custody. The managed-service CREATE TRIGGER limitation remains a separate explicit control condition reported as not_installed."
         },
         {
             "id": "GM-SUP-05",

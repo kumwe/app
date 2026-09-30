@@ -347,11 +347,7 @@ final class AuditAppendOnlyGuard
         $platform = $database->getDatabasePlatform();
         try {
             if ($platform instanceof AbstractMySQLPlatform) {
-                return $database->fetchOne(
-                    'SELECT TRIGGER_NAME FROM information_schema.TRIGGERS '
-                    . 'WHERE TRIGGER_SCHEMA = DATABASE() AND TRIGGER_NAME = ?',
-                    [$name],
-                ) !== false;
+                return AuditRetentionGuard::mysqlTriggerTable($database, $tables, $name) !== null;
             }
             if ($platform instanceof PostgreSQLPlatform) {
                 return $database->fetchOne(

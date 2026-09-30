@@ -23,21 +23,24 @@ final readonly class DatabaseConfiguration
     /**
      * Capture and validate the settings needed to open a connection.
      *
-     * @param   string  $driver         Engine to bind to: `pgsql`, `mysql`, or `mariadb`.
-     * @param   string  $host           Host name or IP address of the database server.
-     * @param   int     $port           TCP port the server listens on, between 1 and 65535.
-     * @param   string  $database       Name of the database Kumwe's tables live in.
-     * @param   string  $user           Account Kumwe authenticates as.
-     * @param   string  $password       Secret for that account; never include it in log or error output.
-     * @param   string  $tablePrefix    Prefix concatenated onto every physical table name, validated
+     * @param   string  $driver                  Engine to bind to: `pgsql`, `mysql`, or `mariadb`.
+     * @param   string  $host                    Host name or IP address of the database server.
+     * @param   int     $port                    TCP port the server listens on, between 1 and 65535.
+     * @param   string  $database                Name of the database Kumwe's tables live in.
+     * @param   string  $user                    Account Kumwe authenticates as.
+     * @param   string  $password                Secret for that account; never include it in log or error output.
+     * @param   string  $tablePrefix             Prefix concatenated onto every physical table name, validated
      *          against `DatabaseTablePrefix` because it reaches SQL unquoted.
-     * @param   string  $sslMode        Transport policy: `disable`, `prefer`, `require`, `verify-ca`,
+     * @param   string  $sslMode                 Transport policy: `disable`, `prefer`, `require`, `verify-ca`,
      *          or `verify-full`.
-     * @param   string  $serverVersion  Engine version Doctrine assumes when choosing platform
+     * @param   string  $serverVersion           Engine version Doctrine assumes when choosing platform
      *          behaviour, so it need not probe the server to find out.
+     * @param   string  $auditRetentionUser      Separate login audit retention runs as, or empty when this
+     *          process holds no retention credential and retention therefore refuses to delete.
+     * @param   string  $auditRetentionPassword  Secret for that login; never include it in log or error output.
      *
-     * @throws  InvalidArgumentException  When the driver, host, port, table prefix, SSL mode, or
-     *          server version is missing or outside the accepted set.
+     * @throws  InvalidArgumentException  When the driver, host, port, table prefix, SSL mode, server
+     *          version, or audit retention credential is missing or outside the accepted set.
      *
      * @since   2.0.0
      */
@@ -51,6 +54,8 @@ final readonly class DatabaseConfiguration
         public string $tablePrefix,
         public string $sslMode,
         public string $serverVersion,
+        public string $auditRetentionUser = '',
+        public string $auditRetentionPassword = '',
     ) {
         if (!in_array($driver, ['pgsql', 'mysql', 'mariadb'], true)) {
             throw new InvalidArgumentException('DB_DRIVER must be pgsql, mysql, or mariadb.');
@@ -77,5 +82,55 @@ final readonly class DatabaseConfiguration
         if (trim($serverVersion) === '') {
             throw new InvalidArgumentException('The database server version is required.');
         }
+
+        if (
+            ($auditRetentionUser === '') !== ($auditRetentionPassword === '')
+            || ($auditRetentionUser !== ''
+                && preg_match('/^[A-Za-z0-9_][A-Za-z0-9_.$-]{0,62}$/D', $auditRetentionUser) !== 1)
+        ) {
+            throw new InvalidArgumentException(
+                'DB_AUDIT_RETENTION_USER and DB_AUDIT_RETENTION_PASSWORD must both name a plain database login.',
+            );
+        }
+    }
+
+    /**
+     * Report whether this process was given the separate audit retention credential.
+     *
+     * @return  bool  True when a retention login and its secret are configured.
+     *
+     * @since   2.0.0
+     */
+    public function hasAuditRetentionCredential(): bool
+    {
+        return $this->auditRetentionUser !== '';
+    }
+
+    /**
+     * Derive the settings for a connection authenticated as the audit retention principal.
+     *
+     * @return  self  The same server, database and transport policy with the retention login.
+     *
+     * @throws  InvalidArgumentException  When no retention credential is configured.
+     *
+     * @since   2.0.0
+     */
+    public function forAuditRetention(): self
+    {
+        if (!$this->hasAuditRetentionCredential()) {
+            throw new InvalidArgumentException('No audit retention database credential is configured.');
+        }
+
+        return new self(
+            $this->driver,
+            $this->host,
+            $this->port,
+            $this->database,
+            $this->auditRetentionUser,
+            $this->auditRetentionPassword,
+            $this->tablePrefix,
+            $this->sslMode,
+            $this->serverVersion,
+        );
     }
 }

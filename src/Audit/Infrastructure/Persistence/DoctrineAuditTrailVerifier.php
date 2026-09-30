@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Audit\Infrastructure\Persistence;
 
+use Kumwe\App\Audit\Application\AuditCheckpoint;
+use Kumwe\App\Audit\Application\AuditContinuityReport;
+use Kumwe\App\Audit\Application\AuditContinuityVerifier;
 use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditArchiveVerifier;
+use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditCheckpointStore;
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
 use Kumwe\Access\AuthorizationGateway;
@@ -46,9 +50,14 @@ use Throwable;
  * them. Missing event or ledger guards prevent an intact verdict even for an empty trail. Every prune
  * must also reproduce its protected archive evidence; database hashes alone cannot authorize erasure.
  *
+ * Hashes and anchors held in the same database cannot tell an intact small trail from a large one that was
+ * erased or rolled back together with its ledger. The verifier therefore also proves the trail still reaches
+ * the checkpoint it retained privately after its last guarded verdict, and any checkpoint the operator
+ * retained off-host, and reports the retention authority posture it observed.
+ *
  * @since  2.0.0
  */
-final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
+final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier, AuditContinuityVerifier
 {
     /**
      * How many recent event digests the walk keeps to resolve witness links against.
@@ -70,6 +79,7 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
      * @param  AuthorizationGateway             $authorization  Decides whether the caller may verify the trail.
      * @param CanonicalEncoder $encoder Host-bound encoder every stored digest is recomputed with.
      * @param  ?FilesystemAuditArchiveVerifier  $archives       Private evidence required for every prune claim.
+     * @param  ?FilesystemAuditCheckpointStore  $checkpoints    Private append-only checkpoints the trail must reach.
      *
      * @since  2.0.0
      */
@@ -79,6 +89,7 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
         private AuthorizationGateway $authorization,
         private CanonicalEncoder $encoder,
         private ?FilesystemAuditArchiveVerifier $archives = null,
+        private ?FilesystemAuditCheckpointStore $checkpoints = null,
     ) {
     }
 
@@ -92,6 +103,7 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
      *          observed on this server, and the first divergence if any.
      *
      * @throws  InvalidArgumentException  When the batch size is outside its bounds.
+     * @throws  RuntimeException  When a reached checkpoint cannot be retained privately.
      * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not verify
      *          the audit trail.
      *
@@ -99,6 +111,35 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
      */
     public function verify(ExecutionContext $context, int $batchSize = 1000): AuditVerificationReport
     {
+        return $this->verifyContinuity($context, $batchSize)->report;
+    }
+
+    /**
+     * Verify the trail and ledger, and prove they still reach every retained or supplied checkpoint.
+     *
+     * A privately retained checkpoint and an operator-supplied one are both checked right after the ledger
+     * chain, because a trail erased or rolled back together with its ledger verifies cleanly on its own.
+     * When the verdict is intact and guarded, and no transaction could still roll back what was observed,
+     * the mark reached is retained privately so it can never be silently lowered afterwards.
+     *
+     * @param   ExecutionContext  $context    Actor the verification is authorized under.
+     * @param   int               $batchSize  Rows fetched per batch during the walk, from 1 to 10000.
+     * @param   ?AuditCheckpoint  $external   Operator-retained checkpoint the trail must still reach.
+     *
+     * @return  AuditContinuityReport  The verdict, the retention authority posture and the reached mark.
+     *
+     * @throws  InvalidArgumentException  When the batch size is outside its bounds.
+     * @throws  RuntimeException  When a reached checkpoint cannot be retained privately.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not verify
+     *          the audit trail.
+     *
+     * @since   2.0.0
+     */
+    public function verifyContinuity(
+        ExecutionContext $context,
+        int $batchSize = 1000,
+        ?AuditCheckpoint $external = null,
+    ): AuditContinuityReport {
         $this->authorization->assertAllowed(
             $context,
             Capability::fromString('audit.manage'),
@@ -107,25 +148,62 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
         if ($batchSize < 1 || $batchSize > 10_000) {
             throw new InvalidArgumentException('The audit verification batch size must be between 1 and 10000.');
         }
+        $authority = AuditRetentionAuthority::state($this->database, $this->tables);
+        $retained = null;
+        $retainedFinding = null;
+        try {
+            $retained = $this->checkpoints?->retained();
+        } catch (RuntimeException $exception) {
+            $retainedFinding = new AuditVerificationFinding('audit.checkpoint.unreadable', 0, $exception->getMessage());
+        }
+        $checkpoints = array_filter(['retained' => $retained, 'operator' => $external]);
+        [$report, $reached] = $this->inspect($batchSize, $checkpoints, $retainedFinding);
+        if (!$report->guarded() || $reached === null) {
+            return new AuditContinuityReport($report, $authority, null, $retained);
+        }
+        if ($this->checkpoints !== null && !$this->database->isTransactionActive()) {
+            $this->checkpoints->retain($reached);
+        }
+
+        return new AuditContinuityReport($report, $authority, $reached, $retained);
+    }
+
+    /**
+     * Derive the verdict from the rows the database holds right now.
+     *
+     * @param   int                             $batchSize    Rows fetched per batch.
+     * @param   array<string, AuditCheckpoint>  $checkpoints  Checkpoints the trail must reach, by origin.
+     * @param   ?AuditVerificationFinding       $unreadable   Failure to read the private checkpoint, if any.
+     *
+     * @return  array{AuditVerificationReport, ?AuditCheckpoint}  The verdict, and the mark the verified
+     *          ledger and trail reach when the ledger itself verified.
+     *
+     * @throws  RuntimeException  When the trail head cannot be read.
+     *
+     * @since   2.0.0
+     */
+    private function inspect(int $batchSize, array $checkpoints, ?AuditVerificationFinding $unreadable): array
+    {
         $head = AuditLedger::optionalPosition($this->database->fetchOne(sprintf(
             'SELECT MAX(position) FROM %s',
             $this->tables->quoted('audit_events'),
         )), 'trail head position') ?? 0;
         $enforcement = AuditAppendOnlyGuard::installed($this->database, $this->tables)
             && AuditRetentionGuard::installed($this->database, $this->tables)
+            && AuditRetentionAuthority::installed($this->database, $this->tables)
             ? AuditEnforcementState::Active : AuditEnforcementState::NotInstalled;
         try {
             $ledger = AuditLedger::all($this->database, $this->tables);
         } catch (RuntimeException $exception) {
-            return new AuditVerificationReport(0, 0, $head, $enforcement, new AuditVerificationFinding(
+            return [new AuditVerificationReport(0, 0, $head, $enforcement, new AuditVerificationFinding(
                 'anchor.row.malformed',
                 0,
                 $exception->getMessage(),
-            ));
+            )), null];
         }
         $ledgerFinding = $this->verifyLedger($ledger);
         if ($ledgerFinding !== null) {
-            return new AuditVerificationReport(0, 0, $head, $enforcement, $ledgerFinding);
+            return [new AuditVerificationReport(0, 0, $head, $enforcement, $ledgerFinding), null];
         }
         $prunedThrough = 0;
         foreach ($ledger as $entry) {
@@ -133,14 +211,24 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
                 $prunedThrough = max($prunedThrough, $entry->toPosition);
             }
         }
+        $tail = $ledger === [] ? null : $ledger[count($ledger) - 1];
+        $reached = new AuditCheckpoint(
+            $tail === null ? 0 : $tail->sequence,
+            $tail?->digest,
+            max($head, $prunedThrough),
+        );
+        $continuityFinding = $unreadable ?? $this->verifyCheckpoints($ledger, $reached, $checkpoints);
+        if ($continuityFinding !== null) {
+            return [new AuditVerificationReport(0, count($ledger), $head, $enforcement, $continuityFinding), $reached];
+        }
         $rangeFinding = $this->verifyRanges($ledger);
         if ($rangeFinding !== null) {
-            return new AuditVerificationReport(0, count($ledger), $head, $enforcement, $rangeFinding);
+            return [new AuditVerificationReport(0, count($ledger), $head, $enforcement, $rangeFinding), $reached];
         }
 
         $report = $this->walk($ledger, $prunedThrough, $head, $batchSize, $enforcement);
         if ($report->intact() && !$enforcement->installed()) {
-            return new AuditVerificationReport(
+            return [new AuditVerificationReport(
                 $report->eventsVerified,
                 $report->anchorsVerified,
                 $head,
@@ -150,10 +238,61 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
                     0,
                     'Required immutable ledger and audit deletion guards are unavailable; continuity cannot be proven.',
                 ),
-            );
+            ), $reached];
         }
 
-        return $report;
+        return [$report, $reached];
+    }
+
+    /**
+     * Prove the verified ledger and trail still reach every retained checkpoint.
+     *
+     * @param   list<AuditLedgerEntry>          $ledger       Verified ledger entries ascending by sequence.
+     * @param   AuditCheckpoint                 $reached      Mark the present ledger and trail reach.
+     * @param   array<string, AuditCheckpoint>  $checkpoints  Checkpoints the trail must reach, by origin.
+     *
+     * @return  ?AuditVerificationFinding  The first regression, or null when every checkpoint is reached.
+     *
+     * @since   2.0.0
+     */
+    private function verifyCheckpoints(
+        array $ledger,
+        AuditCheckpoint $reached,
+        array $checkpoints,
+    ): ?AuditVerificationFinding {
+        foreach ($checkpoints as $origin => $checkpoint) {
+            $entry = $checkpoint->ledgerSequence === 0 ? null : ($ledger[$checkpoint->ledgerSequence - 1] ?? null);
+            if (
+                $checkpoint->ledgerSequence > 0
+                && ($entry === null || !hash_equals((string) $checkpoint->ledgerDigest, $entry->digest))
+            ) {
+                return new AuditVerificationFinding(
+                    'audit.checkpoint.ledger.regressed',
+                    $checkpoint->headPosition,
+                    sprintf(
+                        'The anchor ledger no longer holds entry %d exactly as the %s checkpoint retained it; '
+                        . 'it holds %d entries now.',
+                        $checkpoint->ledgerSequence,
+                        $origin,
+                        count($ledger),
+                    ),
+                );
+            }
+            if ($reached->headPosition < $checkpoint->headPosition) {
+                return new AuditVerificationFinding(
+                    'audit.checkpoint.head.regressed',
+                    $checkpoint->headPosition,
+                    sprintf(
+                        'The trail reaches position %d, below position %d that the %s checkpoint retained.',
+                        $reached->headPosition,
+                        $checkpoint->headPosition,
+                        $origin,
+                    ),
+                );
+            }
+        }
+
+        return null;
     }
 
     /**

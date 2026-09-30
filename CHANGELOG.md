@@ -49,6 +49,14 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
   Verify archived ranges against their original anchors, including concurrent changes during export.
   The protection applies to database DML access, not database or filesystem administration.
 
+- Close the P7-C audit retention bypass (P7C-20260928-01): a runtime DML account can no longer delete
+  audit events or append a retention mark by setting the retention session flag. New triggers accept both
+  only from the separately assigned retention login (`DB_AUDIT_RETENTION_USER`), named by a routine only the
+  schema owner can replace; an unassigned installation refuses every audit deletion, and retention refuses
+  unless the runtime login is separate. Verification also checks an append-only private checkpoint and an
+  optional operator checkpoint (`audit:verify --checkpoint-file`), so erasure or rollback of the trail and
+  ledger together exits 1. Adversarial tests create real DML-only and retention logins (#152).
+
 - Keep record pagination aligned with the requested sort direction and use native null ordering when
   it matches the query. Adopt business-schema 0.1.4 for scoped browse and sortable-field indexes;
   existing definitions receive those indexes through their next normal definition/schema plan.

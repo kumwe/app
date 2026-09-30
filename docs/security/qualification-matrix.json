@@ -1445,14 +1445,54 @@
                             "proves": "Reinserting a pruned row is detected."
                         },
                         {
-                            "test": "tests/Integration/Audit/AuditTrailRuntimeIntegrationTest.php::testTheGuardedRetentionWindowIsTheOnlyPathThatMayDelete",
+                            "test": "tests/Integration/Audit/AuditTrailRuntimeIntegrationTest.php::testTheGuardedRetentionWindowRequiresImmutablePruneEvidence",
                             "job": ".github/workflows/ci.yml#database",
-                            "proves": "Only the guarded retention window may delete."
+                            "proves": "The retention session flag alone cannot delete an unsealed audit row."
                         },
                         {
                             "test": "tests/Unit/Delivery/Console/Command/AuditConsoleCommandTest.php::testExportPrintsTheArchiveManifestAndNeverTheArchivedBytes",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "The console export prints the manifest, never the bytes."
+                        }
+                    ]
+                },
+                {
+                    "id": "retention-authority",
+                    "title": "Retention authority and continuity against the runtime database principal",
+                    "findings": [
+                        "GM-AUD-02"
+                    ],
+                    "boundary": "A principal limited to the documented runtime grant (DML on the audit tables and EXECUTE on the audit routines). Accounts that can alter triggers or routines, database superusers, anonymous MySQL/MariaDB accounts and host or filesystem compromise are outside it; the retained and operator checkpoints detect, but cannot prevent, erasure by those.",
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/Audit/AuditRetentionAuthorityIntegrationTest.php::testDirectFlagSettingCannotAuthorizeDeletionByTheRuntimePrincipal",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A freshly created DML-only principal that sets the retention flag itself cannot delete audit rows, forge a prune mark, or delete or rewrite the anchor ledger, on MariaDB, MySQL and PostgreSQL."
+                        },
+                        {
+                            "test": "tests/Integration/Audit/AuditRetentionAuthorityIntegrationTest.php::testFullEvidenceErasureCannotProduceACleanVerdict",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Complete trail and ledger erasure, possible only with schema authority, fails verification against both the privately retained and the operator-supplied checkpoint, and audit:verify exits 1."
+                        },
+                        {
+                            "test": "tests/Integration/Audit/AuditRetentionAuthorityIntegrationTest.php::testLegitimateArchivedRetentionRunsOnlyAsTheSeparateRetentionPrincipal",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Archived retention succeeds only as the assigned retention principal while the runtime principal is a different login, and refuses when unassigned, on the runtime connection or when not separated."
+                        },
+                        {
+                            "test": "tests/Integration/Audit/AuditRetentionAuthorityIntegrationTest.php::testAConfiguredRetentionCredentialIsAssignedByMigrationAndUsedOnlyForRetention",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "database:migrate assigns the configured retention login, and the kernel opens that login only for a retention pass."
+                        },
+                        {
+                            "test": "tests/Integration/Audit/AuditTamperEvidenceTest.php::testARetainedCheckpointExposesAShortenedTrail",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A shortened trail is reported against the retained or supplied checkpoint, and an unreadable checkpoint is a divergence."
+                        },
+                        {
+                            "test": "tests/Unit/Audit/Infrastructure/Storage/FilesystemAuditCheckpointStoreTest.php::testRetainedCheckpointsOnlyAdvance",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The private checkpoint store is append-only and can never lower its high-water mark."
                         }
                     ]
                 }

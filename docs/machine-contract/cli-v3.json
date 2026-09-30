@@ -2,7 +2,7 @@
   "format": "kumwe-cli-machine-contract-v1",
   "generation": 3,
   "status": "retained",
-  "surface_digest": "sha256:aefa6edc2ebe1cc015b4d9aa5c2fcb803a29c2719678ce95f7b548b62792e32f",
+  "surface_digest": "sha256:41b53d16e893d1b263ec2a4a0de7f521062534af690d00293a3f99c500a64e85",
   "dispatcher": {
     "list_exit": 0,
     "unknown_command_exit": 64,
@@ -141,12 +141,13 @@
       "options": [
         {"name":"site","type":"identifier","enum":[]},
         {"name":"token-file","type":"secret-file","enum":[]},
-        {"name":"batch-size","type":"positive-integer","enum":[]}
+        {"name":"batch-size","type":"positive-integer","enum":[]},
+        {"name":"checkpoint-file","type":"protected-json-file","enum":[]}
       ],
       "output": {"stdout":"json-document","stderr":"json-or-text-lines"},
       "exit_codes": {"0":"intact-and-enforced","1":"divergent-or-failed","2":"intact-without-enforcement"},
       "actions": [
-        {"name":"invoke","risk":"read","positionals":[],"allowed_options":["site","token-file","batch-size"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+        {"name":"invoke","risk":"read","positionals":[],"allowed_options":["site","token-file","batch-size","checkpoint-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
       ]
     },
     {
