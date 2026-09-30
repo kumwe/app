@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Architecture;
 
+use Kumwe\App\Tests\Support\ProcessOwnedShutdown;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
@@ -309,13 +310,13 @@ final class CatalogueQualityGateTest extends TestCase
         foreach ($sources === false ? [] : $sources as $source) {
             copy($source, $directory . '/' . basename($source));
         }
-        register_shutdown_function(static function () use ($directory): void {
+        register_shutdown_function(ProcessOwnedShutdown::capture(static function () use ($directory): void {
             $files = glob($directory . '/*.xlf');
             foreach ($files === false ? [] : $files as $file) {
                 unlink($file);
             }
             rmdir($directory);
-        });
+        }));
 
         return $directory;
     }

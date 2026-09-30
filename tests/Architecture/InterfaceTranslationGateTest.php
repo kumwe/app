@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Architecture;
 
 use JsonException;
+use Kumwe\App\Tests\Support\ProcessOwnedShutdown;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
@@ -1452,9 +1453,9 @@ final class InterfaceTranslationGateTest extends TestCase
             copy($this->root . '/public/assets/' . $stylesheet, $publicAssets . '/' . $stylesheet);
         }
         $this->copyTree($this->root . '/public/assets/build', $publicAssets . '/build');
-        register_shutdown_function(function () use ($tree): void {
+        register_shutdown_function(ProcessOwnedShutdown::capture(function () use ($tree): void {
             $this->removeTree($tree);
-        });
+        }));
 
         return $tree;
     }
