@@ -18,6 +18,7 @@ use Kumwe\App\Infrastructure\Mcp\BusinessMcpHandlers;
 use Kumwe\App\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\App\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\App\Infrastructure\Mcp\McpMutationGuard;
+use Kumwe\App\Infrastructure\Mcp\OperatorDiagnosticsMcpHandlers;
 use Kumwe\App\Infrastructure\Mcp\ReportMcpHandlers;
 use Kumwe\App\Infrastructure\Time\SystemClock;
 use Kumwe\App\Localization\Application\MessageOverrideService;
@@ -39,6 +40,7 @@ final class McpHandlersFixture
         ?ContentModelService $models = null,
         ?StudioContentCompositionService $compositions = null,
         ?StudioMachineCompositionGateway $blueprints = null,
+        ?OperatorDiagnosticsMcpHandlers $diagnostics = null,
     ): KumweMcpHandlers {
         return new KumweMcpHandlers(
             $catalog,
@@ -63,6 +65,7 @@ final class McpHandlersFixture
             models: $models,
             compositions: $compositions,
             blueprints: $blueprints,
+            diagnostics: $diagnostics,
         );
     }
 
