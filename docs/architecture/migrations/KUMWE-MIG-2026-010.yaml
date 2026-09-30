@@ -154,7 +154,6 @@ retained_tests:
   - tests/Architecture/ExtensionContributionBoundaryTest.php
   - tests/Architecture/FieldPresenterBoundaryTest.php
   - tests/Unit/Governance/ComposerLockTest.php
-  - tests/Architecture/CapabilityIndexGateTest.php
 di_changes:
   - service: Kumwe\BusinessDefinition\Application\FieldConfigurationAdmission
     factory: Kumwe\App\Kernel\ContainerFactory

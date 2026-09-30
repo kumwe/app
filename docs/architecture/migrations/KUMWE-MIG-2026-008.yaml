@@ -34,8 +34,6 @@ retained_tests:
   - "tests/Unit/Kernel/CanonicalEncoderConformanceTest.php"
   - "tests/Unit/BusinessDefinition/Infrastructure/Computation/NativeFormulaEvaluationConformanceTest.php"
   - "tests/Unit/BusinessReporting/Infrastructure/Computation/NativeReportMaterializationConformanceTest.php"
-  - "tests/Architecture/CanonicalJsonSemanticIdentityGateTest.php"
-  - "tests/Architecture/CapabilityIndexGateTest.php"
   - "tests/Support/NativeComputationContainer.php"
   - "tests/Support/DeterministicCanonicalEncoder.php"
   - "tests/Unit/BusinessRecord/Application/RecordRuleValidatorTest.php"

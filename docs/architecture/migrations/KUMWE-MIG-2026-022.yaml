@@ -64,7 +64,6 @@ retained_tests:
   - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessActionExecutorTest.php
   - tests/Unit/Delivery/Http/Api/Business/BusinessOperationStatusApiHandlerTest.php
   - tests/Unit/Governance/ComposerLockTest.php
-  - tests/Architecture/CapabilityIndexGateTest.php
 di_changes: []
 capability_index_entries:
   - kumwe/business-policy

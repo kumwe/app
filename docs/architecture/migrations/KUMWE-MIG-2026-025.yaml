@@ -77,7 +77,6 @@ removed_tests:
   - tests/Unit/InterfaceStandard/SurfaceDefinitionTest.php
   - tests/Unit/InterfaceStandard/SurfaceIdentifierParityTest.php
 retained_tests:
-  - tests/Architecture/BusinessWorkspaceInterfaceStandardTest.php
   - tests/Architecture/InterfaceStandardBoundaryTest.php
   - tests/Integration/InterfaceStandard/PresentationPreferencePersistenceIntegrationTest.php
   - tests/Support/DashboardPreferenceTestRuntime.php
@@ -88,7 +87,6 @@ retained_tests:
   - tests/Unit/Delivery/Http/Dashboard/DashboardPreferenceFormDecoderTest.php
   - tests/Unit/Delivery/Http/Dashboard/DashboardPreferenceQueryDecoderTest.php
   - tests/Unit/Governance/LayerClassifierTest.php
-  - tests/Unit/InterfaceStandard/InterfaceStandardSchemaTest.php
   - tests/Unit/InterfaceStandard/PresentationPreferenceManagerTest.php
   - tests/Unit/InterfaceStandard/PresentationPreferenceResolverTest.php
   - tests/Unit/InterfaceStandard/PresentationPreferenceTest.php

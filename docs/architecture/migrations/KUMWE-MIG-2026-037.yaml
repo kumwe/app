@@ -21,7 +21,6 @@ symbols:
 removed_paths: []
 removed_tests: []
 retained_tests:
-  - tests/Unit/InterfaceProgramme/InterfaceProgrammeEvidenceGateTest.php
   - tests/Unit/Portal/Contribution/PortalContributionRegistryTest.php
   - tests/Unit/Portal/Http/PortalDashboardPreferencesHandlerTest.php
   - tests/Unit/Portal/Http/PortalHomeHandlerTest.php

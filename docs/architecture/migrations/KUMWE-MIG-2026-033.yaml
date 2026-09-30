@@ -174,7 +174,6 @@ retained_tests:
   - tests/Unit/Identity/Domain/CapabilityGrantTest.php
   - tests/Unit/Identity/Infrastructure/Administration/DoctrineAdministratorSessionStoreTest.php
   - tests/Unit/Identity/Infrastructure/Authentication/DoctrineAccessTokenVerifierTest.php
-  - tests/Unit/InterfaceStandard/InterfaceStandardSchemaTest.php
   - tests/Unit/InterfaceStandard/PresentationPreferenceManagerTest.php
   - tests/Unit/InterfaceStandard/PresentationPreferenceResolverTest.php
   - tests/Unit/InterfaceStandard/PresentationPreferenceTest.php

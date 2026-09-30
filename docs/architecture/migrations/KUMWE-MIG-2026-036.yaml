@@ -23,7 +23,6 @@ retained_tests:
   - tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php
   - tests/Unit/Administrator/Navigation/AdministratorNavigationRegistryTest.php
   - tests/Unit/Administrator/Presentation/AdministratorContributionRendererTest.php
-  - tests/Unit/InterfaceProgramme/InterfaceProgrammeEvidenceGateTest.php
 di_changes: []
 capability_index_entries:
   - kumwe/administrator-contract
