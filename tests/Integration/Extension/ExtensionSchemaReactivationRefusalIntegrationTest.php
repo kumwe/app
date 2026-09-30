@@ -60,13 +60,17 @@ final class ExtensionSchemaReactivationRefusalIntegrationTest extends TestCase
         $environment = Environment::fromGlobals();
         $setup = TestKernelFactory::create($environment);
         $extensions = $setup->get(ExtensionManager::class);
+        $database = $setup->get(Connection::class);
         self::assertInstanceOf(ExtensionManager::class, $extensions);
+        self::assertInstanceOf(Connection::class, $database);
+        $tableManager = $database->createSchemaManager();
         $context = TestKernelFactory::administratorContext($setup);
         $marker = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -10));
         $identifier = 'integration/reactivate_' . $marker;
         $archive = self::package($identifier, $marker);
         $installed = false;
         $harnesses = [];
+        $tableSnapshots = [];
 
         try {
             $extensions->install($archive, $context);
@@ -76,6 +80,9 @@ final class ExtensionSchemaReactivationRefusalIntegrationTest extends TestCase
             ])[0];
             $extensions->disable($identifier, $context);
             self::assertSame(SchemaInstallationStatus::Disabled, self::installation($setup, $definition)['status']);
+            foreach (self::installation($setup, $definition)['tables'] as $table) {
+                $tableSnapshots[] = $tableManager->introspectTableByUnquotedName($table);
+            }
             self::dropTables($setup, $definition);
             $trust = $setup->get(TrustStore::class);
             self::assertInstanceOf(TrustStore::class, $trust);
@@ -148,6 +155,12 @@ final class ExtensionSchemaReactivationRefusalIntegrationTest extends TestCase
             self::assertFalse($mcp['value']['retryable'] ?? null);
             self::assertSame($before, self::state($container, $identifier, $definition));
         } finally {
+            // Uninstall retains schema metadata, so restore the empty tables this fixture deliberately removed.
+            foreach ($tableSnapshots as $table) {
+                if (!$tableManager->tablesExist([$table->getName()])) {
+                    $tableManager->createTable($table);
+                }
+            }
             foreach ($harnesses as $harness) {
                 $harness->cleanup();
             }
