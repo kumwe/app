@@ -185,12 +185,8 @@
       "runtime_owner": [
         "tools/record-baseline.php"
       ],
-      "tests": [
-        "tests/Unit/Quality/ReproducibleBaselineToolTest.php"
-      ],
-      "workflows": [
-        ".github/workflows/ci.yml#preflight"
-      ],
+      "tests": [],
+      "workflows": [],
       "artifacts": [
         "docs/quality/baseline.json"
       ],
@@ -199,7 +195,7 @@
       "track": "maintainability",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "docs/quality/baseline.json records the PHP toolchain, lock digests, test and HTTP, console, OpenAPI and migration inventories, coverage and quarantine. The package also asks for Node, npm, database, browser, container, operating-system and action versions, build-artifact checksums, workflow run identifiers and the MCP, scheduled-job, event-consumer and page inventories, which the baseline does not carry yet.",
+      "outstanding": "docs/quality/baseline.json records the PHP toolchain, lock digests, test and HTTP, console, OpenAPI and migration inventories, coverage and quarantine. The package also asks for Node, npm, database, browser, container, operating-system and action versions, build-artifact checksums, workflow run identifiers and the MCP, scheduled-job, event-consumer and page inventories, which the baseline does not carry yet. Commit bcfb0b50 (maintainer CI simplification, 2026-09-29) deleted tests/Unit/Quality/ReproducibleBaselineToolTest.php and the preflight job without a successor; composer baseline:check now runs locally only and no CI job enforces it.",
       "gate_b_criteria": [],
       "findings": []
     },
@@ -552,7 +548,7 @@
         "tests/Architecture/TruthfulQualityGateTest.php"
       ],
       "workflows": [
-        ".github/workflows/ci.yml#preflight"
+        ".github/workflows/ci.yml#quality"
       ],
       "artifacts": [],
       "decision": "ADR 0021",
@@ -615,7 +611,6 @@
         "tests/Browser/signed-in-right-to-left.spec.ts"
       ],
       "workflows": [
-        ".github/workflows/ci.yml#preflight",
         ".github/workflows/ci.yml#quality",
         ".github/workflows/ci.yml#browser",
         ".github/workflows/nightly.yml#browser"
@@ -657,7 +652,6 @@
         "tests/Browser/signed-in-right-to-left.spec.ts"
       ],
       "workflows": [
-        ".github/workflows/ci.yml#preflight",
         ".github/workflows/ci.yml#quality",
         ".github/workflows/ci.yml#browser",
         ".github/workflows/nightly.yml#browser"
@@ -1698,7 +1692,6 @@
         "tests/Integration/Identity/AccessControlIntegrationTest.php",
         "tests/Integration/Identity/SessionIdleExpiryIntegrationTest.php",
         "tests/Integration/Identity/AccountSelfServiceIntegrationTest.php",
-        "tests/Architecture/SecurityQualificationMatrixTest.php",
         "tests/Functional/Security/CredentialTakeoverCeilingTest.php",
         "tests/Functional/Security/MachineAdapterAuthorityTest.php",
         "tests/Integration/Security/TenantIsolationIntegrationTest.php",
@@ -2582,19 +2575,15 @@
         "tools/verify-docblocks.php",
         "docs/quality/test-docblock-baseline.json"
       ],
-      "tests": [
-        "tests/Unit/DocumentationBaseline/DocumentationBaselineGateTest.php"
-      ],
-      "workflows": [
-        ".github/workflows/ci.yml#quality"
-      ],
+      "tests": [],
+      "workflows": [],
       "artifacts": [],
       "decision": "D5",
       "state": "open",
       "track": "maintainability",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "The gate is enforced, and the scale and security work retired the baseline entries of the tests it documented. The rest of the burn-down remains Lane M work.",
+      "outstanding": "composer docs:tests still refuses new debt when run, and the scale and security work retired the baseline entries of the tests it documented. The rest of the burn-down remains Lane M work. Commit bcfb0b50 (maintainer CI simplification, 2026-09-29) deleted tests/Unit/DocumentationBaseline/DocumentationBaselineGateTest.php without a successor, and the quality job no longer runs composer docs:tests; the 2026-09-29 AGENTS.md direction retires per-test documentation work, so no CI job enforces this gate.",
       "gate_b_criteria": [],
       "packages": []
     },
@@ -2718,20 +2707,15 @@
       "runtime_owner": [
         "docs/roadmap/findings.json"
       ],
-      "tests": [
-        "tests/Architecture/RoadmapLifecycleTest.php"
-      ],
-      "workflows": [
-        ".github/workflows/ci.yml#preflight",
-        ".github/workflows/ci.yml#quality"
-      ],
+      "tests": [],
+      "workflows": [],
       "artifacts": [],
       "decision": "D2, ADR 0021",
       "state": "open",
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Assessed at the release candidate. Every entry citing criterion 1 must be delivered first, including V2-REL-001 and V2-REL-002 on the Point 5 track and V2-STU-007 behind the pinned Studio release, and every conditional finding needs a named owner and review date; the ledger still records UNASSIGNED. Lane N's V3-NC-001 is a Version 3 seed that Lane N excludes from Gate B evidence.",
+      "outstanding": "Assessed at the release candidate. Every entry citing criterion 1 must be delivered first, including V2-REL-001 and V2-REL-002 on the Point 5 track and V2-STU-007 behind the pinned Studio release, and every conditional finding needs a named owner and review date; the ledger still records UNASSIGNED. Lane N's V3-NC-001 is a Version 3 seed that Lane N excludes from Gate B evidence. Commit bcfb0b50 (maintainer CI simplification, 2026-09-29) deleted tests/Architecture/RoadmapLifecycleTest.php and the preflight job without a successor; composer roadmap:check and acceptance:check run locally only, and no CI job verifies the findings ledger.",
       "gate_b_criteria": [
         1
       ]
@@ -3019,7 +3003,7 @@
         "tests/Browser/signed-in-right-to-left.spec.ts"
       ],
       "workflows": [
-        ".github/workflows/ci.yml#preflight",
+        ".github/workflows/ci.yml#quality",
         ".github/workflows/ci.yml#browser",
         ".github/workflows/nightly.yml#browser"
       ],
