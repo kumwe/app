@@ -139,11 +139,11 @@ Generated from [`findings.json`](findings.json) by `composer acceptance:summary`
 
 | State | Count |
 |---|---|
-| `open` | 10 |
+| `open` | 9 |
 | `reproduced` | 1 |
 | `decision_required` | 0 |
 | `accepted_for_implementation` | 1 |
-| `in_progress` | 11 |
+| `in_progress` | 12 |
 | `verified` | 0 |
 | `conditional` | 1 |
 | `external` | 0 |

@@ -3,7 +3,7 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "ada12fdb792ff6fd06c3ceb57bebdbabd2bc99cf",
+    "commit": "4b9efc5e4d1928f8504d387e3423476bae5ae2e3",
     "recorded_at": "2026-09-30",
     "recorded_from": [],
     "toolchain": {
@@ -35,12 +35,12 @@
             "test_methods": 57
         },
         "integration": {
-            "files": 171,
-            "test_methods": 619
+            "files": 172,
+            "test_methods": 625
         },
         "unit": {
-            "files": 497,
-            "test_methods": 2491
+            "files": 500,
+            "test_methods": 2508
         }
     },
     "coverage": {
@@ -645,11 +645,13 @@
             "20260924140000_export_site_byte_budget",
             "20260928090000_studio_authoring_identity",
             "20260929010000_operator_diagnostics_capability",
-            "20260929120000_audit_retention_evidence"
+            "20260929120000_audit_retention_evidence",
+            "20260930110000_audit_retention_authority"
         ]
     },
     "quarantine": {
         "skip_sites_by_file": {
+            "tests/Integration/Audit/AuditRetentionAuthorityIntegrationTest.php": 1,
             "tests/Integration/Automation/DatabaseLossRecoveryIntegrationTest.php": 1,
             "tests/Integration/Automation/SchedulerOccurrenceContentionIntegrationTest.php": 1,
             "tests/Integration/BusinessIntegration/OutboxInboxClaimContentionIntegrationTest.php": 1,
