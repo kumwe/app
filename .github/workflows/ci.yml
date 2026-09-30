@@ -597,7 +597,7 @@ jobs:
 
       - name: Run database behavior
         if: matrix.database.coverage != 'true' || needs.changes.outputs.full != 'true'
-        run: composer test:database
+        run: composer test:database -- --log-junit "$RUNNER_TEMP/database-tests.xml"
 
       - name: Run database behavior with coverage
         if: matrix.database.coverage == 'true' && needs.changes.outputs.full == 'true'
@@ -606,9 +606,19 @@ jobs:
           set -euo pipefail
           install -d build/coverage
           composer test:database -- \
+            --log-junit "$RUNNER_TEMP/database-tests.xml" \
             --coverage-clover build/coverage/clover.xml \
             --coverage-text=build/coverage/summary.txt
           tail -n +1 build/coverage/summary.txt
+
+      - name: Preserve database test failures
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: database-test-failure-${{ matrix.database.driver }}
+          path: ${{ runner.temp }}/database-tests.xml
+          if-no-files-found: ignore
+          retention-days: 3
 
       # Daily/manual checks retain repeat/reverse-order integration on the same database.
       - name: Prove three integration passes and reverse class order on one database
