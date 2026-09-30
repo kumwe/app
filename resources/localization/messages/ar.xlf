@@ -22917,5 +22917,7 @@
     <unit id="core.diagnostics.field.last_drain_at"><segment><source>Last drain</source><target>آخر إزالة</target></segment></unit>
     <unit id="core.diagnostics.field.expiry_rows_per_second"><segment><source>Expiry (rows/second)</source><target>انتهاء الصلاحية (صفوف/ثانية)</target></segment></unit>
     <unit id="core.diagnostics.policy_cost_included"><segment><source>Included in query cost</source><target>مشمولة في تكلفة الاستعلام</target></segment></unit>
+    <unit id="core.diagnostics.statistics_off"><segment><source>The database is not collecting the statement statistics this answer reads. Enable them to measure it.</source><target>لا تجمع قاعدة البيانات إحصاءات العبارات التي تقرأها هذه الإجابة. فعّلها لقياسها.</target></segment></unit>
+    <unit id="core.diagnostics.cost"><segment><source>Statement limit: {statements}; time limit for the whole answer: {ceiling} ms.</source><target>حد العبارات: {statements}؛ الحد الزمني للإجابة كاملة: {ceiling} مللي ثانية.</target></segment></unit>
   </file>
 </xliff>

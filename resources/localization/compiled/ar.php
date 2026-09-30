@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2641 messages.
+ * Compiled interface message catalogue for ar, carrying 2643 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2063,6 +2063,7 @@ return [
     'core.diagnostics.bounds' => 'تُحدَّد كل عبارة بمدة {timeout} مللي ثانية؛ ويُرجع كل مصدر {rows} صفًا كحد أقصى.',
     'core.diagnostics.budget_exceeded' => 'تجاوز التشخيص حد الوقت أو النتائج. قلّل عبء العمل أو افحص قاعدة البيانات مباشرةً.',
     'core.diagnostics.contention' => 'التزاحم',
+    'core.diagnostics.cost' => 'حد العبارات: {statements}؛ الحد الزمني للإجابة كاملة: {ceiling} مللي ثانية.',
     'core.diagnostics.description' => 'فحص التزاحم والطوابير وتكلفة الاستعلامات والاحتفاظ بالبيانات.',
     'core.diagnostics.empty' => 'لم تُعثر على ملاحظات في هذه العينة.',
     'core.diagnostics.field.backlog_approximate' => 'تراكم تقريبي',
@@ -2093,6 +2094,7 @@ return [
     'core.diagnostics.retention' => 'الاحتفاظ',
     'core.diagnostics.sampled' => 'النتائج عينات محدودة. أعداد الطوابير حدود دنيا؛ والمعدل المجهول لا يساوي صفرًا.',
     'core.diagnostics.slow' => 'الاستعلامات البطيئة',
+    'core.diagnostics.statistics_off' => 'لا تجمع قاعدة البيانات إحصاءات العبارات التي تقرأها هذه الإجابة. فعّلها لقياسها.',
     'core.diagnostics.title' => 'التشخيص',
     'core.diagnostics.unavailable' => 'هذا المصدر غير متاح. تحقق من صلاحيات قاعدة البيانات وتفعيل إحصاءات المحرك.',
     'core.diagnostics.unknown' => 'غير معروف',

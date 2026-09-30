@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2641 messages.
+ * Compiled interface message catalogue for af, carrying 2643 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2063,6 +2063,7 @@ return [
     'core.diagnostics.bounds' => 'Elke stelling is beperk tot {timeout} ms; elke bron lewer hoogstens {rows} rye.',
     'core.diagnostics.budget_exceeded' => 'Die diagnostiek het sy tyd- of resultaatbegroting oorskry. Beperk die werklas of ondersoek die databasis direk.',
     'core.diagnostics.contention' => 'Mededinging',
+    'core.diagnostics.cost' => 'Stellingsperk: {statements}; tydsperk vir die hele antwoord: {ceiling} ms.',
     'core.diagnostics.description' => 'Ondersoek mededinging, toue, navraagkoste en bewaring.',
     'core.diagnostics.empty' => 'Geen waarnemings is in hierdie steekproef gevind nie.',
     'core.diagnostics.field.backlog_approximate' => 'Benaderde agterstand',
@@ -2093,6 +2094,7 @@ return [
     'core.diagnostics.retention' => 'Bewaring',
     'core.diagnostics.sampled' => 'Resultate is begrensde steekproewe. Toutellings is ondergrense; \'n onbekende tempo is nie nul nie.',
     'core.diagnostics.slow' => 'Stadige navrae',
+    'core.diagnostics.statistics_off' => 'Die databasis versamel nie die stellingstatistiek wat hierdie antwoord lees nie. Aktiveer dit om te meet.',
     'core.diagnostics.title' => 'Diagnostiek',
     'core.diagnostics.unavailable' => 'Hierdie bron is nie beskikbaar nie. Kontroleer databasistoegang en of enjinstatistiek geaktiveer is.',
     'core.diagnostics.unknown' => 'Onbekend',

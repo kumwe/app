@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2641 messages.
+ * Compiled interface message catalogue for de, carrying 2643 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2063,6 +2063,7 @@ return [
     'core.diagnostics.bounds' => 'Jede Anweisung ist auf {timeout} ms begrenzt; jede Quelle liefert höchstens {rows} Zeilen.',
     'core.diagnostics.budget_exceeded' => 'Die Diagnose hat ihr Zeit- oder Ergebnisbudget überschritten. Arbeitslast eingrenzen oder Datenbank direkt prüfen.',
     'core.diagnostics.contention' => 'Sperrkonflikte',
+    'core.diagnostics.cost' => 'Anweisungslimit: {statements}; Zeitlimit für die gesamte Antwort: {ceiling} ms.',
     'core.diagnostics.description' => 'Sperrkonflikte, Warteschlangen, Abfragekosten und Aufbewahrung prüfen.',
     'core.diagnostics.empty' => 'In dieser Stichprobe wurden keine Beobachtungen gefunden.',
     'core.diagnostics.field.backlog_approximate' => 'Geschätzter Rückstand',
@@ -2093,6 +2094,7 @@ return [
     'core.diagnostics.retention' => 'Aufbewahrung',
     'core.diagnostics.sampled' => 'Die Ergebnisse sind begrenzte Stichproben. Warteschlangenzahlen sind Untergrenzen; eine unbekannte Rate ist nicht null.',
     'core.diagnostics.slow' => 'Langsame Abfragen',
+    'core.diagnostics.statistics_off' => 'Die Datenbank erfasst die Anweisungsstatistik nicht, die diese Antwort liest. Statistik aktivieren, um sie zu messen.',
     'core.diagnostics.title' => 'Diagnose',
     'core.diagnostics.unavailable' => 'Diese Quelle ist nicht verfügbar. Datenbankzugriff und Aktivierung der Datenbankstatistik prüfen.',
     'core.diagnostics.unknown' => 'Unbekannt',

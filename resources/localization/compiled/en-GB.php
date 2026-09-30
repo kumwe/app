@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2641 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2643 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2063,6 +2063,7 @@ return [
     'core.diagnostics.bounds' => 'Each statement is limited to {timeout} ms; each source returns at most {rows} rows.',
     'core.diagnostics.budget_exceeded' => 'The diagnostic exceeded its time or result budget. Narrow the workload or inspect the database directly.',
     'core.diagnostics.contention' => 'Contention',
+    'core.diagnostics.cost' => 'Statement limit: {statements}; time limit for the whole answer: {ceiling} ms.',
     'core.diagnostics.description' => 'Inspect contention, queues, query costs and retention.',
     'core.diagnostics.empty' => 'No observations were found in this sample.',
     'core.diagnostics.field.backlog_approximate' => 'Approximate backlog',
@@ -2093,6 +2094,7 @@ return [
     'core.diagnostics.retention' => 'Retention',
     'core.diagnostics.sampled' => 'Results are bounded samples. Queue counts are lower bounds; an unknown rate is not zero.',
     'core.diagnostics.slow' => 'Slow queries',
+    'core.diagnostics.statistics_off' => 'The database is not collecting the statement statistics this answer reads. Enable them to measure it.',
     'core.diagnostics.title' => 'Diagnostics',
     'core.diagnostics.unavailable' => 'This source is unavailable. Check database access and whether engine statistics are enabled.',
     'core.diagnostics.unknown' => 'Unknown',
