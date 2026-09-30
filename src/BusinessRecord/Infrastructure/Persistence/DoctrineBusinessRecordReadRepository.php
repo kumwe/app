@@ -629,6 +629,9 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
     ): RecordBrowseResult {
         $compiled = $this->queries->compile($resolved, $scope, $specification, $access);
         $rows = $this->bounded($compiled->sql, $compiled->parameters, $compiled->types);
+        if ($compiled->candidateLimit !== null) {
+            $rows = $this->withinCandidateLimit($rows, $compiled->candidateLimit);
+        }
         $hasMore = count($rows) > $specification->pageSize;
         if ($hasMore) {
             array_pop($rows);
@@ -2303,6 +2306,40 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
                     : 'The result exceeded its byte budget; reduce the page size or requested includes.',
             );
         }
+    }
+
+    /**
+     * Refuse a page whose unindexed ordering had more candidates than it may sort, and drop the count.
+     *
+     * The compiler sorts an ordering no index delivers over a capped candidate set and reports the set's
+     * size on every row. A count past the limit means the page was ordered over an arbitrary subset, so it
+     * is refused rather than returned (P5-G).
+     *
+     * @param   list<array<string, mixed>>  $rows   Page rows carrying `CompiledRecordQuery::CANDIDATE_COLUMN`.
+     * @param   int                         $limit  Most candidate rows the ordering may sort.
+     *
+     * @return  list<array<string, mixed>>  The same rows without the count column.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the candidate count passes the limit.
+     *
+     * @since   2.0.0
+     */
+    private function withinCandidateLimit(array $rows, int $limit): array
+    {
+        foreach ($rows as $index => $row) {
+            $candidates = $row[CompiledRecordQuery::CANDIDATE_COLUMN] ?? 0;
+            if (is_numeric($candidates) && (int) $candidates > $limit) {
+                throw new InvalidBusinessRecordQuery(sprintf(
+                    'The requested ordering has no index and matches more than %d records; narrow the filter '
+                    . 'or sort by an indexed field.',
+                    $limit,
+                ));
+            }
+            unset($row[CompiledRecordQuery::CANDIDATE_COLUMN]);
+            $rows[$index] = $row;
+        }
+
+        return $rows;
     }
 
     /**

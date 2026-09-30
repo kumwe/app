@@ -889,7 +889,9 @@
       "requirement": "Generated queries, reports and exports stay within declared plan, row, byte and time bounds at aged volume.",
       "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
-        "src/BusinessRecord",
+        "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordQueryCompiler.php",
+        "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordReadRepository.php",
+        "src/Infrastructure/Persistence/Migration/CoreListingSortIndexMigration.php",
         "src/BusinessReporting"
       ],
       "tests": [
@@ -897,7 +899,9 @@
         "tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php",
         "tests/Unit/Scale/QueryAndResultBoundsTest.php",
         "tests/Integration/Persistence/BoundedStatementExecutorIntegrationTest.php",
-        "tests/Integration/Performance/BrowseExaminedRowsIntegrationTest.php"
+        "tests/Integration/Performance/BrowseExaminedRowsIntegrationTest.php",
+        "tests/Integration/Performance/CoreListingSortPlanIntegrationTest.php",
+        "tests/Integration/BusinessRecord/BusinessRecordLargeDatasetIntegrationTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
@@ -906,11 +910,11 @@
         "docs/operations/scale-topology.md"
       ],
       "decision": "ADR 0021",
-      "state": "open",
+      "state": "delivered",
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "The head enforces engine statement cancellation, an 8 MiB browse-result budget, bounded expansion and query-count checks, with examined-row evidence on aged indexed sorts. Default updated-time, sortable-but-unindexed, nullable and descending sort plans still need canonical schema-index qualification; docs/operations/scale-topology.md records the exact limits.",
+      "outstanding": null,
       "gate_b_criteria": [],
       "findings": []
     },
@@ -2987,7 +2991,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "The declared deterministic aged dataset, all four storage workloads and sampled concurrency run on all three engines. Reconcile the final Beta 1 artifact manifest with those reports and the remaining query-plan and topology qualifications. The reports label estimates and do not promise production throughput.",
+      "outstanding": "The declared deterministic aged dataset, all four storage workloads and sampled concurrency run on all three engines, and every browse ordering is qualified on that dataset (P5-G). Reconcile the final Beta 1 artifact manifest with those reports and the remaining topology qualification (P5-H). The reports label estimates and do not promise production throughput.",
       "gate_b_criteria": [
         10
       ]

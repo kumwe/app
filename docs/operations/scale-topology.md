@@ -110,11 +110,14 @@ capacity sample's question (`docs/operations/capacity-estimate.md`), not a corre
 | Execution time per browse statement | `DoctrineBusinessRecordReadRepository` through `BoundedStatementExecutor` | 5 s, cancelled by the engine |
 | Result bytes per browse statement | same | 8 MiB of column bytes, refused before decoding |
 | Relationship include fan-out | `DoctrineBusinessRecordReadRepository::MAX_INCLUDED_ROWS` | ≤ 1,000 rows per include |
+| Rows an unindexed ordering may sort | `DoctrineBusinessRecordQueryCompiler::UNINDEXED_SORT_CANDIDATES` | ≤ 10,000; more is refused (HTTP 422) |
 | Query count per page | `GeneratedBusinessQueryBudgetIntegrationTest`, `MachineAdapterQueryBudgetIntegrationTest` | constant in page size through REST, MCP and CLI |
 
-Indexes for scope, identity, version and the fields a definition declares indexed, unique, sortable or
-filterable are created by the physical schema compiler when the definition is installed, and `tests/Integration/Performance` holds the
-declared hot plans (`docs/quality/hot-plans.json`) to an indexed access path on every engine.
+Indexes for scope, identity, the default update-time ordering and the fields a definition declares indexed,
+unique or sortable are created by the physical schema compiler when the definition is installed, and
+`tests/Integration/Performance` holds the declared hot plans (`docs/quality/hot-plans.json`) to an indexed
+access path on every engine.
+
 **Execution-time and byte bounds.** Every statement of a browse — the page, the aggregates, the reference
 identities and each relationship include — runs through `BoundedStatementExecutor` under the repository's
 `StatementBudget` (5 s, 8 MiB). The engine enforces the time: MariaDB runs the statement as `SET
@@ -130,22 +133,50 @@ accepts. `BoundedStatementExecutorIntegrationTest` proves the engine cancellatio
 the untouched caller transaction on MariaDB and PostgreSQL; `BoundedStatementExecutorTest` pins MySQL's
 hint, which no local engine runs.
 
-**Examined rows.** Pagination is keyset-only and the page statement's `WHERE` carries scope, row policy
-and the cursor predicate before `ORDER BY … LIMIT page + 1`. For a sort on a field the definition declares
-`indexed` or `unique`, the installed index leads with the scope columns and the field. The compiler leaves
-out the null-rank term for a NOT NULL column (it ranks every row alike), seeks with a bare comparison, and
-after a unique NOT NULL key emits no identity tie-breaker (the key is already total inside the
-equality-bound scope, and MariaDB cannot extend a unique index with the primary key), so the engine reads
-the page in index order. `BrowseExaminedRowsIntegrationTest` measures at most 4 × (page + 1) examined rows
-for a unique and for an indexed ordering on a 1,503-row table, on MariaDB (session `Handler_read_*`
-counters) and PostgreSQL (`EXPLAIN (ANALYZE)` actual rows); the previous compiled order examined every row
-(1,525 handler reads on MariaDB, 1,503 rows on PostgreSQL). Three orderings are not index-served, because
-the record table's indexes are compiled by the `kumwe/business-schema` package, not by App: the default
-order (last update, newest first — the package emits no `(scope, updated_at)` index), a field that is
-`sortable` but neither `indexed` nor `unique`, and a nullable or descending sort (the rank term and the
-ascending identity tie-breaker need a sort). Those pages examine every row in scope and are bounded by the
-5 s execution-time cap above; the remedy is a package release that indexes `(scope, updated_at, record_id)`
-and every sortable field.
+**Examined rows and sort plans.** Pagination is keyset-only and the page statement's `WHERE` carries scope,
+row policy and the cursor predicate before `ORDER BY … LIMIT page + 1`. `kumwe/business-schema` 0.1.4
+compiles the canonical record-table indexes: `(scope, updated_at, record_id)` for the default ordering (last
+update, newest first) and `(scope, field, record_id)` for every `sortable` field stored in one indexable
+column (a unique NOT NULL field keeps its unique `(scope, field)` index). A definition installed before
+0.1.4 receives them through its next normal schema plan. `DoctrineBusinessRecordQueryCompiler` reads the
+installed blueprint and chooses one of three plans:
+
+| Ordering | Plan | Examined rows |
+|---|---|---|
+| One key an installed index serves, NOT NULL (default updated time, unique, indexed, sortable-only, record identity), either direction | One index range read forwards or backwards; the seek is the row comparison `(key, record_id) > (?, ?)` on PostgreSQL and a leading `>=`/`<=` bound on MariaDB and MySQL, which also name the serving index (`FORCE INDEX`) when the caller supplied no filter or search, because their optimizer otherwise keeps a scope `ref` and walks past every earlier page | ≤ 4 × (page + 1), first page and deep pages alike |
+| One nullable key an installed index serves, any direction and null placement | The valued rows and the empty rows are read as two index ranges, each capped at page + 1, then the at most 2 × (page + 1) rows are ordered together; a segment the cursor has passed is left out | ≤ 8 × (page + 1) |
+| Several keys, or a sortable field no index covers (stored wider than 191 characters, or installed before 0.1.4) | Bounded candidate plan: the rows matching scope, policy, filter and cursor are capped at `UNINDEXED_SORT_CANDIDATES` + 1 (10,001) in a derived table and only those are sorted; a window count reports the set, and a page whose candidates pass 10,000 is refused as `InvalidBusinessRecordQuery` (HTTP 422) asking for a narrower filter or an indexed sort | ≤ 10,001 record rows, never the whole aged table |
+
+`BrowseExaminedRowsIntegrationTest` grows a generated table with the capacity contract's declared 2,000-row
+aged dataset (`tools/PerfDataset.php`, seed 20260924, ages backdated into `created_at` and `updated_at`), walks
+every ordering through `BusinessRecordService` at 100 rows a page and measures the first page and the tenth
+by the engine: MariaDB and MySQL through the session's `Handler_read_*` counters, PostgreSQL through `EXPLAIN
+(ANALYZE)` actual rows. Measured on MariaDB 10.11 and PostgreSQL 16 on 2026-09-30 (2,003 rows):
+
+| Ordering | MariaDB page 1 / page 10 | PostgreSQL page 1 / page 10 |
+|---|---|---|
+| Default updated time, unique, indexed descending, sortable-only, record identity | ≤ 102 / ≤ 102 | 101 / 101 |
+| Nullable, empty values last (ascending or descending) | 506 / 507 handler reads (202 record rows by `ANALYZE`) | 202 / 202 |
+| Nullable, empty values first (ascending or descending) | 506 / 102 | 202 / 101 |
+| Wide sortable field; two keys (bounded candidate plan) | 2,003 record rows | 2,003 record rows |
+| The same after growth to 12,003 rows | refused, 10,001 record rows read | refused, 10,001 record rows read |
+
+In the same test, before the seek became a row comparison and the index was named, a tenth default-order
+page examined 1,001 rows on MariaDB (the scope `ref` walk) and a tenth sortable-only page 1,001 rows on
+PostgreSQL (an index scan filtering every earlier row); before business-schema 0.1.4 and this plan choice the
+default, sortable-only, nullable and several-key orderings sorted every row in scope under the 5 s cap alone. MySQL 8.4 runs the same test in CI's database lane; for the candidate plan its handler
+counters also count the derived set, so it is held to a multiple of the candidates. The bounds are
+examined-row counts on the declared dataset, not throughput: capacity is estimated from concurrent samples
+on CI hardware (ADR 0021, [Capacity estimate](capacity-estimate.md)).
+
+**Core listings.** The content browser's default and oldest-first orderings are served by
+`(site_identifier, updated_at, id)`. Migration `20260930120000_core_listing_sort_indexes` adds
+`(site_identifier, title, id)` for its title orderings and `(updated_at, process_id)` for the operator's
+recent-process listing, which PostgreSQL reads backwards directly and MariaDB and MySQL read as the newest
+identities from the index followed by a primary-key fetch, because their cost model sorts a small table
+instead. `CoreListingSortPlanIntegrationTest` grows both tables with the same aged dataset and holds every
+listing statement to ≤ 4 × the 50-row batch on each engine. Administrator, content and job lists keep their
+offset bounds above; retention drains keep the batch indexes documented in [Retention](retention.md).
 
 **Query-count growth.** `GeneratedBusinessQueryBudgetIntegrationTest` holds generated discovery, operation
 maps and relationship hydration to budgets that do not grow with definitions, relationship width or page
