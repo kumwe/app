@@ -16,6 +16,13 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ### #152 — Version 2 runtime completion
 
+- Keep the Studio right-to-left composition proof working on phones after Studio beta.9 moved narrow
+  viewports to one workspace pane at a time, run the catalogue and interface-translation gates' temporary
+  directory cleanups only in the process that registered them, and withhold a fixture's active schema
+  installation before the MCP parity test rejects its version. The Firefox/WebKit nightly on the branch
+  passes 270 of 272 journeys first time; the desktop WebKit keyboard-only Studio journey still needs a Studio
+  release that makes the block palette a single Tab stop (#152).
+
 - Adopt Studio beta.9 with Producer 0.6.0 and Extension SDK 0.3.6 to preserve accepted server state across
   repeated saves and make the scrolling Outline and editing canvas accessible by keyboard. Pass the
   host's translated messages when mounting Studio so the chooser, editor and save confirmation use the
