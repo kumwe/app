@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2643 messages.
+ * Compiled interface message catalogue for he, carrying 2645 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1529,6 +1529,7 @@ return [
     'core.administrator.extensions.rotate_key' => 'רוטציית מפתח',
     'core.administrator.extensions.rotation_and_emergency_revocation_are_explicit' => 'רוטציה וביטול חירום הן פעולות מפורשות הניתנות לביקורת.',
     'core.administrator.extensions.runtime_extensions' => 'הרחבות זמן ריצה',
+    'core.administrator.extensions.schema_plan_required' => 'לא ניתן להפעיל את {extension} עד שתאושר תוכנית סנכרון לסכמה העסקית שלו. דבר לא שונה.',
     'core.administrator.extensions.signed_production_packages_cannot_be_activated' => 'לא ניתן להפעיל חבילות ייצור חתומות עד שיתווסף מפתח מורשה.',
     'core.administrator.extensions.signing_key_id_signed_production_packages' => 'מזהה מפתח חתימה (חבילות ייצור חתומות)',
     'core.administrator.extensions.signing_key_identifier' => 'מזהה מפתח חתימה',
@@ -2010,6 +2011,7 @@ return [
     'core.console.demo_provision_access.wrote_the_demonstration_credentials_file' => 'נכתב קובץ פרטי הגישה להדגמה {credentialsPath}.',
     'core.console.extension_activate.activated' => 'הופעל {installedIdentifier}.',
     'core.console.extension_activate.description' => 'הפעילו הרחבה או ערכת נושא לאתר שנבחרה עם --surface=site.',
+    'core.console.extension_activate.schema_plan_required' => '{identifier} לא הופעל: אשרו תחילה תוכנית סנכרון לסכמה העסקית שלו. דבר לא שונה.',
     'core.console.extension_build.description' => 'בנו ואמתו קובץ ZIP דטרמיניסטי של הרחבת Kumwe.',
     'core.console.extension_conformance.description' => 'הריצו בדיקות התאמה סטטיות על קובץ ZIP של הרחבת Kumwe.',
     'core.console.extension_disable.description' => 'השביתו הרחבה והסירו אותה ממפת זמן הריצה.',

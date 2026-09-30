@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2643 messages.
+ * Compiled interface message catalogue for ar, carrying 2645 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1529,6 +1529,7 @@ return [
     'core.administrator.extensions.rotate_key' => 'تدوير المفتاح',
     'core.administrator.extensions.rotation_and_emergency_revocation_are_explicit' => 'التدوير والإلغاء الطارئ عمليتان صريحتان وقابلتان للتدقيق.',
     'core.administrator.extensions.runtime_extensions' => 'امتدادات وقت التشغيل',
+    'core.administrator.extensions.schema_plan_required' => 'لا يمكن تفعيل {extension} حتى تتم الموافقة على خطة مزامنة لمخطط أعماله. لم يتم تغيير أي شيء.',
     'core.administrator.extensions.signed_production_packages_cannot_be_activated' => 'لا يمكن تفعيل حزم الإنتاج الموقَّعة إلى أن تُضاف مفتاح مخوَّل.',
     'core.administrator.extensions.signing_key_id_signed_production_packages' => 'معرّف مفتاح التوقيع (حزم الإنتاج الموقَّعة)',
     'core.administrator.extensions.signing_key_identifier' => 'معرّف مفتاح التوقيع',
@@ -2010,6 +2011,7 @@ return [
     'core.console.demo_provision_access.wrote_the_demonstration_credentials_file' => 'تمت كتابة ملف بيانات الاعتماد التوضيحي {credentialsPath}.',
     'core.console.extension_activate.activated' => 'تم تفعيل {installedIdentifier}.',
     'core.console.extension_activate.description' => 'فعِّل امتدادًا أو سمة موقع محددة بـ --surface=site.',
+    'core.console.extension_activate.schema_plan_required' => 'لم يتم تفعيل {identifier}: وافق أولًا على خطة مزامنة لمخطط أعماله. لم يتم تغيير أي شيء.',
     'core.console.extension_build.description' => 'ابنِ ملف ZIP حتميًا لامتداد Kumwe وتحقّق منه.',
     'core.console.extension_conformance.description' => 'شغّل فحوصات مطابقة ثابتة على ملف ZIP لامتداد Kumwe.',
     'core.console.extension_disable.description' => 'عطِّل امتدادًا وأزله من خريطة وقت التشغيل.',

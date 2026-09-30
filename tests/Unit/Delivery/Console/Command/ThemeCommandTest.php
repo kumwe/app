@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 
 use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\Delivery\Console\Command\ActivateExtensionCommand;
 use Kumwe\App\Delivery\Console\Command\ConsoleAuthorizer;
@@ -71,6 +72,26 @@ final class ThemeCommandTest extends TestCase
             '--token-file=' . $this->tokenFile,
         ], $output));
         self::assertStringContainsString('step-up authentication', $output->errors[0]);
+    }
+
+    public function testReactivationNeedingASchemaPlanIsReportedAsALocalizedFailure(): void
+    {
+        $extensions = $this->createStub(ExtensionManager::class);
+        $extensions->method('activate')->willThrowException(new BusinessSchemaConflict(
+            'An extension schema requires an approved synchronization plan before reactivation.',
+        ));
+        $output = new ThemeCommandOutput();
+
+        self::assertSame(1, $this->command($extensions)->execute([
+            'acme/ledger',
+            '--site=default',
+            '--token-file=' . $this->tokenFile,
+        ], $output));
+        self::assertSame([], $output->lines);
+        self::assertSame([
+            'acme/ledger was not activated: approve a synchronization plan for its business schema first. '
+            . 'Nothing was changed.',
+        ], $output->errors);
     }
 
     public function testRecoveryRequiresExactConfirmationAndRestoresCore(): void

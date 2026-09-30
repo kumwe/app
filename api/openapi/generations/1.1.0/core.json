@@ -8755,6 +8755,16 @@
                         },
                         "description": "Theme capability or step-up authentication required"
                     },
+                    "409": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The extension business schema needs an approved synchronization plan first"
+                    },
                     "429": {
                         "content": {
                             "application/problem+json": {

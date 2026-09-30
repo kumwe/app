@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2643 messages.
+ * Compiled interface message catalogue for de, carrying 2645 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1529,6 +1529,7 @@ return [
     'core.administrator.extensions.rotate_key' => 'Schlüssel rotieren',
     'core.administrator.extensions.rotation_and_emergency_revocation_are_explicit' => 'Rotation und Notfall-Widerruf sind explizite, nachvollziehbare Vorgänge.',
     'core.administrator.extensions.runtime_extensions' => 'Laufzeiterweiterungen',
+    'core.administrator.extensions.schema_plan_required' => '{extension} kann erst aktiviert werden, wenn ein Synchronisierungsplan für sein Geschäftsschema genehmigt wurde. Es wurde nichts geändert.',
     'core.administrator.extensions.signed_production_packages_cannot_be_activated' => 'Signierte Produktionspakete können erst aktiviert werden, wenn ein autorisierter Schlüssel hinzugefügt wurde.',
     'core.administrator.extensions.signing_key_id_signed_production_packages' => 'Signaturschlüssel-ID (signierte Produktionspakete)',
     'core.administrator.extensions.signing_key_identifier' => 'Signaturschlüsselkennung',
@@ -2010,6 +2011,7 @@ return [
     'core.console.demo_provision_access.wrote_the_demonstration_credentials_file' => 'Die Demonstrations-Zugangsdatendatei {credentialsPath} wurde geschrieben.',
     'core.console.extension_activate.activated' => '{installedIdentifier} aktiviert.',
     'core.console.extension_activate.description' => 'Aktiviert eine Erweiterung oder ein mit --surface=site ausgewähltes Website-Theme.',
+    'core.console.extension_activate.schema_plan_required' => '{identifier} wurde nicht aktiviert: Genehmigen Sie zuerst einen Synchronisierungsplan für sein Geschäftsschema. Es wurde nichts geändert.',
     'core.console.extension_build.description' => 'Erstellt und prüft ein deterministisches Kumwe-Erweiterungs-ZIP.',
     'core.console.extension_conformance.description' => 'Führt statische Konformitätsprüfungen für ein Kumwe-Erweiterungs-ZIP aus.',
     'core.console.extension_disable.description' => 'Deaktiviert eine Erweiterung und entfernt sie aus der Laufzeitzuordnung.',

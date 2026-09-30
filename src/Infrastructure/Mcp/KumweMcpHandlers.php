@@ -14,6 +14,7 @@ use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Automation\AutomationManagementService;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\Content\Application\ContentModelNotFound;
 use Kumwe\Content\Application\ContentNotFound;
 use Kumwe\Content\Application\ContentRecord;
@@ -2160,7 +2161,9 @@ final readonly class KumweMcpHandlers
      * step-up proof and refuses that one change with `StepUpAuthenticationRequired`; the browser or
      * protected REST path remains the route for it. Every other activation
      * proceeds under the caller's existing `extensions.manage` authorization, taken under the
-     * installation-wide extension lifecycle lock.
+     * installation-wide extension lifecycle lock. An activation whose business schema can no longer be
+     * re-proved rolls back and is refused as `extension.schema_plan_required`, naming the synchronization
+     * plan that has to be approved first; the operation identifier is released so a retry can follow it.
      *
      * @param   string   $operationId  Idempotency key this write is fenced on.
      * @param   string   $identifier   `vendor/name` identifier of the installed extension.
@@ -2173,6 +2176,8 @@ final readonly class KumweMcpHandlers
      *          this extension.
      * @throws  \Kumwe\App\Presentation\Application\StepUpAuthenticationRequired  When the change would take over
      *          the administrator surface, which no machine caller may prove.
+     * @throws  McpToolRefusal  When the extension's business schema needs an approved synchronization plan
+     *          before the extension can be activated again.
      * @throws  InvalidArgumentException  When the surface is neither `site` nor `administrator`, or the
      *          operation identifier is malformed or reused with different arguments.
      * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the
@@ -2203,11 +2208,17 @@ final readonly class KumweMcpHandlers
                 'identifier' => $identifier,
                 'surface' => $themeSurface?->value,
             ],
-            fn (): array => $this->extensions->activate(
-                $identifier,
-                $context,
-                $themeSurface,
-            ),
+            function () use ($identifier, $context, $themeSurface): array {
+                try {
+                    return $this->extensions->activate($identifier, $context, $themeSurface);
+                } catch (BusinessSchemaConflict) {
+                    throw new McpToolRefusal(
+                        'extension.schema_plan_required',
+                        'The extension business schema needs an approved synchronization plan before the extension '
+                        . 'can be activated again.',
+                    );
+                }
+            },
         );
     }
 

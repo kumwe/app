@@ -899,6 +899,15 @@
         <target>Kies ’n medialêer om op te laai.</target>
       </segment>
     </unit>
+    <unit id="core.administrator.extensions.schema_plan_required">
+      <notes>
+        <note category="context">Refusal on the extensions screen when reactivating an extension needs an approved business schema synchronization plan first.</note>
+      </notes>
+      <segment>
+        <source>{extension} cannot be activated until a synchronization plan for its business schema has been approved. Nothing was changed.</source>
+        <target>{extension} kan nie geaktiveer word voordat ’n sinchronisasieplan vir sy besigheidskema goedgekeur is nie. Niks is verander nie.</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.wording.error_scope_quota">
       <notes>
         <note category="context">Wording-screen refusal when the per-scope override quota is reached.</note>
@@ -18367,6 +18376,15 @@
       <segment>
         <source>Activated {installedIdentifier}.</source>
         <target>Geaktiveer: {installedIdentifier}.</target>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_activate.schema_plan_required">
+      <notes>
+        <note category="context">Console error on src/Delivery/Console/Command/ActivateExtensionCommand.php when the extension business schema needs an approved synchronization plan first.</note>
+      </notes>
+      <segment>
+        <source>{identifier} was not activated: approve a synchronization plan for its business schema first. Nothing was changed.</source>
+        <target>{identifier} is nie geaktiveer nie: keur eers ’n sinchronisasieplan vir sy besigheidskema goed. Niks is verander nie.</target>
       </segment>
     </unit>
     <unit id="core.console.extension_build.description">

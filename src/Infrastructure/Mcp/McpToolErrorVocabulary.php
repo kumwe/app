@@ -280,6 +280,13 @@ final readonly class McpToolErrorVocabulary
                 [self::classification(McpToolRefusal::class, 'result.too_large')],
             ),
             ...self::studioAuthoring(),
+            self::definition(
+                'extension.schema_plan_required',
+                'The extension business schema needs an approved synchronization plan before the extension '
+                . 'can be activated again.',
+                false,
+                [self::classification(McpToolRefusal::class, 'extension.schema_plan_required')],
+            ),
         ];
     }
 
