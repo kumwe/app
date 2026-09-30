@@ -46,7 +46,7 @@ record, never this table. A phase with any open or pending entry cannot read as 
 | E — Enterprise document primitives | A | Delivered — every package and follow-up finding complete | — |
 | L — Language, locale and multilingual content | A, with a B tail | In progress — `PL-A`, `PL-B`, `PL-C`, `PL-D`, `PL-E`, `PL-F` delivered; `PL-G` open; 1 finding open | — |
 | **Gate A** | | **Passed — 13/13 executable criteria met** | — |
-| 5 — Enterprise scale | B | In progress — `P5-A`, `P5-B`, `P5-C`, `P5-D`, `P5-E`, `P5-F`, `P5-I` delivered; `P5-G`, `P5-H` open | — |
+| 5 — Enterprise scale | B | In progress — `P5-A`, `P5-B`, `P5-C`, `P5-D`, `P5-E`, `P5-F`, `P5-G`, `P5-I` delivered; `P5-H` open | — |
 | 6 — Continuity and introspection | B | In progress — `P6-D` delivered; `P6-A`, `P6-B`, `P6-C` open; 6 findings open | — |
 | 7 — Qualification | B | In progress — `P7-A`, `P7-D` delivered; `P7-B`, `P7-C`, `P7-E`, `P7-F`, `P7-G`, `P7-H`, `P7-I` open; 3 findings open; in flight on `agent/browser` | Final Phases 5, 6, PL-G and release-artifact evidence in #152 |
 | S — Studio contextual Content authoring | A, with a B integration | In progress — `S-A`, `S-B`, `S-C`, `S-D`, `S-E`, `S-F` delivered; `S-G` open; 1 finding open, 1 requirement open | A Producer release re-pinning Studio past `0.1.0-beta.3`; none exists (pin kept 2026-09-24) |
@@ -69,7 +69,7 @@ definition remains in README, and the per-requirement detail is in
 | 0 | `P0-A`, `P0-B`, `P0-E` | `V2-DOC-002`, `V2-ERP-007` | `maintainability`, `version-3` | — |
 | 2 | `P2-B`, `P2-C`, `P2-D`, `P2-E`, `P2-H` | `V2-DEMO-001`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` | `maintainability`, `pr-152` | — |
 | L | `PL-G` | `V2-LNG-010` | `pr-152` | — |
-| 5 | `P5-G`, `P5-H` | — | `pr-152` | — |
+| 5 | `P5-H` | — | `pr-152` | — |
 | 6 | `P6-A`, `P6-B`, `P6-C` | `V2-DR-001`, `V2-DR-004`, `V2-DR-003`, `V2-DR-002`, `GM-BAK-04`, `GM-BAK-08` | `pr-152` | — |
 | 7 | `P7-B`, `P7-C`, `P7-E`, `P7-F`, `P7-G`, `P7-H`, `P7-I` | `V2-UX-001`, `V2-QA-014`, `GM-SUP-05` | `pr-152` | — |
 | S | `S-G` | `V2-STU-007`, `MACHINE-STUDIO-PARITY` | `pr-152` | — |
