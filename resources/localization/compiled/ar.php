@@ -2065,7 +2065,7 @@ return [
     'core.diagnostics.bounds' => 'تُحدَّد كل عبارة بمدة {timeout} مللي ثانية؛ ويُرجع كل مصدر {rows} صفًا كحد أقصى.',
     'core.diagnostics.budget_exceeded' => 'تجاوز التشخيص حد الوقت أو النتائج. قلّل عبء العمل أو افحص قاعدة البيانات مباشرةً.',
     'core.diagnostics.contention' => 'التزاحم',
-    'core.diagnostics.cost' => 'حد العبارات: {statements}؛ الحد الزمني للإجابة كاملة: {ceiling} مللي ثانية.',
+    'core.diagnostics.cost' => 'حد العبارات: {statements}؛ الميزانية الزمنية الإجمالية لتنفيذ العبارات: {budget} مللي ثانية.',
     'core.diagnostics.description' => 'فحص التزاحم والطوابير وتكلفة الاستعلامات والاحتفاظ بالبيانات.',
     'core.diagnostics.empty' => 'لم تُعثر على ملاحظات في هذه العينة.',
     'core.diagnostics.field.backlog_approximate' => 'تراكم تقريبي',

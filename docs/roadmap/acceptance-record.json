@@ -624,7 +624,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "All nine catalogues, per-locale journeys and signed-in right-to-left baselines are on the PR head; the Hebrew time-format assertion accepts the locale's one-digit hour. The Firefox and WebKit nightly on 38961da3 (Kumwe nightly run 36723428470) passed 270 of 272 journeys first time, every Firefox journey and all 20 critical journeys included; the Chromium browser lane on ada12fdb (Kumwe CI run 36714022462) passed 268 of 268 first time, and the Hebrew and Arabic right-to-left projects pass locally after the mobile Studio composition proof follows Studio beta.9's single-pane layout. Remaining: on desktop WebKit the keyboard-only Studio journey (tests/Browser/studio-authoring.spec.ts) exceeds its time budget because every Studio palette entry is a separate Tab stop (64 presses from the Model tab to the field identifier), and the measured-canvas keyboard parity journey (tests/Browser/studio-composition.spec.ts) passed only on retry. Both need a Studio package release that makes the palette one Tab stop; App does not patch or copy Studio.",
+      "outstanding": "All nine catalogues, per-locale journeys and signed-in right-to-left baselines are on the PR head; the Hebrew time-format assertion accepts the locale's one-digit hour. The Firefox and WebKit nightly on 38961da3 (Kumwe nightly run 36723428470) passed 270 of 272 journeys first time, every Firefox journey and all 20 critical journeys included; the Chromium browser lane on ada12fdb (Kumwe CI run 36714022462) passed 268 of 268 first time, and the Hebrew and Arabic right-to-left projects pass locally after the mobile Studio composition proof follows Studio beta.9's single-pane layout. Remaining: on desktop WebKit the keyboard-only Studio journey (tests/Browser/studio-authoring.spec.ts) exceeds its time budget because every Studio palette entry is a separate Tab stop (64 presses from the Model tab to the field identifier), and the measured-canvas keyboard parity journey (tests/Browser/studio-composition.spec.ts) passed only on retry. These scheduled cross-browser results remain diagnostic evidence; they do not create an additional routine merge gate or establish which package needs changing.",
       "gate_b_criteria": [
         7,
         11
@@ -665,7 +665,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "All nine catalogues are on the PR head and every locale journey passes in the Chromium lane and the Firefox/WebKit nightly. Remaining: on desktop WebKit the keyboard-only Studio journey (tests/Browser/studio-authoring.spec.ts) exceeds its time budget because every Studio palette entry is a separate Tab stop (64 presses from the Model tab to the field identifier), and the measured-canvas keyboard parity journey (tests/Browser/studio-composition.spec.ts) passed only on retry. Both need a Studio package release that makes the palette one Tab stop; App does not patch or copy Studio. No fluent human review is required or claimed.",
+      "outstanding": "All nine catalogues are on the PR head and every locale journey passes in the Chromium lane and the Firefox/WebKit nightly. Remaining: on desktop WebKit the keyboard-only Studio journey (tests/Browser/studio-authoring.spec.ts) exceeds its time budget because every Studio palette entry is a separate Tab stop (64 presses from the Model tab to the field identifier), and the measured-canvas keyboard parity journey (tests/Browser/studio-composition.spec.ts) passed only on retry. These scheduled cross-browser results remain diagnostic evidence; they do not create an additional routine merge gate or establish which package needs changing. No fluent human review is required or claimed.",
       "gate_b_criteria": [
         7,
         11
@@ -1807,7 +1807,7 @@
         "agent/browser"
       ],
       "branch_evidence": [],
-      "outstanding": "All five archetype journeys and the German and Hebrew companion journeys pass on Chromium, Firefox and WebKit (Kumwe CI run 36714022462, Kumwe nightly run 36723428470). Remaining: on desktop WebKit the keyboard-only Studio journey (tests/Browser/studio-authoring.spec.ts) exceeds its time budget because every Studio palette entry is a separate Tab stop (64 presses from the Model tab to the field identifier), and the measured-canvas keyboard parity journey (tests/Browser/studio-composition.spec.ts) passed only on retry. Both need a Studio package release that makes the palette one Tab stop; App does not patch or copy Studio. Native Safari and fluent human review are not claimed.",
+      "outstanding": "All five archetype journeys and the German and Hebrew companion journeys pass on Chromium, Firefox and WebKit (Kumwe CI run 36714022462, Kumwe nightly run 36723428470). Remaining: on desktop WebKit the keyboard-only Studio journey (tests/Browser/studio-authoring.spec.ts) exceeds its time budget because every Studio palette entry is a separate Tab stop (64 presses from the Model tab to the field identifier), and the measured-canvas keyboard parity journey (tests/Browser/studio-composition.spec.ts) passed only on retry. These scheduled cross-browser results remain diagnostic evidence; they do not create an additional routine merge gate or establish which package needs changing. Native Safari and fluent human review are not claimed.",
       "gate_b_criteria": [
         7
       ],
@@ -2239,7 +2239,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "All five archetype journeys pass with accessibility, keyboard, visual and locale evidence on Chromium, Firefox and WebKit (Kumwe CI run 36714022462, Kumwe nightly run 36723428470). Remaining: on desktop WebKit the keyboard-only Studio journey (tests/Browser/studio-authoring.spec.ts) exceeds its time budget because every Studio palette entry is a separate Tab stop (64 presses from the Model tab to the field identifier), and the measured-canvas keyboard parity journey (tests/Browser/studio-composition.spec.ts) passed only on retry. Both need a Studio package release that makes the palette one Tab stop; App does not patch or copy Studio.",
+      "outstanding": "All five archetype journeys pass with accessibility, keyboard, visual and locale evidence on Chromium, Firefox and WebKit (Kumwe CI run 36714022462, Kumwe nightly run 36723428470). Remaining: on desktop WebKit the keyboard-only Studio journey (tests/Browser/studio-authoring.spec.ts) exceeds its time budget because every Studio palette entry is a separate Tab stop (64 presses from the Model tab to the field identifier), and the measured-canvas keyboard parity journey (tests/Browser/studio-composition.spec.ts) passed only on retry. These scheduled cross-browser results remain diagnostic evidence; they do not create an additional routine merge gate or establish which package needs changing.",
       "gate_b_criteria": [
         7
       ],
@@ -2274,7 +2274,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "The live appearance-switch journey passes on mobile and desktop WebKit and Firefox in Kumwe nightly run 36723428470 on 38961da3, and no nightly axe or reflow check fails. Remaining: on desktop WebKit the keyboard-only Studio journey (tests/Browser/studio-authoring.spec.ts) exceeds its time budget because every Studio palette entry is a separate Tab stop (64 presses from the Model tab to the field identifier), and the measured-canvas keyboard parity journey (tests/Browser/studio-composition.spec.ts) passed only on retry. Both need a Studio package release that makes the palette one Tab stop; App does not patch or copy Studio. Native Safari review is not claimed.",
+      "outstanding": "The live appearance-switch journey passes on mobile and desktop WebKit and Firefox in Kumwe nightly run 36723428470 on 38961da3, and no nightly axe or reflow check fails. Remaining: on desktop WebKit the keyboard-only Studio journey (tests/Browser/studio-authoring.spec.ts) exceeds its time budget because every Studio palette entry is a separate Tab stop (64 presses from the Model tab to the field identifier), and the measured-canvas keyboard parity journey (tests/Browser/studio-composition.spec.ts) passed only on retry. These scheduled cross-browser results remain diagnostic evidence; they do not create an additional routine merge gate or establish which package needs changing. Native Safari review is not claimed.",
       "gate_b_criteria": [
         7
       ],
@@ -2914,7 +2914,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "The five archetype task journeys (tests/Browser/user-acceptance-journeys.spec.ts) pass in the Chromium lane and the Firefox/WebKit nightly. Remaining: on desktop WebKit the keyboard-only Studio journey (tests/Browser/studio-authoring.spec.ts) exceeds its time budget because every Studio palette entry is a separate Tab stop (64 presses from the Model tab to the field identifier), and the measured-canvas keyboard parity journey (tests/Browser/studio-composition.spec.ts) passed only on retry. Both need a Studio package release that makes the palette one Tab stop; App does not patch or copy Studio.",
+      "outstanding": "The five archetype task journeys (tests/Browser/user-acceptance-journeys.spec.ts) pass in the Chromium lane and the Firefox/WebKit nightly. Remaining: on desktop WebKit the keyboard-only Studio journey (tests/Browser/studio-authoring.spec.ts) exceeds its time budget because every Studio palette entry is a separate Tab stop (64 presses from the Model tab to the field identifier), and the measured-canvas keyboard parity journey (tests/Browser/studio-composition.spec.ts) passed only on retry. These scheduled cross-browser results remain diagnostic evidence; they do not create an additional routine merge gate or establish which package needs changing.",
       "gate_b_criteria": [
         7
       ]
@@ -3024,7 +3024,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "All nine catalogues and their browser journeys are on the PR head; locale qualification reports no overflow and no axe violation on Chromium, Firefox or WebKit. Remaining: on desktop WebKit the keyboard-only Studio journey (tests/Browser/studio-authoring.spec.ts) exceeds its time budget because every Studio palette entry is a separate Tab stop (64 presses from the Model tab to the field identifier), and the measured-canvas keyboard parity journey (tests/Browser/studio-composition.spec.ts) passed only on retry. Both need a Studio package release that makes the palette one Tab stop; App does not patch or copy Studio.",
+      "outstanding": "All nine catalogues and their browser journeys are on the PR head; locale qualification reports no overflow and no axe violation on Chromium, Firefox or WebKit. Remaining: on desktop WebKit the keyboard-only Studio journey (tests/Browser/studio-authoring.spec.ts) exceeds its time budget because every Studio palette entry is a separate Tab stop (64 presses from the Model tab to the field identifier), and the measured-canvas keyboard parity journey (tests/Browser/studio-composition.spec.ts) passed only on retry. These scheduled cross-browser results remain diagnostic evidence; they do not create an additional routine merge gate or establish which package needs changing.",
       "gate_b_criteria": [
         11
       ]

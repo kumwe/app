@@ -32,7 +32,8 @@ use Psr\Clock\ClockInterface;
  * explicitly unavailable with a fixed reason, never a healthy zero: an engine without a supported statistics
  * branch runs no statement, and statement statistics that are switched off are detected before an empty digest
  * table could read as "nothing is slow". Every answer declares its cost class, the most statements it may run
- * and the resulting elapsed-time ceiling, since each statement is cancelled by the engine at its timeout.
+ * and their combined execution budget. The engine cancels each SELECT at its timeout; connection setup,
+ * transaction control, result transfer and PHP work are outside that budget.
  * SQL text, identities and payloads never leave this reader.
  *
  * @since  2.0.0
@@ -129,7 +130,7 @@ final readonly class DoctrineOperatorDiagnostics implements OperatorDiagnostics
             'cost_class' => in_array($section, ['contention', 'slow'], true) ? 'engine_statistics' : 'bounded_probes',
             'statement_limit' => $statements,
             'statement_timeout_ms' => self::TIMEOUT_MS,
-            'elapsed_ceiling_ms' => $statements * self::TIMEOUT_MS,
+            'statement_budget_ms' => $statements * self::TIMEOUT_MS,
             'statement_byte_limit' => self::BYTE_LIMIT,
             'row_limit_per_source' => self::ROW_LIMIT,
             'sample_limit_per_source' => in_array($section, ['backlog', 'retention'], true)
@@ -194,7 +195,7 @@ final readonly class DoctrineOperatorDiagnostics implements OperatorDiagnostics
     }
 
     /**
-     * Declare the most statements a section may run, so its elapsed time is bounded before it starts.
+     * Declare the most diagnostic SELECT statements a section may run.
      *
      * @param   string  $section  Fixed question to answer.
      * @param   string  $engine   Engine branch from engine().

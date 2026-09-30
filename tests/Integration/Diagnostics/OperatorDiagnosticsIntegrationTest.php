@@ -140,17 +140,17 @@ final class OperatorDiagnosticsIntegrationTest extends TestCase
             $started = microtime(true);
             $answer = $this->diagnostics()->read($this->administrator(), $section);
             $elapsed = (microtime(true) - $started) * 1000;
+            $observation = sprintf('%s returned after %.1f ms.', $section, $elapsed);
             self::assertSame($section, $answer['section']);
             self::assertSame($engine, $answer['engine']);
             self::assertSame(1000, $answer['statement_timeout_ms']);
             self::assertIsInt($answer['statement_limit']);
-            self::assertSame($answer['statement_limit'] * 1000, $answer['elapsed_ceiling_ms']);
-            self::assertLessThan($answer['elapsed_ceiling_ms'], $elapsed, $section);
+            self::assertSame($answer['statement_limit'] * 1000, $answer['statement_budget_ms'], $observation);
             self::assertIsArray($answer['rows']);
             if ($answer['status'] === 'available') {
-                self::assertNull($answer['status_reason'], $section);
+                self::assertNull($answer['status_reason'], $observation);
             } else {
-                self::assertContains($answer['status_reason'], self::REASONS, $section);
+                self::assertContains($answer['status_reason'], self::REASONS, $observation);
                 self::assertSame([], $answer['rows']);
             }
             self::assertLessThanOrEqual($section === 'queues' ? 60 : 20, count($answer['rows']), $section);

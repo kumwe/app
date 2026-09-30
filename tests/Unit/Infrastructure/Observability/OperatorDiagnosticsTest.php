@@ -217,7 +217,7 @@ final class OperatorDiagnosticsTest extends TestCase
             self::assertSame($waits, $result['rows']);
             self::assertSame('engine_statistics', $result['cost_class']);
             self::assertSame($limit, $result['statement_limit']);
-            self::assertSame($limit * 1000, $result['elapsed_ceiling_ms']);
+            self::assertSame($limit * 1000, $result['statement_budget_ms']);
             $reads = $this->selects($database);
             self::assertCount($limit, $reads, $engine);
             self::assertStringContainsString($view, $reads[$limit - 1]);
@@ -414,7 +414,7 @@ final class OperatorDiagnosticsTest extends TestCase
     }
 
     /**
-     * Every section declares the most statements it may run and the elapsed ceiling that follows from them.
+     * Every section declares its statement count and their combined execution budget.
      *
      * @return  void
      *
@@ -433,7 +433,7 @@ final class OperatorDiagnosticsTest extends TestCase
             $result = $this->reader($database->connection())->read($this->operator(), $section);
             self::assertSame('available', $result['status']);
             self::assertSame($statements, $result['statement_limit']);
-            self::assertSame($statements * 1000, $result['elapsed_ceiling_ms']);
+            self::assertSame($statements * 1000, $result['statement_budget_ms']);
             self::assertSame($cost, $result['cost_class']);
             self::assertSame(262144, $result['statement_byte_limit']);
         }

@@ -2065,7 +2065,7 @@ return [
     'core.diagnostics.bounds' => 'Elke stelling is beperk tot {timeout} ms; elke bron lewer hoogstens {rows} rye.',
     'core.diagnostics.budget_exceeded' => 'Die diagnostiek het sy tyd- of resultaatbegroting oorskry. Beperk die werklas of ondersoek die databasis direk.',
     'core.diagnostics.contention' => 'Mededinging',
-    'core.diagnostics.cost' => 'Stellingsperk: {statements}; tydsperk vir die hele antwoord: {ceiling} ms.',
+    'core.diagnostics.cost' => 'Stellingsperk: {statements}; gesamentlike uitvoeringstydsbegroting vir stellings: {budget} ms.',
     'core.diagnostics.description' => 'Ondersoek mededinging, toue, navraagkoste en bewaring.',
     'core.diagnostics.empty' => 'Geen waarnemings is in hierdie steekproef gevind nie.',
     'core.diagnostics.field.backlog_approximate' => 'Benaderde agterstand',

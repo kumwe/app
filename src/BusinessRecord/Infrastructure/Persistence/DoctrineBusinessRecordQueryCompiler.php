@@ -2090,6 +2090,9 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     ): string {
         $parts = [];
         foreach ($keys as $index => $key) {
+            if ($values[$index] === null && $key['nulls_last'] && $key['column']->nullable) {
+                continue;
+            }
             $branch = [];
             for ($prefixIndex = 0; $prefixIndex < $index; ++$prefixIndex) {
                 $prefixColumn = $alias . '.' . $this->quote($keys[$prefixIndex]['column']->physicalName);

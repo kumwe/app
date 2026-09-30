@@ -147,6 +147,11 @@ final readonly class FilesystemAuditCheckpointStore
         $published = @link($temporary, $path);
         @unlink($temporary);
         if (!$published) {
+            // Another verifier may have published this exact checkpoint after our initial read.
+            if (is_file($path) && self::read($path)->toArray() === $checkpoint->toArray()) {
+                return false;
+            }
+
             throw new RuntimeException('The audit checkpoint could not be published exclusively.');
         }
 

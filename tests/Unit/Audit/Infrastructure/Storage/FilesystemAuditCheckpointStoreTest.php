@@ -77,6 +77,55 @@ final class FilesystemAuditCheckpointStoreTest extends TestCase
     }
 
     /**
+     * Concurrent verification can retain the same checkpoint without reporting a false storage failure.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testConcurrentPublicationOfTheSameCheckpointSucceeds(): void
+    {
+        $script = <<<'PHP'
+        require $argv[1];
+        $store = new \Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditCheckpointStore($argv[2]);
+        $checkpoint = new \Kumwe\App\Audit\Application\AuditCheckpoint(1, str_repeat('a', 64), 10);
+        fwrite(STDOUT, "ready\n");
+        fread(STDIN, 1);
+        $store->retain($checkpoint);
+        PHP;
+        $workers = [];
+        for ($worker = 0; $worker < 8; ++$worker) {
+            $process = proc_open(
+                [PHP_BINARY, '-r', $script, dirname(__DIR__, 5) . '/vendor/autoload.php', $this->root . '/store'],
+                [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+                $pipes,
+            );
+            self::assertIsResource($process);
+            self::assertSame("ready\n", fgets($pipes[1]));
+            $workers[] = [$process, $pipes];
+        }
+        foreach ($workers as [, $pipes]) {
+            fwrite($pipes[0], '1');
+            fclose($pipes[0]);
+        }
+        $failures = [];
+        foreach ($workers as [$process, $pipes]) {
+            $errors = stream_get_contents($pipes[2]);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            if (proc_close($process) !== 0) {
+                $failures[] = $errors;
+            }
+        }
+        self::assertSame([], $failures);
+        self::assertEquals(
+            new AuditCheckpoint(1, str_repeat('a', 64), 10),
+            (new FilesystemAuditCheckpointStore($this->root . '/store'))->retained(),
+        );
+        self::assertCount(1, glob($this->root . '/store/*.json') ?: []);
+    }
+
+    /**
      * An unsafe or unreadable retained checkpoint is an error, never an absent one.
      *
      * @return  void

@@ -2065,7 +2065,7 @@ return [
     'core.diagnostics.bounds' => '每条语句限时 {timeout} 毫秒；每个来源最多返回 {rows} 行。',
     'core.diagnostics.budget_exceeded' => '诊断超出了时间或结果限制。请减少工作负载或直接检查数据库。',
     'core.diagnostics.contention' => '锁争用',
-    'core.diagnostics.cost' => '语句上限：{statements}；整个答案的时限：{ceiling} 毫秒。',
+    'core.diagnostics.cost' => '语句上限：{statements}；语句执行总时间预算：{budget} 毫秒。',
     'core.diagnostics.description' => '检查锁争用、队列、查询成本和保留情况。',
     'core.diagnostics.empty' => '此样本中未发现观测结果。',
     'core.diagnostics.field.backlog_approximate' => '近似积压量',

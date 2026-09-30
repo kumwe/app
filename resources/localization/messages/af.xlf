@@ -22936,6 +22936,6 @@
     <unit id="core.diagnostics.field.expiry_rows_per_second"><segment><source>Expiry (rows/second)</source><target>Verstryking (rye/sekonde)</target></segment></unit>
     <unit id="core.diagnostics.policy_cost_included"><segment><source>Included in query cost</source><target>In navraagkoste ingesluit</target></segment></unit>
     <unit id="core.diagnostics.statistics_off"><segment><source>The database is not collecting the statement statistics this answer reads. Enable them to measure it.</source><target>Die databasis versamel nie die stellingstatistiek wat hierdie antwoord lees nie. Aktiveer dit om te meet.</target></segment></unit>
-    <unit id="core.diagnostics.cost"><segment><source>Statement limit: {statements}; time limit for the whole answer: {ceiling} ms.</source><target>Stellingsperk: {statements}; tydsperk vir die hele antwoord: {ceiling} ms.</target></segment></unit>
+    <unit id="core.diagnostics.cost"><segment><source>Statement limit: {statements}; combined statement execution budget: {budget} ms.</source><target>Stellingsperk: {statements}; gesamentlike uitvoeringstydsbegroting vir stellings: {budget} ms.</target></segment></unit>
   </file>
 </xliff>

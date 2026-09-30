@@ -18,10 +18,13 @@ or use MCP tool `kumwe_operator_diagnostics_read`. Select `contention`, `queues`
 another one: ordinary site administration, automation or audit authority does not grant it.
 
 Every answer declares its cost before it runs: `cost_class` (`engine_statistics` for contention and slow
-queries, `bounded_probes` for the others), `statement_limit` (the most statements the section may run),
+queries, `bounded_probes` for the others), `statement_limit` (the most diagnostic SELECT statements the
+section may run),
 `statement_timeout_ms` (1,000 ms, enforced by the engine itself — MariaDB `max_statement_time`, MySQL
-`MAX_EXECUTION_TIME`, PostgreSQL `statement_timeout`) and `elapsed_ceiling_ms`, their product. Results are
-bounded too: at most 20 rows per source (queues report three sources), 256 KiB per statement, sampled
+`MAX_EXECUTION_TIME`, PostgreSQL `statement_timeout`) and `statement_budget_ms`, their product. This is
+the combined SELECT execution budget, not a wall-clock response deadline: connection setup, transaction
+control, result transfer and PHP work add time outside it. Results are bounded too: at most 20 rows per
+source (queues report three sources), 256 KiB per statement, sampled
 queue and retention probes whose counts are lower bounds, the first 1,000 business definitions and the
 100 most expensive statement digests. Unknown rates remain unknown, and retention drain uses the
 configured duty cycle. Slow-query cost includes policy evaluation; it does not measure policy cost
