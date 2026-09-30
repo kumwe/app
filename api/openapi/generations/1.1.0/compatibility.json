@@ -1,10 +1,10 @@
 {
     "format": "kumwe-rest-machine-contract-snapshot-v1",
     "generation": "1.1.0",
-    "openapi_semantic_sha256": "9514b66d516e8db40dd1ad051b870028bd1efef0f3ee3a6b38f85c6246cb9f85",
+    "openapi_semantic_sha256": "bd27614d0631d0b2ec4b8bb4076afcbba930d702e29652c29f131c287be033d8",
     "operations": {
         "activateExtension": {
-            "contract_sha256": "b45490458cd5ee55cbe702d67b307ae5a854986407f411ca3b1cdbc33a8acc72",
+            "contract_sha256": "a4207f045e7d53dd7625ed1a1d82011741e7340912b978e0e2875e0b59c3dd84",
             "method": "POST",
             "path": "/api/v1/extensions/{vendor}/{name}/activate"
         },

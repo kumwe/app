@@ -16,6 +16,14 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ### #152 — Version 2 runtime completion
 
+- Refuse reactivating an extension whose business schema needs an approved synchronization plan first,
+  instead of answering HTTP 500. The extensions screen answers a 409 problem document with a localized
+  explanation in all nine catalogues, REST answers `409 urn:kumwe:problem:business-schema-conflict`
+  (documented on `activateExtension` in REST generation 1.1.0), `extension:activate` prints a localized
+  failure line and exits 1, and MCP answers the new stable error `extension.schema_plan_required`. The
+  activation rolls back whole: registry status, schema installations, definition availability and the
+  audit trail stay as they were. An integration test proves every surface on MariaDB and PostgreSQL (#152).
+
 - Keep the Studio right-to-left composition proof working on phones after Studio beta.9 moved narrow
   viewports to one workspace pane at a time, run the catalogue and interface-translation gates' temporary
   directory cleanups only in the process that registered them, and withhold a fixture's active schema

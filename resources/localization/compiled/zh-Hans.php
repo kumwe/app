@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2643 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2645 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1529,6 +1529,7 @@ return [
     'core.administrator.extensions.rotate_key' => '轮换密钥',
     'core.administrator.extensions.rotation_and_emergency_revocation_are_explicit' => '轮换和紧急吊销均为显式的、可审计的操作。',
     'core.administrator.extensions.runtime_extensions' => '运行时扩展',
+    'core.administrator.extensions.schema_plan_required' => '在其业务架构的同步计划获得批准之前，无法激活 {extension}。未做任何更改。',
     'core.administrator.extensions.signed_production_packages_cannot_be_activated' => '在添加已授权的密钥之前，已签名的生产扩展包无法启用。',
     'core.administrator.extensions.signing_key_id_signed_production_packages' => '签名密钥 ID（已签名的生产扩展包）',
     'core.administrator.extensions.signing_key_identifier' => '签名密钥标识符',
@@ -2010,6 +2011,7 @@ return [
     'core.console.demo_provision_access.wrote_the_demonstration_credentials_file' => '已写入演示凭据文件 {credentialsPath}。',
     'core.console.extension_activate.activated' => '已启用 {installedIdentifier}。',
     'core.console.extension_activate.description' => '启用一个扩展，或使用 --surface=site 选定的站点主题。',
+    'core.console.extension_activate.schema_plan_required' => '未激活 {identifier}：请先批准其业务架构的同步计划。未做任何更改。',
     'core.console.extension_build.description' => '构建并验证一个确定性的 Kumwe 扩展 ZIP 文件。',
     'core.console.extension_conformance.description' => '对 Kumwe 扩展 ZIP 文件运行静态一致性检查。',
     'core.console.extension_disable.description' => '停用一个扩展，并将其从运行时映射中移除。',

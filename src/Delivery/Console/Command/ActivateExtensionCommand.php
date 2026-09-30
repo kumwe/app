@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Delivery\Console\Command;
 
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\App\Delivery\Console\Command;
 use Kumwe\App\Delivery\Console\Output;
 use Kumwe\App\Extension\Application\ExtensionManager;
@@ -75,7 +76,9 @@ final readonly class ActivateExtensionCommand implements Command
      * Authorization requires `extensions.manage` and runs before the surface is acted on. Nothing is
      * allowed to escape: every failure — a bad option, an unauthorized token, a refused administrator
      * surface, a manager error — is written to the output as a message and reported as exit status 1,
-     * so the console never prints a stack trace at an operator.
+     * so the console never prints a stack trace at an operator. An activation whose business schema can
+     * no longer be re-proved is reported with a localized line naming the synchronization plan that has
+     * to be approved first; the activation rolled back, so nothing changed.
      *
      * @param   list<string>  $arguments  Extension identifier first, then `--name=value` options:
      *          `--site` and `--token-file`, plus an optional `--surface`.
@@ -124,6 +127,12 @@ final readonly class ActivateExtensionCommand implements Command
             }
 
             return 0;
+        } catch (BusinessSchemaConflict) {
+            $output->failure('core.console.extension_activate.schema_plan_required', [
+                'identifier' => $arguments[0] ?? '',
+            ]);
+
+            return 1;
         } catch (Throwable $exception) {
             $output->error($exception->getMessage());
 

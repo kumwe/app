@@ -41,7 +41,7 @@
             "retryable"
         ],
         "unexpected_failure": "generic_protocol_error_and_server_log",
-        "registry_sha256": "b0f8e7d67c920f32587c43a69eaf09a4886b9b55eb34ebabeef259896f20bf7b",
+        "registry_sha256": "c282c1de87ac5c817e715df38ca6d908bf684175b040f1400ba041bb71973cf8",
         "registry": [
             {
                 "code": "authorization.denied",
@@ -524,6 +524,17 @@
                         "stable_code": "studio_authoring.idempotency_in_progress"
                     }
                 ]
+            },
+            {
+                "code": "extension.schema_plan_required",
+                "message": "The extension business schema needs an approved synchronization plan before the extension can be activated again.",
+                "retryable": false,
+                "classifications": [
+                    {
+                        "exception": "Kumwe\\App\\Infrastructure\\Mcp\\McpToolRefusal",
+                        "stable_code": "extension.schema_plan_required"
+                    }
+                ]
             }
         ]
     },
@@ -588,7 +599,7 @@
             ]
         }
     ],
-    "contract_sha256": "70e131d6b9d4ee27faab9b1fd8bf5d3c3374ce8b719db28baec9b72e1cdfa529",
+    "contract_sha256": "26ebbb25a3e4a2a0949da4d09835596acfa8adc5742979426043f1ab149e2b36",
     "surface": {
         "tools": [
             {

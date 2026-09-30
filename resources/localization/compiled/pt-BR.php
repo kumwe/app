@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2643 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2645 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1529,6 +1529,7 @@ return [
     'core.administrator.extensions.rotate_key' => 'Rotacionar chave',
     'core.administrator.extensions.rotation_and_emergency_revocation_are_explicit' => 'Rotação e revogação de emergência são operações explícitas e auditáveis.',
     'core.administrator.extensions.runtime_extensions' => 'Extensões em tempo de execução',
+    'core.administrator.extensions.schema_plan_required' => '{extension} não pode ser ativada até que um plano de sincronização para seu esquema de negócios seja aprovado. Nada foi alterado.',
     'core.administrator.extensions.signed_production_packages_cannot_be_activated' => 'Pacotes de produção assinados não podem ser ativados até que uma chave autorizada seja adicionada.',
     'core.administrator.extensions.signing_key_id_signed_production_packages' => 'ID da chave de assinatura (pacotes de produção assinados)',
     'core.administrator.extensions.signing_key_identifier' => 'Identificador da chave de assinatura',
@@ -2010,6 +2011,7 @@ return [
     'core.console.demo_provision_access.wrote_the_demonstration_credentials_file' => 'Arquivo de credenciais de demonstração {credentialsPath} gravado.',
     'core.console.extension_activate.activated' => '{installedIdentifier} ativado.',
     'core.console.extension_activate.description' => 'Ative uma extensão ou um tema de site selecionado com --surface=site.',
+    'core.console.extension_activate.schema_plan_required' => '{identifier} não foi ativada: aprove primeiro um plano de sincronização para seu esquema de negócios. Nada foi alterado.',
     'core.console.extension_build.description' => 'Compile e verifique um ZIP de extensão Kumwe determinístico.',
     'core.console.extension_conformance.description' => 'Execute verificações estáticas de conformidade em um ZIP de extensão Kumwe.',
     'core.console.extension_disable.description' => 'Desative uma extensão e remova-a do mapa de tempo de execução.',

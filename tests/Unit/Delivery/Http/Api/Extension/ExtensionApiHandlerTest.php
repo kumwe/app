@@ -6,6 +6,7 @@ namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Extension;
 
 use Kumwe\Access\AuthorizationDenied;
 use Kumwe\Context\Value\ExecutionContext;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\App\Delivery\Http\Api\Extension\ExtensionApiHandler;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\App\Extension\Application\ExtensionManager;
@@ -111,6 +112,26 @@ final class ExtensionApiHandlerTest extends TestCase
 
         self::assertSame(429, $response->getStatusCode());
         self::assertSame('900', $response->getHeaderLine('Retry-After'));
+    }
+
+    public function testRestReactivationNeedingASchemaPlanIsAConflict(): void
+    {
+        $extensions = $this->createStub(ExtensionManager::class);
+        $extensions->method('activate')->willThrowException(new BusinessSchemaConflict(
+            'An extension schema requires an approved synchronization plan before reactivation.',
+        ));
+        $handler = new ExtensionApiHandler(
+            $extensions,
+            new ProblemDetailsResponseFactory(),
+            self::staging(),
+        );
+        $response = $handler->handle($this->request(['extensions.manage', 'themes.site.manage']));
+        $problem = json_decode((string) $response->getBody(), true, 4, JSON_THROW_ON_ERROR);
+
+        self::assertSame(409, $response->getStatusCode());
+        self::assertIsArray($problem);
+        self::assertSame('urn:kumwe:problem:business-schema-conflict', $problem['type'] ?? null);
+        self::assertStringContainsString('approved synchronization plan', (string) ($problem['detail'] ?? ''));
     }
 
     public function testRestDisableRejectsMissingActiveSiteThemeCapability(): void

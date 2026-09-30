@@ -5129,6 +5129,7 @@ final class ContainerFactory
         ): AdministratorExtensionActionHandler => new AdministratorExtensionActionHandler(
             self::service($container, ExtensionManager::class),
             self::service($container, TrustStore::class),
+            self::service($container, Translator::class),
         ), true);
         $container->share(AdministratorSettingsHandler::class, static fn (
             Container $container,

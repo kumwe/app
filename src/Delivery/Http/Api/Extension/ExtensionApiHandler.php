@@ -8,6 +8,7 @@ use DomainException;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\Access\AuthorizationDenied;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
 use Kumwe\App\Extension\Application\ExtensionManager;
@@ -30,9 +31,10 @@ use stdClass;
  * screen stages its upload, with the optional `key_id` and `signature` query pair the screen's form carries.
  * What this class really owns is the translation of lifecycle refusals into RFC 9457 documents an operator can
  * act on, each under its own `urn:kumwe:problem:` type: a throttled step-up answers 429 with a fixed `Retry-After`, a
- * demanded step-up and a denied capability answer 403 under separate types, and a malformed body
- * answers 422. Serialising the mutation against concurrent lifecycle work is not this handler's job;
- * `TrustLifecycleMiddleware` holds that lock around the whole pipeline.
+ * demanded step-up and a denied capability answer 403 under separate types, an activation whose business
+ * schema needs an approved synchronization plan answers 409, and a malformed body answers 422. Serialising
+ * the mutation against concurrent lifecycle work is not this handler's job; `TrustLifecycleMiddleware` holds
+ * that lock around the whole pipeline.
  *
  * @since  2.0.0
  */
@@ -63,9 +65,12 @@ final readonly class ExtensionApiHandler implements RequestHandlerInterface
      * body carries and answers 201 with the registry row, as the screen's install does before it redirects.
      * Every other verb resolves `vendor/name` from the route attributes, validates the mutation body, and
      * delegates. An uninstall answers an empty 204 because there is no longer a resource to represent; activate
-     * and disable answer whatever record the manager reports. Failures outside the four translated here — a
-     * release that fails its trust check on activation, an unreachable registry — propagate to the pipeline's
-     * problem-details boundary; an invalid or untrusted package is answered 422, as the screen answers it.
+     * and disable answer whatever record the manager reports. An activation refused because the extension's
+     * business schema can no longer be re-proved answers 409 `business-schema-conflict` after the whole
+     * activation rolled back, telling the caller to approve a synchronization plan first. Failures outside the
+     * five translated here — a release that fails its trust check on activation, an unreachable registry —
+     * propagate to the pipeline's problem-details boundary; an invalid or untrusted package is answered 422, as
+     * the screen answers it.
      *
      * @param   ServerRequestInterface  $request  Request whose `vendor` and `name` route attributes address
      *          the extension and whose path suffix and method select the operation.
@@ -132,6 +137,15 @@ final readonly class ExtensionApiHandler implements RequestHandlerInterface
                 'Forbidden',
                 $exception->getMessage(),
                 'urn:kumwe:problem:authorization-denied',
+                (string) $request->getUri(),
+            );
+        } catch (BusinessSchemaConflict) {
+            return $this->problems->create(
+                409,
+                'Conflict',
+                'The extension business schema needs an approved synchronization plan before the extension can be '
+                . 'activated again. Nothing was changed.',
+                'urn:kumwe:problem:business-schema-conflict',
                 (string) $request->getUri(),
             );
         } catch (InvalidArgumentException $exception) {

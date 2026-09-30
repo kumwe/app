@@ -779,6 +779,14 @@
         <source>Choose a media file to upload.</source>
       </segment>
     </unit>
+    <unit id="core.administrator.extensions.schema_plan_required">
+      <notes>
+        <note category="context">Refusal on the extensions screen when reactivating an extension needs an approved business schema synchronization plan first.</note>
+      </notes>
+      <segment>
+        <source>{extension} cannot be activated until a synchronization plan for its business schema has been approved. Nothing was changed.</source>
+      </segment>
+    </unit>
     <unit id="core.administrator.wording.error_scope_quota">
       <notes>
         <note category="context">Wording-screen refusal when the per-scope override quota is reached.</note>
@@ -16272,6 +16280,14 @@
       </notes>
       <segment>
         <source>Activated {installedIdentifier}.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_activate.schema_plan_required">
+      <notes>
+        <note category="context">Console error on src/Delivery/Console/Command/ActivateExtensionCommand.php when the extension business schema needs an approved synchronization plan first.</note>
+      </notes>
+      <segment>
+        <source>{identifier} was not activated: approve a synchronization plan for its business schema first. Nothing was changed.</source>
       </segment>
     </unit>
     <unit id="core.console.extension_build.description">

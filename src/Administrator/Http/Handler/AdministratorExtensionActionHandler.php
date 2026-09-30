@@ -8,12 +8,14 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\App\Administrator\Http\AdministratorRequest;
 use Kumwe\Access\AuthorizationDenied;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
 use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
 use Kumwe\App\Presentation\Application\StepUpAuthenticationRequired;
 use Kumwe\App\Extension\Domain\ThemeSurface;
+use Kumwe\Localization\Application\Translator;
 use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -28,8 +30,9 @@ use Psr\Http\Server\RequestHandlerInterface;
  * the refusals into problem documents rather than letting them reach the generic error page: an
  * operator who is throttled, who has not re-entered their password, or who lacks the theme capability
  * gets a machine-readable 429, 403 or 422 with the reason in `detail`, which is what the screen renders
- * beside the control that was pressed. Anything that succeeds ends in a redirect, so the browser never
- * holds a resubmittable extension mutation.
+ * beside the control that was pressed. An activation whose business schema can no longer be re-proved
+ * answers 409 with a localized `detail` telling the operator to approve a synchronization plan first.
+ * Anything that succeeds ends in a redirect, so the browser never holds a resubmittable extension mutation.
  *
  * @since  2.0.0
  */
@@ -40,11 +43,15 @@ final readonly class AdministratorExtensionActionHandler implements RequestHandl
      *
      * @param  ExtensionManager  $extensions  Performs the activate, disable and uninstall lifecycle changes.
      * @param  TrustStore        $trust       Adds, rotates and revokes the keys extension packages are signed with.
+     * @param  Translator        $translator  Resolves the schema-synchronization refusal for the locale in flight.
      *
      * @since  2.0.0
      */
-    public function __construct(private ExtensionManager $extensions, private TrustStore $trust)
-    {
+    public function __construct(
+        private ExtensionManager $extensions,
+        private TrustStore $trust,
+        private Translator $translator,
+    ) {
     }
 
     /**
@@ -54,9 +61,11 @@ final readonly class AdministratorExtensionActionHandler implements RequestHandl
      * everything else is a lifecycle change against the `identifier` field. A `surface` is only
      * meaningful for template extensions, and `current_password` is passed straight through to the
      * step-up boundary rather than being checked here. A refusal raised while an action is applied
-     * becomes a JSON problem document — throttling a 429, a missing step-up or capability a 403, a
-     * rejected argument a 422 — so the screen can show the reason inline; every success ends in a 303
-     * back to the screen.
+     * becomes a JSON problem document — throttling a 429, a missing step-up or capability a 403, an
+     * activation whose business schema needs an approved synchronization plan a 409, a rejected argument
+     * a 422 — so the screen can show the reason inline; every success ends in a 303 back to the screen.
+     * The 409 follows the rolled-back activation, so the extension, its definitions and its schema
+     * installations stay exactly as they were.
      *
      * @param   ServerRequestInterface  $request  Administrator request, already authenticated and CSRF-checked.
      *
@@ -162,6 +171,16 @@ final readonly class AdministratorExtensionActionHandler implements RequestHandl
                 'status' => 403,
                 'detail' => $exception->getMessage(),
             ], 403, ['Cache-Control' => 'no-store']);
+        } catch (BusinessSchemaConflict) {
+            return new JsonResponse([
+                'type' => 'urn:kumwe:problem:business-schema-conflict',
+                'title' => 'Conflict',
+                'status' => 409,
+                'detail' => $this->translator->translate(
+                    'core.administrator.extensions.schema_plan_required',
+                    ['extension' => $form['identifier'] ?? ''],
+                ),
+            ], 409, ['Cache-Control' => 'no-store']);
         } catch (InvalidArgumentException $exception) {
             return new JsonResponse([
                 'type' => 'urn:kumwe:problem:validation-failed',

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for es, carrying 2643 messages.
+ * Compiled interface message catalogue for es, carrying 2645 messages.
  *
  * Generated from es.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1529,6 +1529,7 @@ return [
     'core.administrator.extensions.rotate_key' => 'Rotar clave',
     'core.administrator.extensions.rotation_and_emergency_revocation_are_explicit' => 'La rotación y la revocación de emergencia son operaciones explícitas y auditables.',
     'core.administrator.extensions.runtime_extensions' => 'Extensiones en tiempo de ejecución',
+    'core.administrator.extensions.schema_plan_required' => '{extension} no se puede activar hasta que se apruebe un plan de sincronización para su esquema de negocio. No se ha cambiado nada.',
     'core.administrator.extensions.signed_production_packages_cannot_be_activated' => 'Los paquetes de producción firmados no se pueden activar hasta que se añada una clave autorizada.',
     'core.administrator.extensions.signing_key_id_signed_production_packages' => 'ID de la clave de firma (paquetes de producción firmados)',
     'core.administrator.extensions.signing_key_identifier' => 'Identificador de la clave de firma',
@@ -2010,6 +2011,7 @@ return [
     'core.console.demo_provision_access.wrote_the_demonstration_credentials_file' => 'Se escribió el archivo de credenciales de demostración {credentialsPath}.',
     'core.console.extension_activate.activated' => 'Se activó {installedIdentifier}.',
     'core.console.extension_activate.description' => 'Activa una extensión o un tema de sitio seleccionado con --surface=site.',
+    'core.console.extension_activate.schema_plan_required' => '{identifier} no se activó: aprueba primero un plan de sincronización para su esquema de negocio. No se ha cambiado nada.',
     'core.console.extension_build.description' => 'Compila y verifica un ZIP de extensión de Kumwe determinista.',
     'core.console.extension_conformance.description' => 'Ejecuta comprobaciones estáticas de conformidad sobre un ZIP de extensión de Kumwe.',
     'core.console.extension_disable.description' => 'Desactiva una extensión y la elimina del mapa de tiempo de ejecución.',

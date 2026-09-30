@@ -6,6 +6,8 @@ namespace Kumwe\App\Tests\Unit\Administrator\Http\Handler;
 
 use DateTimeImmutable;
 use Kumwe\App\Administrator\Http\Handler\AdministratorExtensionActionHandler;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
+use Kumwe\Localization\Application\Translator;
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
@@ -72,6 +74,32 @@ final class AdministratorExtensionActionHandlerTest extends TestCase
         self::assertStringContainsString('insufficient-capability', (string) $response->getBody());
     }
 
+    public function testReactivationNeedingASchemaPlanIsALocalizedConflict(): void
+    {
+        $extensions = $this->createStub(ExtensionManager::class);
+        $extensions->method('activate')->willThrowException(new BusinessSchemaConflict(
+            'An extension schema requires an approved synchronization plan before reactivation.',
+        ));
+        $translator = $this->createMock(Translator::class);
+        $translator->expects(self::once())->method('translate')->with(
+            'core.administrator.extensions.schema_plan_required',
+            ['extension' => 'acme/corporate'],
+        )->willReturn('Localized refusal');
+        $response = $this->handler($extensions, $translator)->handle($this->request([
+            'extensions.manage',
+            'themes.administrator.manage',
+        ]));
+
+        self::assertSame(409, $response->getStatusCode());
+        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+        self::assertSame([
+            'type' => 'urn:kumwe:problem:business-schema-conflict',
+            'title' => 'Conflict',
+            'status' => 409,
+            'detail' => 'Localized refusal',
+        ], json_decode((string) $response->getBody(), true, 4, JSON_THROW_ON_ERROR));
+    }
+
     /** @param list<string> $capabilities */
     private function request(array $capabilities): \Psr\Http\Message\ServerRequestInterface
     {
@@ -100,11 +128,14 @@ final class AdministratorExtensionActionHandlerTest extends TestCase
             ->withAttribute(ExecutionContextAttribute::NAME, $context);
     }
 
-    private function handler(ExtensionManager $extensions): AdministratorExtensionActionHandler
-    {
+    private function handler(
+        ExtensionManager $extensions,
+        ?Translator $translator = null,
+    ): AdministratorExtensionActionHandler {
         return new AdministratorExtensionActionHandler(
             $extensions,
             (new \ReflectionClass(TrustStore::class))->newInstanceWithoutConstructor(),
+            $translator ?? $this->createStub(Translator::class),
         );
     }
 }

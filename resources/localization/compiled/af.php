@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2643 messages.
+ * Compiled interface message catalogue for af, carrying 2645 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1529,6 +1529,7 @@ return [
     'core.administrator.extensions.rotate_key' => 'Roteer sleutel',
     'core.administrator.extensions.rotation_and_emergency_revocation_are_explicit' => 'Rotasie en noodherroeping is eksplisiete, ouditeerbare bewerkings.',
     'core.administrator.extensions.runtime_extensions' => 'Looptyduitbreidings',
+    'core.administrator.extensions.schema_plan_required' => '{extension} kan nie geaktiveer word voordat ’n sinchronisasieplan vir sy besigheidskema goedgekeur is nie. Niks is verander nie.',
     'core.administrator.extensions.signed_production_packages_cannot_be_activated' => 'Ondertekende produksiepakkette kan nie geaktiveer word voordat ’n gemagtigde sleutel bygevoeg is nie.',
     'core.administrator.extensions.signing_key_id_signed_production_packages' => 'Ondertekeningsleutel-ID (ondertekende produksiepakkette)',
     'core.administrator.extensions.signing_key_identifier' => 'Ondertekeningsleutel-identifiseerder',
@@ -2010,6 +2011,7 @@ return [
     'core.console.demo_provision_access.wrote_the_demonstration_credentials_file' => 'Die demonstrasie-kredensiaallêer {credentialsPath} is geskryf.',
     'core.console.extension_activate.activated' => 'Geaktiveer: {installedIdentifier}.',
     'core.console.extension_activate.description' => 'Aktiveer ’n uitbreiding of ’n webwerftema wat met --surface=site gekies is.',
+    'core.console.extension_activate.schema_plan_required' => '{identifier} is nie geaktiveer nie: keur eers ’n sinchronisasieplan vir sy besigheidskema goed. Niks is verander nie.',
     'core.console.extension_build.description' => 'Bou en verifieer ’n deterministiese Kumwe-uitbreiding-ZIP.',
     'core.console.extension_conformance.description' => 'Laat statiese voldoeningskontroles oor ’n Kumwe-uitbreiding-ZIP loop.',
     'core.console.extension_disable.description' => 'Deaktiveer ’n uitbreiding en verwyder dit van die looptydkaart.',

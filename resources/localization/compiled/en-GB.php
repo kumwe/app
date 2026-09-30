@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2643 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2645 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1529,6 +1529,7 @@ return [
     'core.administrator.extensions.rotate_key' => 'Rotate key',
     'core.administrator.extensions.rotation_and_emergency_revocation_are_explicit' => 'Rotation and emergency revocation are explicit, auditable operations.',
     'core.administrator.extensions.runtime_extensions' => 'Runtime extensions',
+    'core.administrator.extensions.schema_plan_required' => '{extension} cannot be activated until a synchronization plan for its business schema has been approved. Nothing was changed.',
     'core.administrator.extensions.signed_production_packages_cannot_be_activated' => 'Signed production packages cannot be activated until an authorized key is added.',
     'core.administrator.extensions.signing_key_id_signed_production_packages' => 'Signing key ID (signed production packages)',
     'core.administrator.extensions.signing_key_identifier' => 'Signing key identifier',
@@ -2010,6 +2011,7 @@ return [
     'core.console.demo_provision_access.wrote_the_demonstration_credentials_file' => 'Wrote the demonstration credentials file {credentialsPath}.',
     'core.console.extension_activate.activated' => 'Activated {installedIdentifier}.',
     'core.console.extension_activate.description' => 'Activate an extension or a site theme selected with --surface=site.',
+    'core.console.extension_activate.schema_plan_required' => '{identifier} was not activated: approve a synchronization plan for its business schema first. Nothing was changed.',
     'core.console.extension_build.description' => 'Build and verify a deterministic Kumwe extension ZIP.',
     'core.console.extension_conformance.description' => 'Run static conformance checks over a Kumwe extension ZIP.',
     'core.console.extension_disable.description' => 'Disable an extension and remove it from the runtime map.',
