@@ -14,13 +14,33 @@ Administrators with the installation-wide `system.diagnostics.read` capability c
 `/administrator/diagnostics`, call `GET /api/v1/diagnostics?section=queues`, run
 `php bin/kumwe app:diagnostics --site=default --token-file=/run/secrets/operator-token --section=queues`,
 or use MCP tool `kumwe_operator_diagnostics_read`. Select `contention`, `queues`, `slow`, `backlog` or
-`retention`; each uses the same authorization and bounded reader. Responses state their sample and
-statement limits. Queue depths are lower bounds, unknown rates remain unknown, and retention drain
-uses the configured duty cycle. Slow-query cost includes policy evaluation; it does not measure policy
-cost separately. Engine lock and statement statistics require database access and, for slow queries,
-PostgreSQL `pg_stat_statements` or MySQL/MariaDB performance-schema digest collection. A source that
-cannot be read is reported as unavailable, never as an empty healthy system. No raw SQL or payloads are
-returned. Reads do not change data, and HTTP responses are not cached.
+`retention`; each uses the same authorization and bounded reader. The capability is never implied by
+another one: ordinary site administration, automation or audit authority does not grant it.
+
+Every answer declares its cost before it runs: `cost_class` (`engine_statistics` for contention and slow
+queries, `bounded_probes` for the others), `statement_limit` (the most statements the section may run),
+`statement_timeout_ms` (1,000 ms, enforced by the engine itself — MariaDB `max_statement_time`, MySQL
+`MAX_EXECUTION_TIME`, PostgreSQL `statement_timeout`) and `elapsed_ceiling_ms`, their product. Results are
+bounded too: at most 20 rows per source (queues report three sources), 256 KiB per statement, sampled
+queue and retention probes whose counts are lower bounds, the first 1,000 business definitions and the
+100 most expensive statement digests. Unknown rates remain unknown, and retention drain uses the
+configured duty cycle. Slow-query cost includes policy evaluation; it does not measure policy cost
+separately. Rows carry only queue names, event types, consumer identifiers, table names, lock modes,
+definition handles and ledger names; no raw SQL, identities or payloads are returned.
+
+| Section | Statements (PostgreSQL / MariaDB / MySQL) | Engine source |
+|---|---|---|
+| `contention` | 1 / 1 / 2 | PostgreSQL `pg_locks` with row-lock waiters attributed to the tables they hold; MariaDB `information_schema.INNODB_LOCK_WAITS`; MySQL `performance_schema.data_lock_waits` |
+| `queues` | 3 | Oldest pending or reserved `jobs`, `integration_outbox` and `integration_inbox` rows |
+| `slow` | 3 / 4 / 4 | PostgreSQL `pg_stat_statements`; MariaDB and MySQL `performance_schema.events_statements_summary_by_digest` |
+| `backlog`, `retention` | 1 + 5 per declared ledger | The bounded retention observer |
+
+A source that cannot answer says why in `status_reason`, never as an empty healthy system:
+`engine_unsupported` (no statistics branch for this engine; nothing runs), `statement_statistics_off`
+(MySQL or MariaDB `performance_schema` is off, the `statements_digest` consumer is disabled, or PostgreSQL
+has no `pg_stat_statements` extension), `source_unreadable` (the role lacks access — MariaDB lock views need
+`PROCESS` — or the database is unreachable), or, with status `budget_exceeded`, `time` or `bytes`. Reads do
+not change data, the console exits `1` unless the answer is available, and HTTP responses are not cached.
 
 ## Minimum signals
 

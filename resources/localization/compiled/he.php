@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2641 messages.
+ * Compiled interface message catalogue for he, carrying 2643 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2063,6 +2063,7 @@ return [
     'core.diagnostics.bounds' => 'כל פקודה מוגבלת ל־{timeout} אלפיות שנייה; כל מקור מחזיר עד {rows} שורות.',
     'core.diagnostics.budget_exceeded' => 'האבחון חרג ממגבלת הזמן או התוצאות. יש לצמצם את העומס או לבדוק את מסד הנתונים ישירות.',
     'core.diagnostics.contention' => 'תחרות על משאבים',
+    'core.diagnostics.cost' => 'מגבלת פקודות: {statements}; מגבלת זמן לתשובה כולה: {ceiling} אלפיות שנייה.',
     'core.diagnostics.description' => 'בדיקת תחרות על משאבים, תורים, עלויות שאילתות ושמירת נתונים.',
     'core.diagnostics.empty' => 'לא נמצאו תצפיות במדגם זה.',
     'core.diagnostics.field.backlog_approximate' => 'הצטברות משוערת',
@@ -2093,6 +2094,7 @@ return [
     'core.diagnostics.retention' => 'שמירת נתונים',
     'core.diagnostics.sampled' => 'התוצאות הן מדגמים מוגבלים. ספירות התורים הן גבולות תחתונים; קצב לא ידוע אינו אפס.',
     'core.diagnostics.slow' => 'שאילתות איטיות',
+    'core.diagnostics.statistics_off' => 'מסד הנתונים אינו אוסף את נתוני הפקודות שתשובה זו קוראת. יש להפעיל אותם כדי למדוד.',
     'core.diagnostics.title' => 'אבחון',
     'core.diagnostics.unavailable' => 'מקור זה אינו זמין. יש לבדוק את הגישה למסד הנתונים ואת הפעלת נתוני המנוע.',
     'core.diagnostics.unknown' => 'לא ידוע',

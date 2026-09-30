@@ -22917,5 +22917,7 @@
     <unit id="core.diagnostics.field.last_drain_at"><segment><source>Last drain</source><target>Última eliminación</target></segment></unit>
     <unit id="core.diagnostics.field.expiry_rows_per_second"><segment><source>Expiry (rows/second)</source><target>Caducidad (filas/segundo)</target></segment></unit>
     <unit id="core.diagnostics.policy_cost_included"><segment><source>Included in query cost</source><target>Incluida en el coste de la consulta</target></segment></unit>
+    <unit id="core.diagnostics.statistics_off"><segment><source>The database is not collecting the statement statistics this answer reads. Enable them to measure it.</source><target>La base de datos no está recopilando las estadísticas de instrucciones que lee esta respuesta. Actívelas para medirla.</target></segment></unit>
+    <unit id="core.diagnostics.cost"><segment><source>Statement limit: {statements}; time limit for the whole answer: {ceiling} ms.</source><target>Límite de instrucciones: {statements}; límite de tiempo para toda la respuesta: {ceiling} ms.</target></segment></unit>
   </file>
 </xliff>

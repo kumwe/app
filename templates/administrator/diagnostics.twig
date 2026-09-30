@@ -51,9 +51,10 @@
   <section class="panel panel-body stack">
     <h2>{{ section_labels[diagnostic.section] }}</h2>
     <p>{{ t('core.diagnostics.bounds', {timeout: diagnostic.statement_timeout_ms, rows: diagnostic.row_limit_per_source}) }}</p>
+    <p>{{ t('core.diagnostics.cost', {statements: diagnostic.statement_limit, ceiling: diagnostic.elapsed_ceiling_ms}) }}</p>
     <p><time datetime="{{ diagnostic.observed_at }}">{{ diagnostic.observed_at }}</time></p>
     {% if diagnostic.status != 'available' %}
-      <p role="status">{{ status_labels[diagnostic.status] }}</p>
+      <p role="status">{{ diagnostic.status_reason == 'statement_statistics_off' ? t('core.diagnostics.statistics_off') : status_labels[diagnostic.status] }}</p>
     {% elseif diagnostic.rows is empty %}
       <p role="status">{{ t('core.diagnostics.empty') }}</p>
     {% else %}

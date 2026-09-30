@@ -6,6 +6,7 @@ namespace Kumwe\App\Infrastructure\Observability;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use InvalidArgumentException;
@@ -28,7 +29,11 @@ use Psr\Clock\ClockInterface;
  * Costed operator probes over existing engine statistics, queue rows and retention observations.
  *
  * Engine privileges and optional statement statistics differ across installations. A missing source is
- * explicitly unavailable, never a healthy zero. SQL text, identities and payloads never leave this reader.
+ * explicitly unavailable with a fixed reason, never a healthy zero: an engine without a supported statistics
+ * branch runs no statement, and statement statistics that are switched off are detected before an empty digest
+ * table could read as "nothing is slow". Every answer declares its cost class, the most statements it may run
+ * and the resulting elapsed-time ceiling, since each statement is cancelled by the engine at its timeout.
+ * SQL text, identities and payloads never leave this reader.
  *
  * @since  2.0.0
  */
@@ -41,6 +46,30 @@ final readonly class DoctrineOperatorDiagnostics implements OperatorDiagnostics
      * @since  2.0.0
      */
     private const int ROW_LIMIT = 20;
+
+    /**
+     * Server-side cancellation point for every statement a diagnostic runs.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const int TIMEOUT_MS = 1000;
+
+    /**
+     * Materialized result bytes one statement may return before it is refused.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const int BYTE_LIMIT = 262144;
+
+    /**
+     * Statements one retention observation runs per declared ledger: backlog, oldest, ingest, expiry, last run.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const int STATEMENTS_PER_LEDGER = 5;
 
     /**
      * Bind the existing authorization, bounded SQL and retention services.
@@ -89,13 +118,19 @@ final readonly class DoctrineOperatorDiagnostics implements OperatorDiagnostics
         if (!in_array($section, self::SECTIONS, true)) {
             throw new InvalidArgumentException('The diagnostic section is not supported.');
         }
+        $engine = $this->engine();
+        $statements = $this->statementLimit($section, $engine);
         $document = [
             'section' => $section,
             'observed_at' => $this->clock->now()->format(DATE_ATOM),
+            'engine' => $engine,
             'status' => 'available',
+            'status_reason' => null,
             'cost_class' => in_array($section, ['contention', 'slow'], true) ? 'engine_statistics' : 'bounded_probes',
-            'statement_timeout_ms' => 1000,
-            'statement_byte_limit' => 262144,
+            'statement_limit' => $statements,
+            'statement_timeout_ms' => self::TIMEOUT_MS,
+            'elapsed_ceiling_ms' => $statements * self::TIMEOUT_MS,
+            'statement_byte_limit' => self::BYTE_LIMIT,
             'row_limit_per_source' => self::ROW_LIMIT,
             'sample_limit_per_source' => in_array($section, ['backlog', 'retention'], true)
                 ? DoctrineRetentionObserver::PROBE_CAP : RuntimeMetricCollector::PROBE_CAP,
@@ -103,40 +138,125 @@ final readonly class DoctrineOperatorDiagnostics implements OperatorDiagnostics
             'statement_digest_limit' => $section === 'slow' ? 100 : null,
             'rows' => [],
         ];
+        if ($engine === 'unsupported' && in_array($section, ['contention', 'slow'], true)) {
+            // No engine statistics branch exists; running another engine's SQL would only fail or mislead.
+            return ['status' => 'unavailable', 'status_reason' => 'engine_unsupported'] + $document;
+        }
         try {
-            $document['rows'] = match ($section) {
-                'contention' => $this->contention(),
+            $rows = match ($section) {
+                'contention' => $this->contention($engine),
                 'queues' => $this->queues(),
-                'slow' => $this->slow(),
+                'slow' => $this->slow($engine),
                 'backlog', 'retention' => $this->retention($section),
             };
-        } catch (StatementBudgetExceeded) {
+            if ($rows === null) {
+                $document['status'] = 'unavailable';
+                $document['status_reason'] = 'statement_statistics_off';
+            } else {
+                $document['rows'] = $rows;
+            }
+        } catch (StatementBudgetExceeded $exceeded) {
             $document['status'] = 'budget_exceeded';
+            $document['status_reason'] = $exceeded->bound;
         } catch (DbalException) {
             // Missing engine statistics/privileges or an unavailable database must not disclose SQL or credentials.
             $document['status'] = 'unavailable';
+            $document['status_reason'] = 'source_unreadable';
         }
 
         return $document;
     }
 
     /**
-     * Read lock wait classes without publishing transaction, connection or SQL identities.
+     * Name the engine branch that answers engine-statistics questions.
      *
-     * @return  list<array<string, mixed>>  At most twenty engine lock-wait groups.
+     * Resolving the platform may need the server version; an unreachable server is reported as `unknown` so the
+     * section's first statement fails inside the sanitized boundary as an unreadable source.
+     *
+     * @return  'postgresql'|'mariadb'|'mysql'|'unsupported'|'unknown'  MariaDB is tested before MySQL.
      *
      * @since   2.0.0
      */
-    private function contention(): array
+    private function engine(): string
     {
-        $platform = $this->database->getDatabasePlatform();
-        if ($platform instanceof PostgreSQLPlatform) {
+        try {
+            $platform = $this->database->getDatabasePlatform();
+        } catch (DbalException) {
+            return 'unknown';
+        }
+
+        return match (true) {
+            $platform instanceof PostgreSQLPlatform => 'postgresql',
+            $platform instanceof MariaDBPlatform => 'mariadb',
+            $platform instanceof AbstractMySQLPlatform => 'mysql',
+            default => 'unsupported',
+        };
+    }
+
+    /**
+     * Declare the most statements a section may run, so its elapsed time is bounded before it starts.
+     *
+     * @param   string  $section  Fixed question to answer.
+     * @param   string  $engine   Engine branch from engine().
+     *
+     * @return  positive-int  Upper bound on statements; each is cancelled by the engine at the timeout.
+     *
+     * @since   2.0.0
+     */
+    private function statementLimit(string $section, string $engine): int
+    {
+        return match ($section) {
+            'contention' => $engine === 'mysql' ? 2 : 1,
+            'queues' => 3,
+            'slow' => $engine === 'postgresql' ? 3 : 4,
+            default => 1 + self::STATEMENTS_PER_LEDGER * count($this->catalogue->policies()),
+        };
+    }
+
+    /**
+     * Report whether the engine is collecting the statistics a question reads, before reading them.
+     *
+     * Performance-schema tables and the statements-digest consumer read as empty when switched off, so an empty
+     * answer would otherwise be indistinguishable from an idle installation.
+     *
+     * @param   string  $sql  Constant single-row readiness probe returning a numeric `ready` column.
+     *
+     * @return  bool  True when the probe reports a positive count or flag.
+     *
+     * @since   2.0.0
+     */
+    private function collecting(string $sql): bool
+    {
+        $ready = $this->query($sql)[0]['ready'] ?? null;
+
+        return is_numeric($ready) && (int) $ready > 0;
+    }
+
+    /**
+     * Read lock wait classes without publishing transaction, connection or SQL identities.
+     *
+     * @param   string  $engine  Supported engine branch from engine().
+     *
+     * @return  ?list<array<string, mixed>>  At most twenty engine lock-wait groups; null when MySQL's
+     *          performance schema, which holds its lock views, is switched off.
+     *
+     * @since   2.0.0
+     */
+    private function contention(string $engine): ?array
+    {
+        if ($engine === 'postgresql') {
+            // A row-lock waiter waits on the holder's transaction ID, which names no relation; attribute it to
+            // the user tables the waiting session already holds locks on, so the wait lands on its hotspot.
             $sql = "SELECT COALESCE(c.relname, 'transaction') AS table_name, l.mode AS lock_class, "
-                . 'COUNT(*) AS waiting FROM pg_locks l JOIN pg_stat_activity a ON a.pid = l.pid '
-                . 'LEFT JOIN pg_class c ON c.oid = l.relation '
+                . 'COUNT(DISTINCT l.pid) AS waiting FROM pg_locks l JOIN pg_stat_activity a ON a.pid = l.pid '
+                . 'LEFT JOIN (SELECT h.pid, h.relation FROM pg_locks h JOIN pg_class t ON t.oid = h.relation '
+                . "AND t.relkind IN ('r', 'p') AND t.relnamespace <> 'pg_catalog'::regnamespace "
+                . "WHERE h.granted AND h.locktype = 'relation') touched "
+                . 'ON touched.pid = l.pid AND l.relation IS NULL '
+                . 'LEFT JOIN pg_class c ON c.oid = COALESCE(l.relation, touched.relation) '
                 . 'WHERE NOT l.granted AND a.datname = current_database() '
                 . 'GROUP BY c.relname, l.mode ORDER BY waiting DESC LIMIT 20';
-        } elseif ($platform instanceof MariaDBPlatform) {
+        } elseif ($engine === 'mariadb') {
             $sql = 'SELECT l.lock_table AS table_name, l.lock_mode AS lock_class, COUNT(*) AS waiting '
                 . 'FROM information_schema.INNODB_LOCK_WAITS w JOIN information_schema.INNODB_LOCKS l '
                 . 'ON l.lock_id = w.requested_lock_id '
@@ -144,6 +264,9 @@ final readonly class DoctrineOperatorDiagnostics implements OperatorDiagnostics
                 . 'GROUP BY l.lock_table, l.lock_mode '
                 . 'ORDER BY waiting DESC LIMIT 20';
         } else {
+            if (!$this->collecting('SELECT @@performance_schema AS ready')) {
+                return null;
+            }
             $sql = 'SELECT l.OBJECT_NAME AS table_name, l.LOCK_MODE AS lock_class, COUNT(*) AS waiting '
                 . 'FROM performance_schema.data_lock_waits w JOIN performance_schema.data_locks l '
                 . 'ON l.ENGINE_LOCK_ID = w.REQUESTING_ENGINE_LOCK_ID AND l.ENGINE = w.ENGINE '
@@ -204,12 +327,25 @@ final readonly class DoctrineOperatorDiagnostics implements OperatorDiagnostics
      * The first thousand catalogue heads and hundred engine digests are explicit samples. Native statement
      * statistics must be enabled by the operator; no background profiler or unbounded metric labels are added.
      *
-     * @return  list<array<string, mixed>>  At most twenty definition cost observations; raw SQL is discarded.
+     * @param   string  $engine  Supported engine branch from engine().
+     *
+     * @return  ?list<array<string, mixed>>  At most twenty definition cost observations; raw SQL is discarded;
+     *          null when the engine is not collecting statement statistics.
      *
      * @since   2.0.0
      */
-    private function slow(): array
+    private function slow(string $engine): ?array
     {
+        $collecting = $engine === 'postgresql'
+            ? $this->collecting("SELECT COUNT(*) AS ready FROM pg_extension WHERE extname = 'pg_stat_statements'")
+            // The server variable needs no privilege; the consumer table is only read once the schema is on.
+            : $this->collecting('SELECT @@performance_schema AS ready') && $this->collecting(
+                'SELECT COUNT(*) AS ready FROM performance_schema.setup_consumers '
+                    . "WHERE NAME = 'statements_digest' AND ENABLED = 'YES'",
+            );
+        if (!$collecting) {
+            return null;
+        }
         $definitions = $this->query(sprintf(
             'SELECT id, handle FROM %s ORDER BY id LIMIT 1000',
             $this->tables->quoted('business_definitions'),
@@ -220,7 +356,7 @@ final readonly class DoctrineOperatorDiagnostics implements OperatorDiagnostics
                 $known[$this->names->entityTable($definition['id'], $definition['handle'])] = $definition['handle'];
             }
         }
-        $sql = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
+        $sql = $engine === 'postgresql'
             ? 'SELECT LEFT(query, 1024) AS statement, calls, mean_exec_time AS mean_ms, total_exec_time AS total_ms '
                 . 'FROM pg_stat_statements WHERE dbid = '
                 . '(SELECT oid FROM pg_database WHERE datname = current_database()) '
@@ -309,7 +445,7 @@ final readonly class DoctrineOperatorDiagnostics implements OperatorDiagnostics
             $sql,
             [],
             [],
-            new StatementBudget(1000, 262144),
+            new StatementBudget(self::TIMEOUT_MS, self::BYTE_LIMIT),
         );
     }
 }

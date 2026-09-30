@@ -22917,5 +22917,7 @@
     <unit id="core.diagnostics.field.last_drain_at"><segment><source>Last drain</source><target>פינוי אחרון</target></segment></unit>
     <unit id="core.diagnostics.field.expiry_rows_per_second"><segment><source>Expiry (rows/second)</source><target>תפוגה (שורות/שנייה)</target></segment></unit>
     <unit id="core.diagnostics.policy_cost_included"><segment><source>Included in query cost</source><target>כלולה בעלות השאילתה</target></segment></unit>
+    <unit id="core.diagnostics.statistics_off"><segment><source>The database is not collecting the statement statistics this answer reads. Enable them to measure it.</source><target>מסד הנתונים אינו אוסף את נתוני הפקודות שתשובה זו קוראת. יש להפעיל אותם כדי למדוד.</target></segment></unit>
+    <unit id="core.diagnostics.cost"><segment><source>Statement limit: {statements}; time limit for the whole answer: {ceiling} ms.</source><target>מגבלת פקודות: {statements}; מגבלת זמן לתשובה כולה: {ceiling} אלפיות שנייה.</target></segment></unit>
   </file>
 </xliff>

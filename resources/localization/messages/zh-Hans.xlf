@@ -22917,5 +22917,7 @@
     <unit id="core.diagnostics.field.last_drain_at"><segment><source>Last drain</source><target>上次清理</target></segment></unit>
     <unit id="core.diagnostics.field.expiry_rows_per_second"><segment><source>Expiry (rows/second)</source><target>到期速率（行/秒）</target></segment></unit>
     <unit id="core.diagnostics.policy_cost_included"><segment><source>Included in query cost</source><target>包含在查询成本中</target></segment></unit>
+    <unit id="core.diagnostics.statistics_off"><segment><source>The database is not collecting the statement statistics this answer reads. Enable them to measure it.</source><target>数据库未收集此答案所需的语句统计。请启用后再进行测量。</target></segment></unit>
+    <unit id="core.diagnostics.cost"><segment><source>Statement limit: {statements}; time limit for the whole answer: {ceiling} ms.</source><target>语句上限：{statements}；整个答案的时限：{ceiling} 毫秒。</target></segment></unit>
   </file>
 </xliff>

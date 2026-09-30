@@ -114,7 +114,7 @@ Ticket. Committing business documents of one size class takes more than five sec
 
 - **Check:** the business dashboard's document panel by `operation_class`, and deadlocks on the transport
   dashboard; a hot sequence row serialises every document.
-- **Act:** find the serialising row or trigger with the diagnostics surface (`diagnostics.read`) and remove it.
+- **Act:** find the serialising row or trigger with the diagnostics surface (`system.diagnostics.read`, section `contention`) and remove it.
 - **Clears when:** p95 falls below five seconds over fifteen minutes.
 
 ## Database

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for es, carrying 2641 messages.
+ * Compiled interface message catalogue for es, carrying 2643 messages.
  *
  * Generated from es.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2063,6 +2063,7 @@ return [
     'core.diagnostics.bounds' => 'Cada instrucción está limitada a {timeout} ms; cada fuente devuelve como máximo {rows} filas.',
     'core.diagnostics.budget_exceeded' => 'El diagnóstico superó su límite de tiempo o resultados. Reduzca la carga o inspeccione directamente la base de datos.',
     'core.diagnostics.contention' => 'Contención',
+    'core.diagnostics.cost' => 'Límite de instrucciones: {statements}; límite de tiempo para toda la respuesta: {ceiling} ms.',
     'core.diagnostics.description' => 'Inspeccionar contención, colas, costes de consultas y retención.',
     'core.diagnostics.empty' => 'No se encontraron observaciones en esta muestra.',
     'core.diagnostics.field.backlog_approximate' => 'Acumulación aproximada',
@@ -2093,6 +2094,7 @@ return [
     'core.diagnostics.retention' => 'Retención',
     'core.diagnostics.sampled' => 'Los resultados son muestras limitadas. Los recuentos de colas son límites inferiores; una tasa desconocida no es cero.',
     'core.diagnostics.slow' => 'Consultas lentas',
+    'core.diagnostics.statistics_off' => 'La base de datos no está recopilando las estadísticas de instrucciones que lee esta respuesta. Actívelas para medirla.',
     'core.diagnostics.title' => 'Diagnóstico',
     'core.diagnostics.unavailable' => 'Esta fuente no está disponible. Compruebe el acceso a la base de datos y si las estadísticas están activadas.',
     'core.diagnostics.unknown' => 'Desconocido',

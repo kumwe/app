@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2641 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2643 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2063,6 +2063,7 @@ return [
     'core.diagnostics.bounds' => 'Cada instrução é limitada a {timeout} ms; cada fonte retorna no máximo {rows} linhas.',
     'core.diagnostics.budget_exceeded' => 'O diagnóstico excedeu o limite de tempo ou resultados. Reduza a carga ou inspecione o banco de dados diretamente.',
     'core.diagnostics.contention' => 'Contenção',
+    'core.diagnostics.cost' => 'Limite de instruções: {statements}; limite de tempo para a resposta inteira: {ceiling} ms.',
     'core.diagnostics.description' => 'Inspecionar contenção, filas, custos de consultas e retenção.',
     'core.diagnostics.empty' => 'Nenhuma observação foi encontrada nesta amostra.',
     'core.diagnostics.field.backlog_approximate' => 'Acúmulo aproximado',
@@ -2093,6 +2094,7 @@ return [
     'core.diagnostics.retention' => 'Retenção',
     'core.diagnostics.sampled' => 'Os resultados são amostras limitadas. As contagens de filas são limites inferiores; uma taxa desconhecida não é zero.',
     'core.diagnostics.slow' => 'Consultas lentas',
+    'core.diagnostics.statistics_off' => 'O banco de dados não está coletando as estatísticas de instruções que esta resposta lê. Ative-as para medir.',
     'core.diagnostics.title' => 'Diagnóstico',
     'core.diagnostics.unavailable' => 'Esta fonte está indisponível. Verifique o acesso ao banco de dados e se as estatísticas estão ativadas.',
     'core.diagnostics.unknown' => 'Desconhecido',

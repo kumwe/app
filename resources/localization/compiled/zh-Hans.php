@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2641 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2643 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2063,6 +2063,7 @@ return [
     'core.diagnostics.bounds' => '每条语句限时 {timeout} 毫秒；每个来源最多返回 {rows} 行。',
     'core.diagnostics.budget_exceeded' => '诊断超出了时间或结果限制。请减少工作负载或直接检查数据库。',
     'core.diagnostics.contention' => '锁争用',
+    'core.diagnostics.cost' => '语句上限：{statements}；整个答案的时限：{ceiling} 毫秒。',
     'core.diagnostics.description' => '检查锁争用、队列、查询成本和保留情况。',
     'core.diagnostics.empty' => '此样本中未发现观测结果。',
     'core.diagnostics.field.backlog_approximate' => '近似积压量',
@@ -2093,6 +2094,7 @@ return [
     'core.diagnostics.retention' => '数据保留',
     'core.diagnostics.sampled' => '结果为有限样本。队列计数是下限；未知速率不等于零。',
     'core.diagnostics.slow' => '慢查询',
+    'core.diagnostics.statistics_off' => '数据库未收集此答案所需的语句统计。请启用后再进行测量。',
     'core.diagnostics.title' => '诊断',
     'core.diagnostics.unavailable' => '此来源不可用。请检查数据库访问权限及是否已启用引擎统计。',
     'core.diagnostics.unknown' => '未知',
