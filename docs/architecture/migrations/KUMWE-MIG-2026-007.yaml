@@ -12,7 +12,6 @@ symbols: []
 removed_paths: []
 removed_tests: []
 retained_tests:
-  - tests/Architecture/CanonicalJsonSemanticIdentityGateTest.php
   - tests/Unit/Identity/Application/Administration/AccessControlServiceTest.php
 di_changes: []
 capability_index_entries:

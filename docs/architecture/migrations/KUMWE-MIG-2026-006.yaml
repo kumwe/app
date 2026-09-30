@@ -58,7 +58,6 @@ retained_tests:
   - tests/Unit/Extension/Runtime/ActiveExtensionSetTest.php
   - tests/Unit/Extension/Runtime/TrustEnforcingJobHandlerTest.php
   - tests/Unit/Governance/LayerClassifierTest.php
-  - tests/Unit/InterfaceStandard/InterfaceStandardSchemaTest.php
   - tests/Unit/InterfaceStandard/PresentationPreferenceManagerTest.php
   - tests/Unit/InterfaceStandard/PresentationPreferenceResolverTest.php
   - tests/Unit/InterfaceStandard/PresentationPreferenceTest.php

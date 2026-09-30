@@ -85,7 +85,6 @@ retained_tests:
   - tests/Architecture/MoneyConversionBoundaryTest.php
   - tests/Architecture/UnitConversionBoundaryTest.php
   - tests/Architecture/ConvertedMoneySurfaceCoverageTest.php
-  - tests/Architecture/ConversionApiConsumerGateTest.php
   - tests/Unit/BusinessRecord/Domain/ExactValueCodecTest.php
   - tests/Unit/BusinessRecord/Domain/RecordValueProtectionTest.php
   - tests/Unit/BusinessRecord/Application/MoneyRateProviderContributionTest.php
@@ -103,7 +102,6 @@ retained_tests:
   - tests/Unit/Governance/LayerClassifierTest.php
   - tests/Unit/Governance/ComposerLockTest.php
   - tests/Unit/Governance/PackageManifestsTest.php
-  - tests/Architecture/CapabilityIndexGateTest.php
   - tests/Architecture/StudioDependencyPinGateTest.php
 di_changes:
   - service: Kumwe\Conversion\Provider\MoneyRateProviderCatalog
