@@ -83,6 +83,19 @@ use Ramsey\Uuid\Uuid;
 final readonly class DoctrineBusinessRecordQueryCompiler
 {
     /**
+     * Most candidate rows a page ordered without an index may sort (P5-G).
+     *
+     * An ordering no installed index delivers — several keys, or a sortable field too wide to index — is
+     * sorted over at most this many rows plus one. A page whose candidates pass it is refused, so an aged
+     * table is never sorted whole; the caller narrows the filter or sorts by an indexed field. It matches
+     * the other authorization-filtered walk bounds.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const int UNINDEXED_SORT_CANDIDATES = 10_000;
+
+    /**
      * Wire the compiler to the metadata, codecs and connection it resolves a query against.
      *
      * @param  Connection                            $database       Connection whose platform quotes every
@@ -346,23 +359,30 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         $aggregateParameters = $parameters;
         $aggregateTypes = $types;
 
-        [$order, $cursorColumns] = $this->sorts($resolved, $table, $alias, $specification, $access);
+        $keys = $this->orderingKeys($resolved, $table, $specification, $access);
+        $effective = $this->effectiveKeys($keys);
+        $cursorColumns = array_map(
+            static fn (array $key): array => ['field' => $key['field'], 'physical' => $key['column']->physicalName],
+            $keys,
+        );
         $cursorDigest = $this->cursorDigest($resolved, $scope, $specification, $access);
+        $cursor = null;
         if ($specification->after !== null) {
             $position = $this->cursors->decode($specification->after);
             if (!hash_equals($cursorDigest, $position->specificationDigest)) {
                 throw new InvalidBusinessRecordQuery('The cursor belongs to a different query specification.');
             }
-            $where[] = $this->cursorPredicate(
-                $resolved,
-                $table,
-                $alias,
-                $specification,
-                $position->sortValues,
+            if (count($position->sortValues) !== count($keys)) {
+                throw new InvalidBusinessRecordQuery('The cursor sort-value count does not match the query.');
+            }
+            $cursor = [
+                array_map(
+                    fn (array $key, mixed $value): mixed => $this->cursorKeyValue($key, $value),
+                    $effective,
+                    array_slice($position->sortValues, 0, count($effective)),
+                ),
                 $position->recordKey,
-                $parameters,
-                $types,
-            );
+            ];
         }
 
         $projection = $this->projection($resolved->definition, $table, $specification, $access);
@@ -370,19 +390,90 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         foreach ($cursorColumns as $cursorColumn) {
             $select[] = $cursorColumn['physical'];
         }
-        $select = array_values(array_unique($select));
-        $sql = sprintf(
-            'SELECT %s FROM %s %s WHERE %s ORDER BY %s LIMIT %d',
-            implode(', ', array_map(
-                fn (string $physical): string => $alias . '.' . $this->quote($physical),
-                $select,
-            )),
-            $this->quote($table->physicalName),
-            $alias,
-            implode(' AND ', $where),
-            implode(', ', $order),
-            $specification->pageSize + 1,
-        );
+        $columns = implode(', ', array_map(
+            fn (string $physical): string => $alias . '.' . $this->quote($physical),
+            array_values(array_unique($select)),
+        ));
+        $limit = $specification->pageSize + 1;
+        $candidateLimit = null;
+        $index = count($effective) === 1 ? $this->servingIndex($table, $effective[0]) : null;
+        if ($index !== null) {
+            // MariaDB and MySQL keep a scope `ref` on the serving index when the seek's range covers much
+            // of the scope, and then walk the index from the scope's end past every earlier page. Naming the
+            // index makes them take the seek's range instead. A filter or search may be better served by
+            // its own index, so the optimizer keeps that choice when the caller narrowed the page.
+            $source = $this->quote($table->physicalName) . ' ' . $alias;
+            if (
+                $this->database->getDatabasePlatform() instanceof AbstractMySQLPlatform
+                && $specification->filter === null
+                && $specification->search === null
+            ) {
+                $source .= ' FORCE INDEX (' . $this->quote($index) . ')';
+            }
+            if ($effective[0]['column']->nullable) {
+                [$sql, $parameters, $types] = $this->nullSegmentedPage(
+                    $table,
+                    $alias,
+                    $source,
+                    $effective[0],
+                    $columns,
+                    $where,
+                    $parameters,
+                    $types,
+                    $cursor === null ? null : [$cursor[0][0], $cursor[1]],
+                    $limit,
+                );
+            } else {
+                if ($cursor !== null) {
+                    $where[] = $this->rangeSeek(
+                        $table,
+                        $alias,
+                        $effective[0],
+                        $cursor[0][0],
+                        $cursor[1],
+                        $parameters,
+                        $types,
+                    );
+                }
+                $sql = sprintf(
+                    'SELECT %s FROM %s WHERE %s ORDER BY %s LIMIT %d',
+                    $columns,
+                    $source,
+                    implode(' AND ', $where),
+                    implode(', ', $this->orderTerms($table, $alias, $effective)),
+                    $limit,
+                );
+            }
+        } else {
+            // No installed index delivers this ordering, so the engine has to sort. The sort is confined
+            // to a candidate set of at most UNINDEXED_SORT_CANDIDATES + 1 rows, and the window count
+            // tells the repository when the set was cut short, which it refuses rather than return a
+            // page ordered over an arbitrary subset.
+            if ($cursor !== null) {
+                $where[] = $this->cursorPredicate(
+                    $table,
+                    $alias,
+                    $effective,
+                    $cursor[0],
+                    $cursor[1],
+                    $parameters,
+                    $types,
+                );
+            }
+            $sql = sprintf(
+                'SELECT c0.*, COUNT(*) OVER () AS %s FROM (SELECT %s FROM %s %s WHERE %s LIMIT %d) c0 '
+                . 'ORDER BY %s LIMIT %d',
+                CompiledRecordQuery::CANDIDATE_COLUMN,
+                $columns,
+                $this->quote($table->physicalName),
+                $alias,
+                implode(' AND ', $where),
+                self::UNINDEXED_SORT_CANDIDATES + 1,
+                implode(', ', $this->orderTerms($table, 'c0', $effective)),
+                $limit,
+            );
+            $candidateLimit = self::UNINDEXED_SORT_CANDIDATES;
+        }
 
         $aggregateSql = $this->aggregateSql(
             $resolved,
@@ -403,6 +494,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
             $aggregateSql,
             $aggregateParameters,
             $aggregateTypes,
+            $candidateLimit,
         );
     }
 
@@ -1536,30 +1628,24 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     }
 
     /**
-     * Compile the requested ordering into `ORDER BY` terms and the columns a cursor is read from.
+     * Resolve the requested ordering into the keys the page is ordered and paged by.
      *
-     * Null placement uses the engine's native order when it matches the requested placement; otherwise
-     * an explicit rank expression preserves the request. The record identity is appended in the final
-     * key's direction, allowing a composite index to serve both forward and backward scans while keeping
-     * the ordering total and safe to page on. A column the installed schema declares NOT NULL gets no rank
-     * expression: it would rank every row alike, and leaving it out lets an
-     * index that leads with the scope and that column deliver the page in order, so the engine examines
-     * the page rather than sorting every row in scope (P5-G). A key on a unique, NOT NULL field already
-     * makes the ordering total inside the equality-bound scope its unique index covers, so no identity
-     * tie-breaker follows it; MariaDB cannot extend a unique index with the primary key and would otherwise
-     * sort every row. A specification that declares no sort orders by last update, newest first, and its
-     * cursor is read from that column.
+     * A specification that declares no sort orders by last update, newest first. Every declared key must
+     * name a sortable, query-visible field the caller may sort on, stored in one scalar column with a
+     * portable keyset ordering. A key is `total` when it is a unique NOT NULL field: its unique index,
+     * led by the equality-bound scope, already orders every row, so nothing after it can reorder the
+     * page. A key is `native` when the engine's own null placement for its direction is the one requested
+     * (or the column holds no nulls), so no rank expression has to precede it.
      *
      * @param   ResolvedBusinessDefinition  $resolved       Definition and installed schema the sort
      *          handles resolve against.
      * @param   PhysicalTableBlueprint      $table          Installed record table being ordered.
-     * @param   string                      $alias          Alias the ordering qualifies columns with.
      * @param   RecordQuerySpecification    $specification  Page request carrying the ordering keys.
      * @param   BusinessRecordAccessPlan    $access         Dynamic sort-field permissions.
      *
-     * @return  array{list<string>, list<array{field: ?string, physical: string}>}  The `ORDER BY` terms in
-     *          order, and the columns the next cursor is built from, whose `field` is null for the default
-     *          last-updated ordering.
+     * @return  non-empty-list<array{field: ?string, column: PhysicalColumnBlueprint, direction: SortDirection,
+     *          nulls_last: bool, total: bool, native: bool}>  The keys in request order; `field` is null
+     *          for the default last-updated ordering.
      *
      * @throws  InvalidBusinessRecordQuery  When a sort names no field, names one the definition does not
      *          allow to be sorted or shown, spans more than one column, or reads a column whose type has
@@ -1567,196 +1653,485 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      *
      * @since   2.0.0
      */
-    private function sorts(
+    private function orderingKeys(
         ResolvedBusinessDefinition $resolved,
         PhysicalTableBlueprint $table,
-        string $alias,
         RecordQuerySpecification $specification,
         BusinessRecordAccessPlan $access,
     ): array {
-        $order = [];
-        $cursor = [];
-        $total = false;
-        $tieDirection = SortDirection::Descending;
         if ($specification->sorts === []) {
-            $updated = $this->physical($table, 'updated_at');
-            $order[] = $alias . '.' . $this->quote($updated) . ' DESC';
-            $cursor[] = ['field' => null, 'physical' => $updated];
-        } else {
-            foreach ($specification->sorts as $sort) {
-                $field = $this->field($resolved->definition, $sort->field);
-                if (
-                    !$field->sortable
-                    || !$this->queryVisible($field)
-                    || !$access->fields->allows(FieldAccessUsage::Sort, $field->handle)
-                ) {
-                    throw new InvalidBusinessRecordQuery('A requested query field is unavailable.');
-                }
-                $columns = $this->fieldColumns($resolved->definition, $table, $field);
-                if (count($columns) !== 1) {
-                    throw new InvalidBusinessRecordQuery('Sorting a composite field is ambiguous.');
-                }
-                if (in_array($columns[0]->doctrineType, ['binary', 'blob', 'json', 'text'], true)) {
-                    throw new InvalidBusinessRecordQuery(
-                        'Sorting requires a scalar physical field with portable keyset semantics.',
-                    );
-                }
-                $physical = $columns[0]->physicalName;
-                $qualified = $alias . '.' . $this->quote($physical);
-                $nativeNullsLast = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
-                    ? $sort->direction === SortDirection::Ascending
-                    : $sort->direction === SortDirection::Descending;
-                if ($columns[0]->nullable && $sort->nullsLast !== $nativeNullsLast) {
-                    $nullRank = $sort->nullsLast ? '1' : '0';
-                    $nonNullRank = $sort->nullsLast ? '0' : '1';
-                    $order[] = sprintf(
-                        'CASE WHEN %s IS NULL THEN %s ELSE %s END ASC',
-                        $qualified,
-                        $nullRank,
-                        $nonNullRank,
-                    );
-                }
-                $order[] = $qualified . ' ' . strtoupper($sort->direction->value);
-                $cursor[] = ['field' => $field->handle, 'physical' => $physical];
-                $total = $total || ($field->unique && !$columns[0]->nullable);
-                $tieDirection = $sort->direction;
-            }
+            return [[
+                'field' => null,
+                'column' => $table->column('updated_at')
+                    ?? throw new InvalidBusinessRecordQuery('An installed query column is unavailable.'),
+                'direction' => SortDirection::Descending,
+                'nulls_last' => true,
+                'total' => false,
+                'native' => true,
+            ]];
         }
-        if (!$total) {
-            $order[] = $alias . '.' . $this->quote($this->physical($table, 'record_id'))
-                . ' ' . strtoupper($tieDirection->value);
+        $keys = [];
+        foreach ($specification->sorts as $sort) {
+            $field = $this->field($resolved->definition, $sort->field);
+            if (
+                !$field->sortable
+                || !$this->queryVisible($field)
+                || !$access->fields->allows(FieldAccessUsage::Sort, $field->handle)
+            ) {
+                throw new InvalidBusinessRecordQuery('A requested query field is unavailable.');
+            }
+            $columns = $this->fieldColumns($resolved->definition, $table, $field);
+            if (count($columns) !== 1) {
+                throw new InvalidBusinessRecordQuery('Sorting a composite field is ambiguous.');
+            }
+            if (in_array($columns[0]->doctrineType, ['binary', 'blob', 'json', 'text'], true)) {
+                throw new InvalidBusinessRecordQuery(
+                    'Sorting requires a scalar physical field with portable keyset semantics.',
+                );
+            }
+            $nativeNullsLast = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
+                ? $sort->direction === SortDirection::Ascending
+                : $sort->direction === SortDirection::Descending;
+            $keys[] = [
+                'field' => $field->handle,
+                'column' => $columns[0],
+                'direction' => $sort->direction,
+                'nulls_last' => $sort->nullsLast,
+                'total' => $field->unique && !$columns[0]->nullable,
+                'native' => !$columns[0]->nullable || $sort->nullsLast === $nativeNullsLast,
+            ];
         }
 
-        return [$order, $cursor];
+        return $keys;
     }
 
     /**
-     * Compile the keyset seek that resumes a browse immediately after the row a cursor names.
+     * Cut the ordering keys after the first total key, which already decides the order of every row.
+     *
+     * Keys after a unique NOT NULL key can never reorder two rows inside the equality-bound scope, and
+     * leaving them in the `ORDER BY` would only stop the unique index from delivering the page in order.
+     * The cursor still carries a value for every declared key, so its digest and value count are unchanged.
+     *
+     * @param   non-empty-list<array{field: ?string, column: PhysicalColumnBlueprint, direction: SortDirection,
+     *          nulls_last: bool, total: bool, native: bool}>  $keys  Ordering keys in request order.
+     *
+     * @return  non-empty-list<array{field: ?string, column: PhysicalColumnBlueprint, direction: SortDirection,
+     *          nulls_last: bool, total: bool, native: bool}>  The keys up to and including the first total one.
+     *
+     * @since   2.0.0
+     */
+    private function effectiveKeys(array $keys): array
+    {
+        $effective = [];
+        foreach ($keys as $key) {
+            $effective[] = $key;
+            if ($key['total']) {
+                break;
+            }
+        }
+
+        return $effective;
+    }
+
+    /**
+     * Compile ordering keys into `ORDER BY` terms, closing the ordering with the record identity.
+     *
+     * A non-native nullable key is preceded by a rank expression that places its empty values where the
+     * request asked. The record identity follows in the final key's direction, which keeps the ordering
+     * total and lets one ascending index be read forwards or backwards, unless the final key is total.
+     *
+     * @param   PhysicalTableBlueprint  $table  Installed record table being ordered.
+     * @param   string                  $alias  Alias the terms qualify columns with.
+     * @param   non-empty-list<array{field: ?string, column: PhysicalColumnBlueprint, direction: SortDirection,
+     *          nulls_last: bool, total: bool, native: bool}>  $keys  Effective ordering keys.
+     *
+     * @return  list<string>  The `ORDER BY` terms in order.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the table declares no record identity column.
+     *
+     * @since   2.0.0
+     */
+    private function orderTerms(PhysicalTableBlueprint $table, string $alias, array $keys): array
+    {
+        $order = [];
+        foreach ($keys as $key) {
+            $qualified = $alias . '.' . $this->quote($key['column']->physicalName);
+            if (!$key['native']) {
+                $order[] = sprintf(
+                    'CASE WHEN %s IS NULL THEN %d ELSE %d END ASC',
+                    $qualified,
+                    $key['nulls_last'] ? 1 : 0,
+                    $key['nulls_last'] ? 0 : 1,
+                );
+            }
+            $order[] = $qualified . ' ' . strtoupper($key['direction']->value);
+        }
+        $last = $keys[array_key_last($keys)];
+        if (!$last['total']) {
+            $order[] = $alias . '.' . $this->quote($this->physical($table, 'record_id'))
+                . ' ' . strtoupper($last['direction']->value);
+        }
+
+        return $order;
+    }
+
+    /**
+     * Find the installed index that delivers a single-key ordering without a sort (P5-G).
+     *
+     * The page statement binds every scope column by equality, so an index serves the ordering when it
+     * leads with the scope columns, in any order, followed by the key column and, unless the key is total,
+     * the record identity. The key may be read forwards or backwards, which covers both directions of one
+     * ascending index. A record-identity key is served by the primary key. The answer is taken from the
+     * installed blueprint, so a definition installed before its sort index existed is treated as unindexed
+     * until its next schema plan installs the index.
+     *
+     * @param   PhysicalTableBlueprint  $table  Installed record table.
+     * @param   array{field: ?string, column: PhysicalColumnBlueprint, direction: SortDirection,
+     *          nulls_last: bool, total: bool, native: bool}  $key  The only effective ordering key.
+     *
+     * @return  ?string  Physical name of the serving index (`PRIMARY` for the primary key), or null when
+     *          no installed index delivers the page in the key's order.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the table declares no record identity column.
+     *
+     * @since   2.0.0
+     */
+    private function servingIndex(PhysicalTableBlueprint $table, array $key): ?string
+    {
+        $identity = $this->physical($table, 'record_id');
+        $column = $key['column']->physicalName;
+        if ($column === $identity) {
+            return $table->primaryKey === [$identity] ? 'PRIMARY' : null;
+        }
+        $scope = [];
+        foreach (['site_identifier', 'organization_identifier'] as $logical) {
+            $scopeColumn = $table->column($logical);
+            if ($scopeColumn !== null) {
+                $scope[] = $scopeColumn->physicalName;
+            }
+        }
+        sort($scope);
+        $ordered = $key['total'] ? [$column] : [$column, $identity];
+        foreach ($table->indexes() as $index) {
+            $leading = array_slice($index->columns, 0, count($scope));
+            sort($leading);
+            if ($leading === $scope && array_slice($index->columns, count($scope), count($ordered)) === $ordered) {
+                return $index->physicalName;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Restore one cursor value to the storage form its ordering key is compared in.
+     *
+     * @param   array{field: ?string, column: PhysicalColumnBlueprint, direction: SortDirection,
+     *          nulls_last: bool, total: bool, native: bool}  $key    Ordering key the value belongs to.
+     * @param   mixed                                           $value  Value the signed cursor carries.
+     *
+     * @return  mixed  The value bound for the key's column, or null for an empty value.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the default ordering's timestamp is not a string.
+     * @throws  InvalidArgumentException  When a value cannot be restored to its column's storage form,
+     *          which `compile()` reports as a refused query.
+     *
+     * @since   2.0.0
+     */
+    private function cursorKeyValue(array $key, mixed $value): mixed
+    {
+        if ($key['field'] !== null) {
+            return $this->values->cursorStorageValue($key['column'], $value);
+        }
+        if (!is_string($value)) {
+            throw new InvalidBusinessRecordQuery('The default cursor timestamp is invalid.');
+        }
+
+        return new DateTimeImmutable($value, new DateTimeZone('UTC'));
+    }
+
+    /**
+     * Compile the seek past the cursor for an index-served, NOT NULL single-key ordering.
+     *
+     * The seek has to be an index range, so a deep page starts reading at the cursor instead of filtering
+     * every earlier row. PostgreSQL takes the row comparison `(key, identity) > (?, ?)` as one index
+     * condition over the serving index; MariaDB and MySQL build their range from the redundant leading
+     * bound (`>=` or `<=` the cursor value) and the disjunction behind it. A total key needs no identity
+     * branch.
+     *
+     * @param   PhysicalTableBlueprint  $table       Installed record table being paged.
+     * @param   string                  $alias       Alias the seek qualifies columns with.
+     * @param   array{field: ?string, column: PhysicalColumnBlueprint, direction: SortDirection,
+     *          nulls_last: bool, total: bool, native: bool}  $key  The ordering key.
+     * @param   mixed                   $value       Cursor value in storage form.
+     * @param   string                  $recordKey   Identity of the cursor row.
+     * @param   list<mixed>             $parameters  Bound values so far; the seek's are appended.
+     * @param   list<string>            $types       Doctrine type names so far, appended in step.
+     *
+     * @return  string  The parenthesized seek predicate.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the cursor carries no value for a NOT NULL key, or the
+     *          table declares no record identity column.
+     *
+     * @since   2.0.0
+     */
+    private function rangeSeek(
+        PhysicalTableBlueprint $table,
+        string $alias,
+        array $key,
+        mixed $value,
+        string $recordKey,
+        array &$parameters,
+        array &$types,
+    ): string {
+        if ($value === null) {
+            throw new InvalidBusinessRecordQuery('The cursor does not match the query ordering.');
+        }
+        $qualified = $alias . '.' . $this->quote($key['column']->physicalName);
+        $type = $key['column']->doctrineType;
+        $beyond = $key['direction'] === SortDirection::Ascending ? '>' : '<';
+        if ($key['total']) {
+            $parameters[] = $value;
+            $types[] = $type;
+
+            return '(' . $qualified . ' ' . $beyond . ' ?)';
+        }
+        $identity = $alias . '.' . $this->quote($this->physical($table, 'record_id'));
+        if ($this->database->getDatabasePlatform() instanceof PostgreSQLPlatform) {
+            array_push($parameters, $value, $recordKey);
+            array_push($types, $type, $this->type($table, 'record_id'));
+
+            return sprintf('((%s, %s) %s (?, ?))', $qualified, $identity, $beyond);
+        }
+        array_push($parameters, $value, $value, $value, $recordKey);
+        array_push($types, $type, $type, $type, $this->type($table, 'record_id'));
+
+        return sprintf(
+            '(%1$s %2$s= ? AND (%1$s %2$s ? OR (%1$s = ? AND %3$s %2$s ?)))',
+            $qualified,
+            $beyond,
+            $identity,
+        );
+    }
+
+    /**
+     * Compile an index-served page over a nullable key as two index ranges, one per null segment.
+     *
+     * Where the empty values rank is a presentation choice the engine's native null order matches for
+     * only one direction, and a rank expression in the `ORDER BY` would force a sort of every row in
+     * scope. Instead the valued rows and the empty rows are each read as their own index range — the
+     * valued ones in key order from the cursor on, the empty ones in identity order — each capped at the
+     * page's look-ahead, and the at most two capped segments are then ordered together. The engine
+     * therefore examines at most twice the look-ahead plus the rows its other predicates reject, whatever
+     * null placement, direction or page depth was asked for. A segment the cursor has already passed is
+     * left out, and when only one remains it is the statement.
+     *
+     * @param   PhysicalTableBlueprint  $table       Installed record table being paged.
+     * @param   string                  $alias       Alias every part of the statement uses.
+     * @param   string                  $source      Aliased table reference, with any index hint.
+     * @param   array{field: ?string, column: PhysicalColumnBlueprint, direction: SortDirection,
+     *          nulls_last: bool, total: bool, native: bool}  $key  The nullable ordering key.
+     * @param   string                  $columns     Qualified select list.
+     * @param   list<string>            $where       Scope, lifecycle, policy, filter and search predicates.
+     * @param   list<mixed>             $parameters  Values bound by those predicates.
+     * @param   list<string>            $types       Doctrine type names in step with $parameters.
+     * @param   ?array{mixed, string}   $cursor      Cursor value in storage form and cursor record
+     *          identity, or null on the first page.
+     * @param   int                     $limit       Page size plus the one-row look-ahead.
+     *
+     * @return  array{string, list<mixed>, list<string>}  The statement, its bindings and their types.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the table declares no record identity column.
+     *
+     * @since   2.0.0
+     */
+    private function nullSegmentedPage(
+        PhysicalTableBlueprint $table,
+        string $alias,
+        string $source,
+        array $key,
+        string $columns,
+        array $where,
+        array $parameters,
+        array $types,
+        ?array $cursor,
+        int $limit,
+    ): array {
+        $qualified = $alias . '.' . $this->quote($key['column']->physicalName);
+        $identity = $alias . '.' . $this->quote($this->physical($table, 'record_id'));
+        $direction = strtoupper($key['direction']->value);
+        $valued = [
+            'where' => [...$where, $qualified . ' IS NOT NULL'],
+            'parameters' => $parameters,
+            'types' => $types,
+            'order' => $qualified . ' ' . $direction . ', ' . $identity . ' ' . $direction,
+        ];
+        $empty = [
+            'where' => [...$where, $qualified . ' IS NULL'],
+            'parameters' => $parameters,
+            'types' => $types,
+            // PostgreSQL reads the serving index for the empty rows only when the order names its columns,
+            // although the key is empty throughout; MariaDB and MySQL treat the `IS NULL` key as a constant
+            // and would sort if it were named.
+            'order' => ($this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
+                ? $qualified . ' ' . $direction . ', '
+                : '') . $identity . ' ' . $direction,
+        ];
+        // The segment ranked first is the only one a cursor can have passed: a cursor on an empty value
+        // under nulls-last has passed every valued row, and one on a value under nulls-first every empty one.
+        $leadingPassed = false;
+        if ($cursor !== null) {
+            [$value, $recordKey] = $cursor;
+            if ($value === null) {
+                $empty['where'][] = $identity
+                    . ($key['direction'] === SortDirection::Ascending ? ' > ?' : ' < ?');
+                $empty['parameters'][] = $recordKey;
+                $empty['types'][] = $this->type($table, 'record_id');
+            } else {
+                $valued['where'][] = $this->rangeSeek(
+                    $table,
+                    $alias,
+                    $key,
+                    $value,
+                    $recordKey,
+                    $valued['parameters'],
+                    $valued['types'],
+                );
+            }
+            $leadingPassed = $key['nulls_last'] === ($value === null);
+        }
+        [$leading, $trailing] = $key['nulls_last'] ? [$valued, $empty] : [$empty, $valued];
+        if ($leadingPassed) {
+            return [
+                $this->segment($source, $columns, $trailing['where'], $trailing['order'], $limit),
+                $trailing['parameters'],
+                $trailing['types'],
+            ];
+        }
+
+        return [
+            sprintf(
+                'SELECT * FROM ((%1$s) UNION ALL (%2$s)) c0 ORDER BY CASE WHEN c0.%3$s IS NULL THEN %4$d ELSE %5$d '
+                . 'END ASC, c0.%3$s %6$s, c0.%7$s %6$s LIMIT %8$d',
+                $this->segment($source, $columns, $leading['where'], $leading['order'], $limit),
+                $this->segment($source, $columns, $trailing['where'], $trailing['order'], $limit),
+                $this->quote($key['column']->physicalName),
+                $key['nulls_last'] ? 1 : 0,
+                $key['nulls_last'] ? 0 : 1,
+                $direction,
+                $this->quote($this->physical($table, 'record_id')),
+                $limit,
+            ),
+            [...$leading['parameters'], ...$trailing['parameters']],
+            [...$leading['types'], ...$trailing['types']],
+        ];
+    }
+
+    /**
+     * Compile one capped, ordered segment of a page.
+     *
+     * @param   string        $source   Aliased table reference, with any index hint.
+     * @param   string        $columns  Qualified select list.
+     * @param   list<string>  $where    Predicates of the segment.
+     * @param   string        $order    `ORDER BY` terms of the segment.
+     * @param   int           $limit    Page size plus the one-row look-ahead.
+     *
+     * @return  string  The segment's `SELECT`.
+     *
+     * @since   2.0.0
+     */
+    private function segment(string $source, string $columns, array $where, string $order, int $limit): string
+    {
+        return sprintf(
+            'SELECT %s FROM %s WHERE %s ORDER BY %s LIMIT %d',
+            $columns,
+            $source,
+            implode(' AND ', $where),
+            $order,
+            $limit,
+        );
+    }
+
+    /**
+     * Compile the keyset seek that resumes an unindexed ordering immediately after the cursor row.
      *
      * The result is a disjunction: one branch per ordering key, requiring the keys before it to be equal
      * and that key to lie beyond the cursor's value, plus a final branch matching every key exactly and a
      * record identity beyond the cursor in the final key's direction. Keys holding no value are compared
      * with `IS NULL`, and a nulls-last key that held none contributes no branch of its own, so no row is
-     * repeated or skipped where the valued
-     * rows meet the empty ones. A NOT NULL column has no empty rows to keep reachable, so its seek is the
-     * bare comparison an index range can serve, and an ordering made total by a unique NOT NULL key needs
-     * no identity branch, because no other row can share that key within the scope. Bindings are appended
-     * as the branches are emitted, which is why the caller takes its aggregate snapshot before calling this.
+     * repeated or skipped where the valued rows meet the empty ones. A NOT NULL column has no empty rows to
+     * keep reachable, so its seek is the bare comparison, and an ordering made total by a unique NOT NULL
+     * key needs no identity branch. This seek serves the bounded candidate plan; index-served orderings use
+     * `rangeSeek()` and `nullSegmentedPage()` instead.
      *
-     * @param   ResolvedBusinessDefinition  $resolved       Definition and installed schema the sort
-     *          handles resolve against.
-     * @param   PhysicalTableBlueprint      $table          Installed record table being paged.
-     * @param   string                      $alias          Alias the seek qualifies columns with.
-     * @param   RecordQuerySpecification    $specification  Page request whose ordering the seek has to
-     *          reproduce.
-     * @param   list<mixed>                 $cursorValues   Ordering values of the last row of the
-     *          previous page, one per declared sort, or a single `updated_at` timestamp when the query
-     *          declares none.
-     * @param   string                      $recordKey      Identity of that row, which breaks ties between
-     *          rows whose ordering values are equal.
-     * @param   list<mixed>                 $parameters     Bound values so far; the seek's are appended.
-     * @param   list<string>                $types          Doctrine type names so far, appended in step.
+     * @param   PhysicalTableBlueprint  $table       Installed record table being paged.
+     * @param   string                  $alias       Alias the seek qualifies columns with.
+     * @param   non-empty-list<array{field: ?string, column: PhysicalColumnBlueprint, direction: SortDirection,
+     *          nulls_last: bool, total: bool, native: bool}>  $keys  Effective ordering keys.
+     * @param   list<mixed>             $values      Cursor values in storage form, one per key.
+     * @param   string                  $recordKey   Identity of the cursor row, which breaks ties.
+     * @param   list<mixed>             $parameters  Bound values so far; the seek's are appended.
+     * @param   list<string>            $types       Doctrine type names so far, appended in step.
      *
      * @return  string  A parenthesized disjunction admitting only rows after the cursor position.
      *
-     * @throws  InvalidBusinessRecordQuery  When the cursor carries a different number of ordering values
-     *          than the query declares, or its default timestamp is not a string.
-     * @throws  InvalidArgumentException  When a cursor value cannot be restored to the storage form of its
-     *          column, which `compile()` reports as a refused query.
+     * @throws  InvalidBusinessRecordQuery  When the table declares no record identity column.
      *
      * @since   2.0.0
      */
     private function cursorPredicate(
-        ResolvedBusinessDefinition $resolved,
         PhysicalTableBlueprint $table,
         string $alias,
-        RecordQuerySpecification $specification,
-        array $cursorValues,
+        array $keys,
+        array $values,
         string $recordKey,
         array &$parameters,
         array &$types,
     ): string {
-        $sorts = $specification->sorts;
-        if (count($cursorValues) !== max(1, count($sorts))) {
-            throw new InvalidBusinessRecordQuery('The cursor sort-value count does not match the query.');
-        }
-        $keys = [];
-        if ($sorts === []) {
-            $value = $cursorValues[0];
-            if (!is_string($value)) {
-                throw new InvalidBusinessRecordQuery('The default cursor timestamp is invalid.');
-            }
-            $keys[] = [
-                'column' => $this->physical($table, 'updated_at'),
-                'type' => Types::DATETIME_IMMUTABLE,
-                'value' => new DateTimeImmutable($value, new DateTimeZone('UTC')),
-                'direction' => SortDirection::Descending,
-                'nulls_last' => true,
-                'nullable' => false,
-                'total' => false,
-            ];
-        } else {
-            foreach ($sorts as $index => $sort) {
-                $field = $this->field($resolved->definition, $sort->field);
-                $columns = $this->fieldColumns($resolved->definition, $table, $field);
-                $encoded = $this->values->cursorStorageValue($columns[0], $cursorValues[$index]);
-                $keys[] = [
-                    'column' => $columns[0]->physicalName,
-                    'type' => $columns[0]->doctrineType,
-                    'value' => $encoded,
-                    'direction' => $sort->direction,
-                    'nulls_last' => $sort->nullsLast,
-                    'nullable' => $columns[0]->nullable,
-                    'total' => $field->unique && !$columns[0]->nullable,
-                ];
-            }
-        }
         $parts = [];
         foreach ($keys as $index => $key) {
             $branch = [];
             for ($prefixIndex = 0; $prefixIndex < $index; ++$prefixIndex) {
-                $prefixKey = $keys[$prefixIndex];
-                $prefixColumn = $alias . '.' . $this->quote($prefixKey['column']);
-                if ($prefixKey['value'] === null) {
+                $prefixColumn = $alias . '.' . $this->quote($keys[$prefixIndex]['column']->physicalName);
+                if ($values[$prefixIndex] === null) {
                     $branch[] = $prefixColumn . ' IS NULL';
                 } else {
                     $branch[] = $prefixColumn . ' = ?';
-                    $parameters[] = $prefixKey['value'];
-                    $types[] = $prefixKey['type'];
+                    $parameters[] = $values[$prefixIndex];
+                    $types[] = $keys[$prefixIndex]['column']->doctrineType;
                 }
             }
-            $qualified = $alias . '.' . $this->quote($key['column']);
             $seek = $this->seek(
-                $qualified,
-                $key['value'],
+                $alias . '.' . $this->quote($key['column']->physicalName),
+                $values[$index],
                 $key['direction'],
-                $key['nulls_last'] && $key['nullable'],
+                $key['nulls_last'] && $key['column']->nullable,
                 $parameters,
                 $types,
-                $key['type'],
+                $key['column']->doctrineType,
             );
             if ($seek !== null) {
                 $branch[] = $seek;
                 $parts[] = '(' . implode(' AND ', $branch) . ')';
             }
         }
-        if (in_array(true, array_column($keys, 'total'), true)) {
+        $last = $keys[array_key_last($keys)];
+        if ($last['total']) {
             return '(' . implode(' OR ', $parts) . ')';
         }
         $tie = [];
-        foreach ($keys as $key) {
-            $qualified = $alias . '.' . $this->quote($key['column']);
-            if ($key['value'] === null) {
+        foreach ($keys as $index => $key) {
+            $qualified = $alias . '.' . $this->quote($key['column']->physicalName);
+            if ($values[$index] === null) {
                 $tie[] = $qualified . ' IS NULL';
             } else {
                 $tie[] = $qualified . ' = ?';
-                $parameters[] = $key['value'];
-                $types[] = $key['type'];
+                $parameters[] = $values[$index];
+                $types[] = $key['column']->doctrineType;
             }
         }
-        $tieDirection = $keys[array_key_last($keys)]['direction'];
         $tie[] = $alias . '.' . $this->quote($this->physical($table, 'record_id'))
-            . ($tieDirection === SortDirection::Ascending ? ' > ?' : ' < ?');
+            . ($last['direction'] === SortDirection::Ascending ? ' > ?' : ' < ?');
         $parameters[] = $recordKey;
         $types[] = $this->type($table, 'record_id');
         $parts[] = '(' . implode(' AND ', $tie) . ')';

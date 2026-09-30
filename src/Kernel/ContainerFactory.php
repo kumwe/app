@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Kernel;
 
+use Kumwe\App\Infrastructure\Persistence\Migration\CoreListingSortIndexMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\QueueWorkerPermitsMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\BusinessRecordScaleMigration;
 use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionEventSequencer;
@@ -2820,6 +2821,7 @@ final class ContainerFactory
                     new ExportSiteByteBudgetMigration(self::service($container, TableNames::class)),
                     new OperatorDiagnosticsCapabilityMigration(self::service($container, TableNames::class)),
                     new AuditRetentionAuthorityMigration(self::service($container, TableNames::class)),
+                    new CoreListingSortIndexMigration(self::service($container, TableNames::class)),
                 ],
                 self::acceptedHistoricalChecksums(),
             ), true);

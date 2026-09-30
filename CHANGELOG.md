@@ -69,6 +69,13 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
   existing definitions receive those indexes through their next normal definition/schema plan.
   Preserve safe bounded execution for queries that cannot use an index.
 
+- Qualify every record browse ordering on the declared aged dataset (P5-G). Index-served orderings seek
+  with an index range on every engine (a row comparison on PostgreSQL; the named serving index on MariaDB
+  and MySQL), a nullable key is read as two capped index ranges instead of a rank sort, and an ordering no
+  index serves sorts at most 10,000 candidate rows and is otherwise refused with HTTP 422. Index the
+  content browser's title orderings and the recent-process listing (migration 20260930120000). Pages
+  examine at most 4 × (page + 1) rows, 8 × for a nullable key, on MariaDB and PostgreSQL (#152).
+
 - Document the schema fixture's acting-administrator password and remove its resolved documentation
   exemptions, unblocking the pre-flight and PHP quality gates without changing fixture behavior (#152).
 

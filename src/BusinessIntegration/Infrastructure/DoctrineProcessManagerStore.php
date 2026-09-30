@@ -6,6 +6,7 @@ namespace Kumwe\App\BusinessIntegration\Infrastructure;
 
 use DateInterval;
 use DateTimeImmutable;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Kumwe\CanonicalJson\CanonicalEncoder;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
@@ -334,6 +335,12 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
     /**
      * Return the most recent operator-visible records.
      *
+     * The listing is read from the `(updated_at, process_id)` index, so it reads the limit rather than
+     * sorting every instance of an aged table (P5-G). PostgreSQL reads the index backwards for the page
+     * itself. MariaDB and MySQL cost a sort of the whole table below the index walk on a small table, so
+     * there the newest identities are read from the index alone first and only those rows are then fetched
+     * by primary key; an instance updated between the two reads is returned in its new position.
+     *
      * @param   int  $limit  Maximum number of records the operation may return or change.
      *
      * @return  list<array<string, mixed>>  Operator-visible rows in deterministic order.
@@ -343,12 +350,31 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
     public function recent(int $limit = 100): array
     {
         $this->assertLimit($limit);
-        return $this->database->fetchAllAssociative(sprintf(
-            'SELECT process_id, process_type, correlation_id, site_identifier, organization_id, version, '
-            . 'status, state, cancellation_by, cancellation_note, created_at, updated_at, completed_at, '
-            . 'cancelled_at FROM %s ORDER BY updated_at DESC, process_id DESC LIMIT ?',
-            $this->tables->quoted('business_process_instances'),
-        ), [$limit], [Types::INTEGER]);
+        $table = $this->tables->quoted('business_process_instances');
+        $columns = 'process_id, process_type, correlation_id, site_identifier, organization_id, version, status, '
+            . 'state, cancellation_by, cancellation_note, created_at, updated_at, completed_at, cancelled_at';
+        $order = 'ORDER BY updated_at DESC, process_id DESC';
+        if ($this->database->getDatabasePlatform() instanceof PostgreSQLPlatform) {
+            return $this->database->fetchAllAssociative(
+                sprintf('SELECT %s FROM %s %s LIMIT ?', $columns, $table, $order),
+                [$limit],
+                [Types::INTEGER],
+            );
+        }
+        $identities = $this->database->fetchFirstColumn(
+            sprintf('SELECT process_id FROM %s %s LIMIT ?', $table, $order),
+            [$limit],
+            [Types::INTEGER],
+        );
+        if ($identities === []) {
+            return [];
+        }
+
+        return $this->database->fetchAllAssociative(
+            sprintf('SELECT %s FROM %s WHERE process_id IN (?) %s', $columns, $table, $order),
+            [$identities],
+            [ArrayParameterType::STRING],
+        );
     }
 
     /**

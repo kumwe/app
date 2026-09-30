@@ -23,6 +23,14 @@ use InvalidArgumentException;
 final readonly class CompiledRecordQuery
 {
     /**
+     * Result column carrying the candidate count of a page ordered without an index.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string CANDIDATE_COLUMN = 'kumwe_sort_candidates';
+
+    /**
      * Values bound to the placeholders in $sql, in placeholder order.
      *
      * @var    list<mixed>
@@ -101,6 +109,9 @@ final readonly class CompiledRecordQuery
      *          placeholders in $aggregateSql, in placeholder order.
      * @param   list<string>                                   $aggregateTypes       Doctrine type name per
      *          entry of $aggregateParameters; must be the same length.
+     * @param   ?int                                           $candidateLimit       Most candidate rows an
+     *          unindexed ordering may sort, or null when an index delivers the order. When set, every row
+     *          of $sql carries `CANDIDATE_COLUMN` and the reader refuses a page whose count passes it.
      *
      * @throws  InvalidArgumentException  When a parameter list and its type list differ in length, which
      *          would leave a statement bound with the wrong types.
@@ -117,6 +128,7 @@ final readonly class CompiledRecordQuery
         public ?string $aggregateSql = null,
         array $aggregateParameters = [],
         array $aggregateTypes = [],
+        public ?int $candidateLimit = null,
     ) {
         if (count($parameters) !== count($types) || count($aggregateParameters) !== count($aggregateTypes)) {
             throw new InvalidArgumentException('A compiled business-record query has mismatched bound parameters.');
