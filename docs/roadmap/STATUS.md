@@ -46,7 +46,15 @@ the packaged index now use the current generation, including verified audit chec
 October 2 nightly artifact reports 271 of 272 journeys passing first attempt and 20 of 20 critical
 journeys passing; the desktop WebKit keyboard journey exhausted its deadline in repeated viewport
 observer checks. The repair preserves visibility and clipping assertions while removing that overhead.
+The previously failing WebKit journey passed locally in 57.3 seconds with its original 90-second
+deadline and no retry; the existing release-tool tests and all release-documentation checks also pass.
 These source fixes await their own workflow results; they do not qualify or publish beta artifacts.
+
+The separate scheduled PostgreSQL clean-target restore failure remains unresolved. A fresh application
+backup and restore passed locally, which does not reproduce the PostgreSQL 17 catalog left by the full
+scheduled test suite. The repair retains failure stderr and records the source relation count and lock
+budget in that lane so the next failure exposes the exact cause. No speculative database setting or
+weaker recovery assertion is introduced.
 
 ### Focus before an RC
 
