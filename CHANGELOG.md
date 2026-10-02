@@ -20,6 +20,8 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
   `app:diagnostics` and the protected audit checkpoint input. Keep generations 1 and 2 unchanged.
   Run the existing release-tool tests on packaging changes before publication and retain concise
   release preflight failure output.
+- Retain clean-target backup/restore failure stderr and PostgreSQL catalog/lock-budget diagnostics
+  without uploading backup data or signing files. The separate scheduled restore cause remains open.
 - Preserve Studio keyboard visibility checks without creating an IntersectionObserver at every Tab
   stop. The WebKit keyboard journey no longer spends most of its deadline in observer initialization;
   focused controls must still be visible, named and intersect the viewport through clipping ancestors.
