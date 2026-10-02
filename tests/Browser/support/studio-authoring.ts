@@ -68,6 +68,52 @@ export interface FocusStop {
 }
 
 /**
+ * Measure viewport intersection through scrolling ancestors and open shadow hosts.
+ *
+ * A fresh IntersectionObserver for every Tab stop costs about half a second in WebKit. A long keyboard
+ * walk then exhausts its budget while every control remains visible. Read the settled layout instead;
+ * the caller still polls after native focus scrolling, and never scrolls a control on the test's behalf.
+ * Slot distribution, positioned controls, transforms and shaped clipping retain the native observer.
+ */
+export function hasViewportIntersection(element: Element): boolean | null {
+  const bounds = element.getBoundingClientRect();
+  let left = Math.max(0, bounds.left);
+  let top = Math.max(0, bounds.top);
+  let right = Math.min(window.innerWidth, bounds.right);
+  let bottom = Math.min(window.innerHeight, bounds.bottom);
+  let ancestor: Element | null = element;
+  while (ancestor !== null) {
+    const style = getComputedStyle(ancestor);
+    if (ancestor.assignedSlot !== null || style.position === 'absolute' || style.position === 'fixed'
+      || style.transform !== 'none' || style.perspective !== 'none' || style.clipPath !== 'none'
+      || style.clip !== 'auto' || (style.translate && style.translate !== 'none')
+      || (style.rotate && style.rotate !== 'none') || (style.scale && style.scale !== 'none')
+      || (style.zoom && !['1', 'normal', '100%'].includes(style.zoom))) return null;
+    if (ancestor !== element) {
+      const paintContained = /(?:^|\s)(?:paint|strict|content)(?:\s|$)/u.test(style.contain);
+      const clipX = paintContained || style.overflowX !== 'visible';
+      const clipY = paintContained || style.overflowY !== 'visible';
+      if (clipX || clipY) {
+        const clip = ancestor.getBoundingClientRect();
+        const clipLeft = clip.left + ancestor.clientLeft;
+        const clipTop = clip.top + ancestor.clientTop;
+        if (clipX) {
+          left = Math.max(left, clipLeft);
+          right = Math.min(right, clipLeft + ancestor.clientWidth);
+        }
+        if (clipY) {
+          top = Math.max(top, clipTop);
+          bottom = Math.min(bottom, clipTop + ancestor.clientHeight);
+        }
+      }
+    }
+    const root = ancestor.getRootNode();
+    ancestor = ancestor.parentElement ?? (root instanceof ShadowRoot ? root.host : null);
+  }
+  return right > left && bottom > top;
+}
+
+/**
  * Describe the element that holds keyboard focus now, following focus into open shadow roots.
  *
  * Studio renders its shell in shadow DOM, so `document.activeElement` names only the host element. The
@@ -76,7 +122,7 @@ export interface FocusStop {
  * is what an assistive technology announces. A stop must be visible, inside the viewport, and carry a
  * non-empty accessible name.
  */
-export async function focusStop(page: Page): Promise<FocusStop> {
+export async function focusStop(page: Page, viewportTimeout?: number): Promise<FocusStop> {
   const place = await page.evaluate((marker) => {
     const holder = window as Window & { kumweFocusStops?: number };
     let element: Element | null = document.activeElement;
@@ -97,7 +143,13 @@ export async function focusStop(page: Page): Promise<FocusStop> {
   const locator = page.locator(`[${FOCUS_MARKER}="${String(place?.stop ?? 0)}"]`);
   await expect(locator).toHaveCount(1);
   await expect(locator, 'A focused control must be visible.').toBeVisible();
-  await expect(locator, 'A focused control must be scrolled into the viewport.').toBeInViewport();
+  const viewportMessage = 'A focused control must be scrolled into the viewport.';
+  await expect.poll(async () => {
+    const intersection = await locator.evaluate(hasViewportIntersection);
+    if (intersection !== null) return intersection;
+    await expect(locator, viewportMessage).toBeInViewport({ timeout: viewportTimeout });
+    return true;
+  }, { message: viewportMessage, timeout: viewportTimeout }).toBe(true);
   const snapshot = await locator.ariaSnapshot();
   const announced = /^- ([\w-]+)(?: "((?:[^"\\]|\\.)*)")?/u.exec(snapshot.trim());
   const role = announced?.[1] ?? '';
