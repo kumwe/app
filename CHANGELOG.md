@@ -14,6 +14,18 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ## [Unreleased]
 
+### Release and scheduled-build repair
+
+- Validate and package release documentation against the live CLI generation 3, including
+  `app:diagnostics` and the protected audit checkpoint input. Keep generations 1 and 2 unchanged.
+  Run the existing release-tool tests on packaging changes before publication and retain concise
+  release preflight failure output.
+- Preserve Studio keyboard visibility checks without creating an IntersectionObserver at every Tab
+  stop. The WebKit keyboard journey no longer spends most of its deadline in observer initialization;
+  focused controls must still be visible, named and intersect the viewport through clipping ancestors.
+- Align the active beta/RC status with merged #152 and the actual published releases, and publish the
+  October 2 concurrent throughput and storage observations with unavailable measurements stated.
+
 ### #152 — Version 2 runtime completion
 
 - Accept simultaneous publication of an identical audit checkpoint without reporting a false storage

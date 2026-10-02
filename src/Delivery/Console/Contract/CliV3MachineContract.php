@@ -9,7 +9,8 @@ use RuntimeException;
 /**
  * Loads the generation-three CLI contract the live console dispatches against.
  *
- * Generation three adds protected password-file input to schema purge planning and approval. The
+ * Generation three adds protected password-file input to schema purge planning and approval, and
+ * checkpoint-file input to audit verification. The
  * earlier contracts remain retained unchanged; their published token-only invocation cannot authorize
  * a high-impact stage. The JSON is deployed beside this loader so project archives retain the contract.
  *
