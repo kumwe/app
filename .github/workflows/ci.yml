@@ -359,6 +359,16 @@ jobs:
           composer audit --locked --abandoned=fail
           git diff --exit-code -- composer.json composer.lock
 
+      - name: Install Node.js for release-tool checks
+        if: needs.changes.outputs.packaging == 'true'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Verify release tooling before publication
+        if: needs.changes.outputs.packaging == 'true'
+        run: node --test tools/release-artifacts.test.mjs tools/source-sbom.test.mjs tools/release-docs.test.mjs
+
       # architecture:policy now runs the semantic dependency graph as well as the textual predicates, so
       # this step fails on an edge that points the wrong way and is not in the recorded baseline.
       - name: Verify source policy and dependency direction

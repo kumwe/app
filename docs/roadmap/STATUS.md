@@ -1,8 +1,75 @@
-# Programme status
+# Version 2 beta and release-candidate status
 
-This is a historical programme record. The current maintainer direction in [`AGENTS.md`](../../AGENTS.md)
-and the checks on the current pull-request head govern delivery. Older open ledger entries and scheduled
-diagnostic results do not add merge prerequisites.
+## Current position — 2026-10-02
+
+Pull request [#152](https://github.com/kumwe/app/pull/152) merged on 2026-09-30 as
+[`4fb53353`](https://github.com/kumwe/app/commit/4fb533531c0c28bf4cbb902d9fa7214cdcf6986f).
+Its runtime work is on `master`. The beta tag exists, but
+[release run 36766403378](https://github.com/kumwe/app/actions/runs/36766403378) failed before publishing
+qualified distributions. The latest published application release is `v2.0.0-alpha.23`; a tag alone does
+not make Beta 1 available. A successful signed beta release is the immediate delivery objective. Gate B
+and a stable Version 2 release have not been declared complete.
+
+The current maintainer direction in [`AGENTS.md`](../../AGENTS.md) governs delivery. Historical ledger
+counts below are retained for context; they are not a fresh audit of `master` or additional merge gates.
+No 24-hour or 72-hour endurance run, documentation inventory, or separate acceptance-record commit is
+required. Capacity evidence comes from bounded concurrent samples with their limitations stated.
+
+### What is implemented
+
+| Objective from the ERP runtime blueprint | Current implementation and practical boundary |
+|---|---|
+| Unified extension contributions | Signed, owner-aware contributions, immutable trusted runtime generations, diagnostics and executable withdrawal; [extension contracts](../extensions.md). Installed PHP is trusted in-process code, not sandboxed code. |
+| Business definitions | Immutable typed entities, fields, relations, views, actions, bounded expressions and compatibility plans; [definition runtime](../business-definitions.md). CMS content and business records remain separate. |
+| Transactional business runtime | Approved relational schema plans, exact values, optimistic concurrency, idempotency, revision/audit, relations and atomic header/line documents; [runtime](../business-runtime.md). |
+| Security and portal | Query and field policy, scoped identities, approvals, step-up and opt-in portal surfaces; [security](../business-security.md) and [portal](../portal.md). |
+| Generated delivery | Administrator, portal, REST/OpenAPI, CLI and MCP adapters use shared application services; [generated surfaces](../architecture/generated-business-surfaces.md). |
+| Integration and SDK | Durable events, inbox/outbox, jobs, schedules, processes, reports, exports, scaffolding and neutral proof extensions; [integration guide](../business-integrations.md). Current Extension SDK is `0.3.6`. |
+| Production qualification | Recovery, security, diagnostics and sampled capacity are implemented. Release publication and reproducible current failures still need correction and verification; source tests do not prove unavailable release bytes. |
+| Contextual Studio | Content create/edit, save/reopen, reusable types, values, layout, localization, keyboard authoring, accepted-revision preview and public PHP rendering use Studio beta.9 with Producer `0.6.0`. [The host guide](../studio-composition-authoring.md) records the remaining product boundaries. |
+
+### Latest workflow evidence
+
+These runs all concern source commit `4fb53353`; they establish different facts.
+
+| Lane | Result and scope |
+|---|---|
+| [CI 36976157692](https://github.com/kumwe/app/actions/runs/36976157692) | Failed in PostgreSQL backup/restore. Quality and browser jobs passed; fail-fast cancelled MariaDB, so this run is not a complete three-engine pass. |
+| [Nightly 36985200275](https://github.com/kumwe/app/actions/runs/36985200275) | Broader Firefox/WebKit browser evidence failed. Its performance lane passed. Preserve and repair the failing journeys rather than infer readiness from a passing subset. |
+| [Recovery 36986638272](https://github.com/kumwe/app/actions/runs/36986638272) | Passed its recovery workflow; this does not cancel the separate CI backup/restore failure. |
+| [Observability 36986988538](https://github.com/kumwe/app/actions/runs/36986988538) | Passed. |
+| [Sampled capacity 36987101673](https://github.com/kumwe/app/actions/runs/36987101673) | Passed on MariaDB, MySQL and PostgreSQL, with zero measured call failures on fresh and 2,000-record aged workloads. [Current measurements and storage limits](../operations/capacity-estimate.md#workflow-sample-2026-10-02) are recorded separately from forecasts. |
+
+The repair reproduces the release documentation failure: its inventory used retained CLI generation 2
+and rejected the implemented `app:diagnostics` command from generation 3. Documentation validation and
+the packaged index now use the current generation, including verified audit checkpoint input. The
+October 2 nightly artifact reports 271 of 272 journeys passing first attempt and 20 of 20 critical
+journeys passing; the desktop WebKit keyboard journey exhausted its deadline in repeated viewport
+observer checks. The repair preserves visibility and clipping assertions while removing that overhead.
+These source fixes await their own workflow results; they do not qualify or publish beta artifacts.
+
+### Focus before an RC
+
+1. Correct the release-source and PostgreSQL restore failures, pass the affected checks, merge the fix,
+   then build, qualify and publish the signed beta from the accepted source. Verify the actual image and
+   distribution digests through the existing release pipeline; no extra approval dossier is needed.
+2. Correct reproducible nightly browser failures and prove the affected Studio flows on Firefox and
+   WebKit. Keep the ordinary CI selection focused; broader scheduled evidence remains diagnostic.
+3. Drive Content create, author, save, reopen, preview and publish from the packaged PHP application,
+   including a successful hosted round trip beside an independent local Studio mount. Review the exact
+   candidate for remaining authorization, integrity and recovery defects before selecting the RC.
+
+Studio still lacks live-draft hosted preview, extension-owned authoring targets, and complete extension
+field-adapter/pattern/migration integration. The host guide identifies the owning SDK/Studio contracts
+and App follow-through. Accepted-revision preview works; it is not live-draft preview. Decide the scope
+of these remaining capabilities explicitly when setting the RC feature freeze instead of treating an
+old ledger count as product readiness. Demo redesign and the Version 3 native client remain separate.
+
+## Historical programme evidence
+
+The remaining tables describe the pre-merge programme record. Their `open` states, old agent names,
+package blockers and generated counts have not been re-assessed against merged `master`. The current
+status and priorities above, the actual code and current workflow outcomes take precedence.
 
 **Exact machine-evidence candidate** [`67cf6c02`](https://github.com/kumwe/app/commit/67cf6c02360f8af4220f8bde7c24297854d45dad)
 

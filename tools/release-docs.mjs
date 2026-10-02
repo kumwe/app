@@ -15,6 +15,7 @@ const read = (path) => readFileSync(path);
 const json = (path) => JSON.parse(read(path));
 const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const write = (path, value) => writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+const cliContract = () => json("src/Delivery/Console/Contract/cli-v3.json");
 
 /** Expand reviewed paths without following links outside the source or dependency artifact. */
 function files(path) {
@@ -36,7 +37,7 @@ export function verifyCommands(text, commands, path) {
 
 /** Index all runtime contract inputs and the corresponding reviewed prose without editing those inputs. */
 export function inventory(model) {
-  const commands = json("src/Delivery/Console/Contract/cli-v2.json").commands.map((command) => command.name);
+  const commands = cliContract().commands.map((command) => command.name);
   const records = model.references.map((reference) => {
     assert.ok(reference.guides.length > 0 && reference.runtime.length > 0);
     return { id: reference.id,
@@ -82,7 +83,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       mkdirSync(dirname(target), { recursive: true });
       cpSync(path, target);
     }
-    const cli = json("src/Delivery/Console/Contract/cli-v2.json");
+    const cli = cliContract();
     const mcp = json("docs/machine-contract/mcp-v2.json");
     const index = { kind: "kumwe-release-documentation-index", contractVersion: "1.0.0", release: version,
       sourceCommit: commit, referenceModelSha256: sha(read("resources/release/documentation.json")),

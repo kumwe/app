@@ -141,14 +141,26 @@ jobs:
           key: composer-files-${{ hashFiles('composer.lock') }}
           restore-keys: composer-files-
       - name: Verify source and locked dependencies
+        shell: bash
         run: |
+          set -euo pipefail
           composer validate --strict --no-check-all
           composer install --no-interaction --prefer-dist --dry-run
           composer install --no-interaction --prefer-dist
           composer audit --locked --abandoned=fail
           php bin/kumwe database:migrate
-          php tools/quality-contract.php --run --cadence=release
-          node --test tools/release-artifacts.test.mjs tools/source-sbom.test.mjs tools/release-docs.test.mjs
+          php tools/quality-contract.php --run --cadence=release 2>&1 | tee "$RUNNER_TEMP/release-source.log"
+          node --test tools/release-artifacts.test.mjs tools/source-sbom.test.mjs tools/release-docs.test.mjs \
+            2>&1 | tee -a "$RUNNER_TEMP/release-source.log"
+
+      - name: Preserve release preflight failure details
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-source-failure
+          path: ${{ runner.temp }}/release-source.log
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Stamp the generated tag version into the build inputs
         env:

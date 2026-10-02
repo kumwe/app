@@ -1,5 +1,12 @@
 # Kumwe App consolidated roadmap
 
+This is the historical programme specification. For active beta/RC work, use
+[`STATUS.md`](STATUS.md#current-position--2026-10-02), current source and workflow results. The
+2026-09-29 maintainer direction in [`AGENTS.md`](../../AGENTS.md) supersedes the older bookkeeping,
+fixed-coverage and expanding qualification instructions below; historical ledgers do not define new
+merge prerequisites. Pull request #152 is merged. Preserving this specification does not declare
+every old requirement completed or make its generated counts current.
+
 **Original consolidation baseline** `7a83c295bce6c23f250384ba787dd5e4595fff0e`
 
 **Exact machine-evidence candidate** [`67cf6c02`](https://github.com/kumwe/app/commit/67cf6c02360f8af4220f8bde7c24297854d45dad)

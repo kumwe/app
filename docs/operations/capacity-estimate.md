@@ -28,11 +28,14 @@ years 15%) and a uniform age inside it. The report binds `dataset_seed` and `dat
 count, distribution, bucket counts and a SHA-256 digest of the drawn ages) in `result_binding`, so two runs
 can prove they ran on the same data.
 
-`.github/workflows/capacity.yml` runs the same command on MariaDB, MySQL 8.4 and PostgreSQL 17 for every
-pull request (workers 1,2,4 × 30 samples × 3 repeats), once on the fresh dataset and once on the declared
-2,000-record aged dataset, and on dispatch with larger inputs; it then measures storage, log and backup
-amplification per workload (`tools/perf-storage.php`), publishes the markdown to the job summary and
-retains the JSON, raw per-call samples and logs as artifacts.
+`.github/workflows/capacity.yml` runs the same command on MariaDB, MySQL 8.4 and PostgreSQL 17 for
+pull requests and `master` pushes touching its declared performance/runtime paths, merge groups, the
+nightly schedule and manual dispatch. The ordinary sample is workers 1,2,4 × 30 samples × 3 repeats,
+once on the fresh dataset and once on the declared 2,000-record aged dataset. Manual dispatch accepts
+larger bounded inputs. It then samples create, update, ten-line document and aged-create storage/log/backup
+amplification (`tools/perf-storage.php`), publishes results to the job summary and retains JSON reports,
+raw per-call samples and worker logs for 14 days as `capacity-samples-<driver>` artifacts. Unavailable
+measurements remain `null`; a green sample does not turn them into observed values.
 
 ## What is recorded
 
@@ -91,6 +94,76 @@ keeps the older per-worker-count time extrapolation (repeat mean × 86,400, obse
   (ordinary create: 8.0 PRM/LBT on MariaDB, 15.2 on PostgreSQL's database-wide counters; see
   `docs/operations/scale-topology.md`) and is not folded into these throughput figures.
 - Extrapolations assume the same data size and configuration at every concurrency.
+
+## Workflow sample, 2026-10-02
+
+[Capacity run 36987101673](https://github.com/kumwe/app/actions/runs/36987101673) passed all three engines
+on merged source [`4fb53353`](https://github.com/kumwe/app/commit/4fb533531c0c28bf4cbb902d9fa7214cdcf6986f).
+Each separate workflow host exposed 4 AMD EPYC 7763 logical CPUs and 15.6 GiB RAM, running PHP 8.5.11
+with native engine 1.0.3; the database and workers shared that host. MariaDB was 12.3.3, MySQL 8.4.11 and
+PostgreSQL 17.11. The archived JSON records exact configuration and digests; these are source-workflow
+samples, with `application_image_digest=null`, not measurements of a qualified release image.
+
+The plan was 1, 2 and 4 workers, 30 measured calls per worker per repeat, five unmeasured warm-up calls,
+and three repeats, on fresh and aged tables. Each operation had 630 measured calls per dataset per
+engine; the four-worker rows below each pool 360 calls. All observed calls succeeded, integrity checks
+passed, and four-worker batches reached four overlapping calls on independent database sessions.
+The aged workload was seeded with 2,000 records per operation using seed 20260924 and age digest
+`266d674e6ccbda6900d3fef234ec02c0d59bdf2a742d2a3771e99b62bbb6f140`.
+
+### Measured aged throughput at four workers
+
+| Engine | Operation | LBT/s mean | 95% CI | Throughput CV | p95 / p99 ms | Failed calls |
+|---|---|---:|---|---:|---|---:|
+| MariaDB | Ordinary small create | 145.7 | 137.2–154.2 | 0.02 | 32.5 / 36.7 | 0 |
+| MySQL | Ordinary small create | 137.2 | 133.1–141.2 | 0.01 | 34.8 / 38.8 | 0 |
+| PostgreSQL | Ordinary small create | 118.5 | 116.4–120.5 | 0.01 | 38.7 / 44.0 | 0 |
+| MariaDB | Create with one shared legal-number counter | 130.0 | 126.4–133.7 | 0.01 | 36.4 / 44.7 | 0 |
+| MySQL | Create with one shared legal-number counter | 116.1 | 111.4–120.7 | 0.02 | 39.9 / 46.7 | 0 |
+| PostgreSQL | Create with one shared legal-number counter | 108.5 | 107.1–109.8 | 0.01 | 42.2 / 49.3 | 0 |
+
+These short observed rates exceed the planning target's arithmetic equivalent of 57.9 LBT/s. Extending
+them to an entire day would be an estimate, not an observed daily workload. The complete fresh/aged
+reports include the other worker counts, model fits and extrapolation warnings. This result gives no
+multi-site, large-document, mixed read/write, replica or continuous-production capacity guarantee.
+
+The engines also had different durability settings: MariaDB reported `log_bin=0`, `sync_binlog=0`,
+MySQL `log_bin=1`, `sync_binlog=1`, and PostgreSQL `fsync=on`, `synchronous_commit=on`. Both MySQL-family
+engines used `innodb_flush_log_at_trx_commit=1`. The rows must not be presented as a ranking under
+identical production durability or topology.
+
+### Measured storage samples
+
+The same run sampled 200 LBT per workload. A document LBT comprised one header and ten owned lines.
+The table reports net allocated table/index growth per logical transaction, including platform ledgers;
+it is neither just the business record's payload size nor physical bytes written to disk.
+
+| Engine | Workload | Table + index bytes/LBT | WAL bytes/LBT | Logical dump growth bytes/LBT |
+|---|---|---:|---:|---:|
+| MariaDB | Create | 11,386.9 | unavailable | unavailable |
+| MariaDB | Update | 819.2 | unavailable | unavailable |
+| MariaDB | Ten-line document | 23,347.2 | unavailable | unavailable |
+| MariaDB | Aged create | 16,957.5 | unavailable | unavailable |
+| MySQL | Create | 6,225.9 | unavailable | 7,147.8 |
+| MySQL | Update | 409.6 | unavailable | 5,300.4 |
+| MySQL | Ten-line document | 12,943.4 | unavailable | 8,121.3 |
+| MySQL | Aged create | 11,796.5 | unavailable | 7,147.5 |
+| PostgreSQL | Create | 8,683.5 | 15,969.4 | unavailable |
+| PostgreSQL | Update | 5,939.2 | 12,333.0 | unavailable |
+| PostgreSQL | Ten-line document | 9,748.5 | 17,823.8 | unavailable |
+| PostgreSQL | Aged create | 8,765.4 | 13,626.4 | unavailable |
+
+MySQL-family binary-log growth was unavailable. MariaDB and PostgreSQL logical dump observations were
+also unavailable (`dump_tool=null`); only MySQL retained a measured dump delta. Those omissions are
+visible limits of this run, not zero log or backup cost. InnoDB allocation moves in pages/extents, so
+some updates show no new table pages despite real writes; PostgreSQL tuple counts are database-wide,
+and MySQL-family handler counts include internal temporary tables. Use the complete reports and a
+representative workload mix before sizing storage or comparing physical mutation counts.
+
+Download `capacity-samples-mariadb`, `capacity-samples-mysql` and `capacity-samples-pgsql` from the linked
+run while retained. Each contains `concurrent-fresh.json/.md`, `concurrent-aged.json/.md`,
+`storage-<driver>-{create,update,document,aged}.json` and raw worker observations/logs. Rerun the existing
+workflow for new source or an operator topology; no long endurance prerequisite is added.
 
 ## Local run, 2026-09-24
 

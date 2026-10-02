@@ -5,7 +5,7 @@ automation, projections, and reports. They extend schema 3; they do not change t
 schema 1, 2, or 3 packages. A schema-4 package is trusted in-process code, but every executable contribution still
 has to match its signed, owner-scoped declaration before it can enter a runtime generation.
 
-The complete Version 2 extension SDK — `kumwe/extension-sdk`, pinned exactly at 0.2.4 — carries manifest schemas 1
+The current Version 2 extension SDK — `kumwe/extension-sdk`, pinned exactly at 0.3.6 — carries manifest schemas 1
 through 6 and contribution SPI revisions 1 through 4. Schema 5/SPI 3 preserves every schema-4 integration byte and
 adds the separate declarative composition section; schema 6/SPI 4 carries canonical Studio documents beside the
 frozen generations. This guide focuses on the durable-integration contract introduced by schema 4/SPI 2.
