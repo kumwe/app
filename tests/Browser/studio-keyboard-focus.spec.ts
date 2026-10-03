@@ -101,15 +101,36 @@ test('Studio keyboard viewport checks retain clipping and native focus scrolling
     <style>body { margin: 0; height: 20px; overflow: hidden; }</style>
     <button style="position: relative; top: 80px">Viewport overflow control</button>`);
   const viewportOverflow = page.getByRole('button', { name: 'Viewport overflow control' });
+  // Body/root clipping differs across observers; the fallback must preserve each engine's answer.
+  const expectNativeViewportFocus = async (): Promise<void> => {
+    expect(await viewportOverflow.evaluate(hasViewportIntersection)).toBeNull();
+    const intersects = await viewportOverflow.evaluate((element) => new Promise<boolean>((resolve, reject) => {
+      const observer = new IntersectionObserver(([entry]) => {
+        observer.disconnect();
+        if (entry === undefined) {
+          reject(new Error('The native viewport observation must return the focused control.'));
+          return;
+        }
+        resolve(entry.intersectionRatio > 0);
+      });
+      observer.observe(element);
+    }));
+    await viewportOverflow.evaluate((element) => { (element as HTMLElement).focus({ preventScroll: true }); });
+    if (intersects) {
+      await expect(viewportOverflow).toBeInViewport();
+      expect((await focusStop(page)).name).toBe('Viewport overflow control');
+    } else {
+      await expect(viewportOverflow).not.toBeInViewport();
+      await expect(focusStop(page, 1_000)).rejects.toThrow('A focused control must be scrolled into the viewport.');
+    }
+  };
   await expect(viewportOverflow).toBeInViewport();
   expect(await viewportOverflow.evaluate(hasViewportIntersection)).toBe(true);
   await page.locator('html').evaluate((element) => { (element as HTMLElement).style.overflow = 'hidden'; });
-  await expect(viewportOverflow).not.toBeInViewport();
-  expect(await viewportOverflow.evaluate(hasViewportIntersection)).toBe(false);
+  await expectNativeViewportFocus();
   await page.locator('html').evaluate((element) => { (element as HTMLElement).style.overflow = 'visible'; });
   await page.locator('body').evaluate((element) => { (element as HTMLElement).style.contain = 'paint'; });
-  expect(await viewportOverflow.evaluate(hasViewportIntersection)).toBeNull();
-  await expect(viewportOverflow).not.toBeInViewport();
+  await expectNativeViewportFocus();
 
   // Cover the repeated walk that exhausted the real Studio journey's budget in WebKit.
   await page.setContent(`<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1">

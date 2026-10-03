@@ -92,6 +92,9 @@ export function hasViewportIntersection(element: Element): boolean | null {
     if (ancestor !== element) {
       const paintContained = /(?:^|\s)(?:paint|strict|content)(?:\s|$)/u.test(style.contain);
       const rootStyle = ancestor === document.body ? getComputedStyle(document.documentElement) : null;
+      // Observers differ on body clipping when root overflow prevents viewport propagation.
+      if (rootStyle !== null && (rootStyle.overflowX !== 'visible' || rootStyle.overflowY !== 'visible')
+        && (style.overflowX !== 'visible' || style.overflowY !== 'visible')) return null;
       // Root overflow, and body overflow propagated through a visible root, clip the viewport above.
       const viewportOverflow = ancestor === document.documentElement
         || (rootStyle?.overflowX === 'visible' && rootStyle.overflowY === 'visible');
