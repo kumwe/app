@@ -32,6 +32,7 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
   vendor initialization and existing account grants; document the managed-database prerequisite.
 - Supply protected current-password proof when deployment acceptance approves a high-impact asset
   schema change. Retain checksum confirmation, authorization checks and temporary credential cleanup.
+  Select the administrator session cookie by name when form login also expires its CSRF cookie.
 - Preserve Studio keyboard visibility checks without creating an IntersectionObserver at every Tab
   stop. The WebKit keyboard journey no longer spends most of its deadline in observer initialization;
   focused controls must still be visible, named and intersect the viewport through clipping ancestors.
