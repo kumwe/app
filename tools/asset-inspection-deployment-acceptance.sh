@@ -71,16 +71,30 @@ app() {
 app_token() {
     local credential_file="$1"
     shift
+    local -a password_environment=()
+    if [[ "${1:-}" == --current-password-file=* ]]; then
+        local password_input="${1#--current-password-file=}"
+        shift
+        [[ -r "$password_input" ]] || fail 'current-password file is unreadable'
+        password_environment=(--env "KUMWE_ACCEPTANCE_CURRENT_PASSWORD=$(<"$password_input")")
+    fi
     local credential
     credential="$(<"$credential_file")"
     [[ "$credential" =~ ^[A-Za-z0-9_-]{32,}$ ]] || fail 'an acceptance token has an invalid form'
     compose exec -T \
         --env "KUMWE_ACCEPTANCE_TOKEN=$credential" \
+        "${password_environment[@]}" \
         app /usr/local/bin/kumwe-entrypoint sh -euc '
             umask 077
             token_file="$(mktemp)"
-            trap '\''rm -f "$token_file"'\'' EXIT
+            password_file=""
+            trap '\''rm -f "$token_file"; if [ -n "$password_file" ]; then rm -f "$password_file"; fi'\'' EXIT
             printf %s "$KUMWE_ACCEPTANCE_TOKEN" > "$token_file"
+            if [ "${KUMWE_ACCEPTANCE_CURRENT_PASSWORD+x}" = x ]; then
+                password_file="$(mktemp)"
+                printf %s "$KUMWE_ACCEPTANCE_CURRENT_PASSWORD" > "$password_file"
+                set -- "$@" --password-file="$password_file"
+            fi
             php bin/kumwe "$@" --site="${KUMWE_ACCEPTANCE_SITE:-default}" --token-file="$token_file"
         ' sh "$@"
 }
@@ -211,6 +225,7 @@ install_schema() {
     local definition="$1"
     local plan id checksum risk execution schema_checksum
     local -a confirmation=()
+    local -a approval_credential=()
     plan="$(app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" business-schema plan --definition="$definition")"
     id="$(jq -er '.id' <<< "$plan")"
     checksum="$(jq -er '.checksum | select(test("^[0-9a-f]{64}$"))' <<< "$plan")"
@@ -220,6 +235,7 @@ install_schema() {
             ;;
         backfill_required | behavior_changing)
             confirmation=(--confirmation="$checksum")
+            approval_credential=(--current-password-file="$KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE")
             ;;
         rebuild_or_locking | destructive)
             fail "fresh schema installation unexpectedly requires recovery evidence ($risk)"
@@ -228,7 +244,7 @@ install_schema() {
             fail "schema plan '$id' returned unsupported risk '$risk'"
             ;;
     esac
-    app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" business-schema approve \
+    app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" "${approval_credential[@]}" business-schema approve \
         --plan="$id" --expected-checksum="$checksum" "${confirmation[@]}" >/dev/null
     execution="$(app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" business-schema execute --plan="$id")"
     jq -e --arg plan_id "$id" '
