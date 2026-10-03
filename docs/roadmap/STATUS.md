@@ -1,6 +1,6 @@
 # Version 2 beta and release-candidate status
 
-## Current position — 2026-10-02
+## Current position — 2026-10-03
 
 Pull request [#152](https://github.com/kumwe/app/pull/152) merged on 2026-09-30 as
 [`4fb53353`](https://github.com/kumwe/app/commit/4fb533531c0c28bf4cbb902d9fa7214cdcf6986f).
@@ -49,6 +49,13 @@ observer checks. The repair preserves visibility and clipping assertions while r
 The previously failing WebKit journey passed locally in 57.3 seconds with its original 90-second
 deadline and no retry; the existing release-tool tests and all release-documentation checks also pass.
 These source fixes await their own workflow results; they do not qualify or publish beta artifacts.
+
+The first [repair PR run 37011315868](https://github.com/kumwe/app/actions/runs/37011315868) passed all
+three database jobs, quality, frontend and artifact checks. Its browser report passed 269 of 270
+journeys; the sole failure was the new mobile keyboard fixture's missing responsive viewport metadata.
+Chromium's shrink-to-fit layout exposed one pixel of its deliberately offscreen control. With viewport
+metadata matching the application, the complete fixture passes desktop and mobile Chromium without
+changing assertions, retries or deadlines. The corrected source still needs its own workflow result.
 
 The separate scheduled PostgreSQL clean-target restore failure remains unresolved. A fresh application
 backup and restore passed locally, which does not reproduce the PostgreSQL 17 catalog left by the full
