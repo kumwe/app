@@ -697,6 +697,7 @@ jobs:
           set -euo pipefail
           # Retain stderr only: never upload the backup, source manifest or signing/password files.
           exec 2> >(tee "$RUNNER_TEMP/backup-restore-${DB_DRIVER}.log" >&2)
+          trap 'backup_failure_status=$?; printf "Backup acceptance failed at shell line %s (exit %s).\n" "$LINENO" "$backup_failure_status" >&2; exit "$backup_failure_status"' ERR
           recovery_root="$RUNNER_TEMP/kumwe-recovery-${DB_DRIVER}"
           backup_root="$recovery_root/backups"
           source_media="$recovery_root/source/media"
@@ -803,6 +804,7 @@ jobs:
           KUMWE_DRILL_BACKUP_SECONDS="$backup_seconds" \
           KUMWE_DRILL_RESTORE_SECONDS="$restore_seconds" \
             php tests/Support/business-runtime-backup-acceptance.php verify "$runtime_manifest"
+          echo 'Backup acceptance: compare restored payloads and permissions.' >&2
           cmp "$source_media/probe.txt" "$restore_root/media/probe.txt"
           cmp \
             "$source_private/report-exports/objects/probe.csv" \
@@ -817,6 +819,7 @@ jobs:
           # drill damages copies of the backup that was just taken and requires each one to be
           # refused with the message that names the damage. The restored database is handed over as
           # the occupied target, so the "refuse a non-empty database" branch runs against a real one.
+          echo 'Backup acceptance: verify tampered backups and occupied targets are refused.' >&2
           KUMWE_TAMPER_DRILL_OCCUPIED_DB=kumwe_restore_test \
             bash tests/Support/backup-tamper-drill.sh "$backup_path"
 
