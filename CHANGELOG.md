@@ -21,7 +21,9 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
   Run the existing release-tool tests on packaging changes before publication and retain concise
   release preflight failure output.
 - Retain clean-target backup/restore failure stderr and PostgreSQL catalog/lock-budget diagnostics
-  without uploading backup data or signing files. The separate scheduled restore cause remains open.
+  without uploading backup data or signing files. Provision the CI PostgreSQL service with a lock
+  budget of 256 after the repeated suite's retained catalog exhausted the default 64 during atomic
+  restore. Preserve the single transaction and all recovery assertions; document operator sizing.
 - Preserve Studio keyboard visibility checks without creating an IntersectionObserver at every Tab
   stop. The WebKit keyboard journey no longer spends most of its deadline in observer initialization;
   focused controls must still be visible, named and intersect the viewport through clipping ancestors.

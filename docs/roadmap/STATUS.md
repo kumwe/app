@@ -34,7 +34,7 @@ These runs all concern source commit `4fb53353`; they establish different facts.
 
 | Lane | Result and scope |
 |---|---|
-| [CI 36976157692](https://github.com/kumwe/app/actions/runs/36976157692) | Failed in PostgreSQL backup/restore. Quality and browser jobs passed; fail-fast cancelled MariaDB, so this run is not a complete three-engine pass. |
+| [CI 36976157692](https://github.com/kumwe/app/actions/runs/36976157692) | Failed in PostgreSQL backup/restore. Quality and browser jobs passed; MariaDB was cancelled, so this run is not a complete three-engine pass. |
 | [Nightly 36985200275](https://github.com/kumwe/app/actions/runs/36985200275) | Broader Firefox/WebKit browser evidence failed. Its performance lane passed. Preserve and repair the failing journeys rather than infer readiness from a passing subset. |
 | [Recovery 36986638272](https://github.com/kumwe/app/actions/runs/36986638272) | Passed its recovery workflow; this does not cancel the separate CI backup/restore failure. |
 | [Observability 36986988538](https://github.com/kumwe/app/actions/runs/36986988538) | Passed. |
@@ -57,11 +57,16 @@ Chromium's shrink-to-fit layout exposed one pixel of its deliberately offscreen 
 metadata matching the application, the complete fixture passes desktop and mobile Chromium without
 changing assertions, retries or deadlines. The corrected source still needs its own workflow result.
 
-The separate scheduled PostgreSQL clean-target restore failure remains unresolved. A fresh application
-backup and restore passed locally, which does not reproduce the PostgreSQL 17 catalog left by the full
-scheduled test suite. The repair retains failure stderr and records the source relation count and lock
-budget in that lane so the next failure exposes the exact cause. No speculative database setting or
-weaker recovery assertion is introduced.
+The full [diagnostic run 37119794580](https://github.com/kumwe/app/actions/runs/37119794580) reproduced
+the scheduled PostgreSQL restore failure after ordinary and repeat/reverse suites passed. Its stderr
+artifact records 7,790 public relations, `max_locks_per_transaction=64` and `max_connections=100`.
+Seed, signed backup and signature/checksum verification passed; atomic `pg_restore` exhausted the
+shared lock table while adding a foreign key. The CI PostgreSQL service now starts with a lock budget
+of 256, preserving the single transaction, retained catalog and all application/security/tamper checks.
+The unchanged full recovery lane must verify that correction. All three browser lanes, quality,
+frontend, artifact, security and Compose checks passed on the diagnostic source; these do not qualify
+or publish a beta. [The restore guide](../operations/backup-restore.md) records the operator sizing
+implication without prescribing a universal production value.
 
 ### Focus before an RC
 

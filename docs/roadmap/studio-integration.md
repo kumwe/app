@@ -51,9 +51,22 @@ registries for its requirements and threats, a canonical fixture corpus, and an 
 contract is `0.1-draft` until its own first gate ratifies it; consumers pin exact prerelease versions
 until then, which is why every version below is exact.
 
-## Current App pin and next release family
+## Current App pin
 
-The App currently consumes the eight-package `0.1.0-beta.3` coordinated beta family — the Studio
+App pins the eight-package Studio `0.1.0-beta.9` family with `kumwe/producer` `0.6.0` and
+`kumwe/extension-sdk` `0.3.6`. The exact Studio bytes are recorded in
+[`resources/studio-contract/PIN.json`](../../resources/studio-contract/PIN.json); the package locks and
+`ContainerFactory::studioContextualAuthoringQualification()` bind the coordinated implementation.
+The [App host record](../studio-composition-authoring.md#current-app-truth) describes the implemented
+contextual journey and its remaining preview, extension and packaged-acceptance boundaries.
+
+## Historical pin and release assessment — 2026-09-24 to 2026-09-28
+
+The assessment, component inventories and counts below describe the earlier beta.3 integration.
+They are retained evidence, not current package pins, current readiness or additional release gates.
+Use the current App pin above, the host record and [`STATUS.md`](STATUS.md) for active beta/RC work.
+
+At the time of this assessment, App consumed the eight-package `0.1.0-beta.3` coordinated beta family — the Studio
 coordinate `kumwe/producer` 0.3.0 pins, adopted deliberately in place of the interim `0.1.0-rc.1`
 snapshot so that App → Producer → Studio is one chain. No package bytes are committed: the eight
 packages resolve from the public npm registry at their exact versions, and
@@ -131,9 +144,9 @@ an installation, startup, authoring, preview, publication, or production-server 
 Rollback selects the last complete compatible family and its matching corpus. Mixing any two Studio versions,
 or completing Core against unreleased Studio bytes, is prohibited.
 
-### Pin selection — 2026-09-24
+### Historical pin selection — 2026-09-24
 
-**Decision: App stays on Studio `0.1.0-beta.3` with `kumwe/producer` `0.3.0`.** No newer Studio–Producer–App
+**Decision at the time: App stays on Studio `0.1.0-beta.3` with `kumwe/producer` `0.3.0`.** No newer Studio–Producer–App
 combination can be adopted, because no Producer release implements a newer Studio release. Re-evaluate when
 Producer tags a release whose pin names a newer family.
 
@@ -182,7 +195,7 @@ once the Producer version moves.
 Rechecked on **2026-09-28** through GitHub releases and exact tag/installed sources: Studio beta.6 remains the
 latest coordinated release, Producer 0.3.0 still pins beta.3, and SDK 0.3.3 still supplies no extension authoring-target
 kind or authoring-resource SPI. The complete prerequisite matrix is in
-[the App host record](../studio-composition-authoring.md#dependency-and-ownership-verification--2026-09-28).
+[the historical App host assessment](../studio-composition-authoring.md#historical-dependency-and-ownership-assessment--2026-09-28).
 It distinguishes the missing SDK declaration and Studio preview/localization work from App-owned field identity,
 initial-presentation and packaged qualification work. Beta.3 already reconciles excluded local Entry values and
 presentation; their absence from a type-save request is not by itself an upstream blocker.
