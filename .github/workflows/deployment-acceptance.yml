@@ -816,6 +816,11 @@ jobs:
           else
             database_health="mysqladmin ping -h 127.0.0.1 -ukumwe -p$database_password"
           fi
+          database_arguments=()
+          if [[ "$DATABASE_DRIVER" == mysql ]]; then
+            # The schema-scoped restore account must recreate the backed-up audit triggers.
+            database_arguments=(mysqld --log-bin-trust-function-creators=ON)
+          fi
           docker run --detach \
             --name "$restore_container" \
             --network bridge \
@@ -835,7 +840,7 @@ jobs:
             --env POSTGRES_DB=kumwe_restore \
             --env POSTGRES_USER=kumwe \
             --env "POSTGRES_PASSWORD=$database_password" \
-            "$DATABASE_IMAGE" >/dev/null
+            "$DATABASE_IMAGE" "${database_arguments[@]}" >/dev/null
           docker network connect kumwe_backend "$restore_container"
           for attempt in $(seq 1 60); do
             [[ "$(docker inspect --format '{{.State.Health.Status}}' "$restore_container")" == healthy ]] && break

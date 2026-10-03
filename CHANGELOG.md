@@ -27,6 +27,11 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 - Allow 180 minutes for the full MariaDB coverage/repeat/reverse/recovery job after a healthy repeat
   alone took 46 minutes. Routine jobs retain their existing budget; test assertions and deadlines are
   unchanged.
+- Provision bundled MySQL and the deployment clean-restore target to permit the schema-scoped account
+  to create append-only audit triggers while binary logging is enabled. Preserve audit enforcement,
+  vendor initialization and existing account grants; document the managed-database prerequisite.
+- Supply protected current-password proof when deployment acceptance approves a high-impact asset
+  schema change. Retain checksum confirmation, authorization checks and temporary credential cleanup.
 - Preserve Studio keyboard visibility checks without creating an IntersectionObserver at every Tab
   stop. The WebKit keyboard journey no longer spends most of its deadline in observer initialization;
   focused controls must still be visible, named and intersect the viewport through clipping ancestors.

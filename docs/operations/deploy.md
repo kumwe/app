@@ -51,6 +51,13 @@ MariaDB LTS is the default. Override one coherent set for another supported engi
 
 Choose the engine before the first migration. Switching an existing site requires a separately tested logical data migration; changing only the image and driver variables is not a database conversion.
 
+The bundled MySQL server starts with `log_bin_trust_function_creators=ON` so the schema-scoped migration
+account can install the append-only audit triggers while binary logging is enabled. This applies on every
+startup, including existing volumes; the application account receives no additional global privileges.
+On a managed MySQL server with binary logging enabled, the database administrator must provision the
+same setting or the required trigger-creation privileges before running migrations or restoring a
+logical backup. Migration fails if the append-only guards cannot be installed.
+
 For a managed database, keep the application variables but omit or profile out the bundled `database` service in a deployment-specific Compose overlay. Use TLS verification, private networking, backups, monitoring, and distinct migration and runtime accounts supplied by the database platform. The overlay must override the shared database environment and secret on the long-lived services; merely changing `KUMWE_DB_USER` changes the migration task too and does not create a split.
 
 ## Proxy boundary

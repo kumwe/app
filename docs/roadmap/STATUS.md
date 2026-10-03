@@ -25,10 +25,10 @@ required. Capacity evidence comes from bounded concurrent samples with their lim
 | Security and portal | Query and field policy, scoped identities, approvals, step-up and opt-in portal surfaces; [security](../business-security.md) and [portal](../portal.md). |
 | Generated delivery | Administrator, portal, REST/OpenAPI, CLI and MCP adapters use shared application services; [generated surfaces](../architecture/generated-business-surfaces.md). |
 | Integration and SDK | Durable events, inbox/outbox, jobs, schedules, processes, reports, exports, scaffolding and neutral proof extensions; [integration guide](../business-integrations.md). Current Extension SDK is `0.3.6`. |
-| Production qualification | Recovery, security, diagnostics and sampled capacity are implemented. Release publication and reproducible current failures still need correction and verification; source tests do not prove unavailable release bytes. |
+| Production qualification | Recovery, security, diagnostics and sampled capacity are implemented. The repair evidence below establishes specific source checks; qualified and published beta bytes remain pending. |
 | Contextual Studio | Content create/edit, save/reopen, reusable types, values, layout, localization, keyboard authoring, accepted-revision preview and public PHP rendering use Studio beta.9 with Producer `0.6.0`. [The host guide](../studio-composition-authoring.md) records the remaining product boundaries. |
 
-### Latest workflow evidence
+### Latest merged-master evidence
 
 These runs all concern source commit `4fb53353`; they establish different facts.
 
@@ -37,55 +37,54 @@ These runs all concern source commit `4fb53353`; they establish different facts.
 | [CI 37103075988](https://github.com/kumwe/app/actions/runs/37103075988) | PostgreSQL backup/restore failed. MariaDB was cancelled at its 90-minute job deadline during repeat/reverse checks; this was not a fail-fast cancellation or a complete three-engine pass. |
 | [Nightly 37109109916](https://github.com/kumwe/app/actions/runs/37109109916) | Failed the same WebKit keyboard journey. 270 of 272 journeys passed first attempt; the canvas journey needed a retry, and all 20 critical journeys passed. A recovered retry is not first-attempt evidence. |
 | [Recovery 37109960693](https://github.com/kumwe/app/actions/runs/37109960693) | Passed its recovery workflow; this does not cancel the separate CI backup/restore failure. |
-| [Observability 36986988538](https://github.com/kumwe/app/actions/runs/36986988538) | Passed. |
+| [Observability 37109995350](https://github.com/kumwe/app/actions/runs/37109995350) | Passed. |
 | [Sampled capacity 37110028732](https://github.com/kumwe/app/actions/runs/37110028732) | Passed on MariaDB, MySQL and PostgreSQL, with zero failures in 7,560 measured calls on fresh and 2,000-record aged workloads. [Current measurements, host variation and storage limits](../operations/capacity-estimate.md#workflow-sample-2026-10-03) are recorded separately from forecasts. |
 
-The repair reproduces the release documentation failure: its inventory used retained CLI generation 2
-and rejected the implemented `app:diagnostics` command from generation 3. Documentation validation and
-the packaged index now use the current generation, including verified audit checkpoint input. The
-October 2 nightly artifact reports 271 of 272 journeys passing first attempt and 20 of 20 critical
-journeys passing; the desktop WebKit keyboard journey exhausted its deadline in repeated viewport
-observer checks. The repair preserves visibility and clipping assertions while removing that overhead.
-The previously failing WebKit journey passed locally in 57.3 seconds with its original 90-second
-deadline and no retry; the existing release-tool tests and all release-documentation checks also pass.
-These source fixes await their own workflow results; they do not qualify or publish beta artifacts.
+### Repair in pull request #154
 
-The first [repair PR run 37011315868](https://github.com/kumwe/app/actions/runs/37011315868) passed all
-three database jobs, quality, frontend and artifact checks. Its browser report passed 269 of 270
-journeys; the sole failure was the new mobile keyboard fixture's missing responsive viewport metadata.
-Chromium's shrink-to-fit layout exposed one pixel of its deliberately offscreen control. With viewport
-metadata matching the application, the complete fixture passes desktop and mobile Chromium without
-changing assertions, retries or deadlines. The corrected source still needs its own workflow result.
+[The repair](https://github.com/kumwe/app/pull/154) addresses six observed causes. These branch results
+are separate from the merged-master evidence above and do not qualify or publish release bytes.
 
-The full [diagnostic run 37119794580](https://github.com/kumwe/app/actions/runs/37119794580) reproduced
-the scheduled PostgreSQL restore failure after ordinary and repeat/reverse suites passed. Its stderr
-artifact records 7,790 public relations, `max_locks_per_transaction=64` and `max_connections=100`.
-Seed, signed backup and signature/checksum verification passed; atomic `pg_restore` exhausted the
-shared lock table while adding a foreign key. The CI PostgreSQL service now starts with a lock budget
-of 256, preserving the single transaction, retained catalog and all application/security/tamper checks.
-The unchanged full recovery lane must verify that correction. All three browser lanes, quality,
-frontend, artifact, security and Compose checks passed on the diagnostic source; these do not qualify
-or publish a beta. [The restore guide](../operations/backup-restore.md) records the operator sizing
-implication without prescribing a universal production value.
+| Cause | Repair and retained boundary |
+|---|---|
+| Release documentation used retained CLI generation 2 and rejected the implemented generation-3 `app:diagnostics` command. | Inventory, packaged index and machine-contract validation use generation 3, including the existing audit checkpoint input. Retained generation-1/2 contracts remain intact. |
+| WebKit keyboard authoring exhausted its 90-second deadline in repeated viewport observer checks. | Common geometry uses a bounded synchronous check; browser-specific layout falls back to the native assertion. Visibility, clipping, accessibility, native focus scrolling and the original journey deadline remain enforced. |
+| Atomic PostgreSQL restore exhausted the shared lock table after the full suite retained 7,790 public relations with a lock budget of 64 and 100 connections. | The CI PostgreSQL service starts with `max_locks_per_transaction=256`. Atomic restore, retained data, signing, restored behavior and tamper checks remain intact. [Operator sizing](../operations/backup-restore.md) is documented without a universal production value. |
+| Healthy full MariaDB work exceeded the 90-minute job budget: the initial phase took about 39 minutes and one repeat took 46 minutes with 651 tests, 18,701 assertions and no failures/errors. | The canonical full job allows 180 minutes for coverage, repeat/reverse and recovery. Routine and other database jobs, individual test deadlines and assertions retain their existing budgets. |
+| Downstream MySQL deployment could not create the audit guards with binary logging enabled and `log_bin_trust_function_creators` absent. | Production Compose and the clean-restore MySQL server enable `log_bin_trust_function_creators=ON` at startup. Application credentials remain scoped to the installation schema; audit guards and binary logging remain enabled. Deployment qualification is pending. |
+| The PostgreSQL and MariaDB asset-inspection deployment fixture omitted the current-password proof required to approve its schema change. | The acceptance helper supplies the existing administrator credential through a protected temporary password file for approval risks that require it, then cleans up the file. Runtime authorization and schema-risk checks remain enforced. Deployment qualification is pending. |
 
-The October 3 MariaDB idempotency artifact records a complete repeat with 651 tests, 18,701 assertions
-and no failures/errors in 46 minutes. The initial phase had already consumed about 39 minutes of the
-90-minute job budget; reverse order was cancelled before completing. The full canonical MariaDB job
-now allows 180 minutes for coverage, repeat/reverse and recovery. Routine and other database jobs retain
-their existing budget, and individual test deadlines and assertions remain unchanged. The full lane
-still has to finish successfully. The final viewport fixture also passes Firefox in 10.2 seconds;
-WebKit's full nightly qualification is being re-run against the repair.
+The new geometry regression fixture also needed responsive viewport metadata for mobile Chromium and
+a native fallback for root/body overflow semantics that differ across engines. Those corrections preserve
+the assertions. The final focused fixture passes desktop/mobile Chromium (2/2) and Firefox (1/1), and
+`npm run check` passes. Existing release-tool tests and release-documentation checks also pass.
+
+| Repair subject and lane | Verified result and pending work |
+|---|---|
+| [Full CI 37124609098](https://github.com/kumwe/app/actions/runs/37124609098), subject [`b646494b`](https://github.com/kumwe/app/commit/b646494bd0e4278856e3d65f5ee2a813e52b7761) | All three database lanes passed ordinary suites, repeat/reverse checks, signed backup, atomic restore, restored application behavior and tamper checks. All three browser lanes, quality, frontend and artifact checks passed. The overall run failed downstream in deployment acceptance at the two causes above; qualification of those repairs is pending. |
+| [Nightly 37124608881](https://github.com/kumwe/app/actions/runs/37124608881), before the final fixture correction | The real WebKit keyboard journey passed first attempt in 35.792 seconds and canvas authoring in 11.072 seconds. The run failed only the new geometry fixture's root/body assumption. |
+| [Corrected nightly 37127282091](https://github.com/kumwe/app/actions/runs/37127282091) and [routine CI 37127282181](https://github.com/kumwe/app/actions/runs/37127282181), subject [`a7e908c3`](https://github.com/kumwe/app/commit/a7e908c3263fac75aa6fb0f9d801522f097d3be9) | Nightly passed 274 of 274 journeys first attempt and all 20 critical journeys, with no failures, flakes, skips or retries. WebKit keyboard authoring took 48.342 seconds within its unchanged 90-second deadline. Routine CI passed all three ordinary database lanes, quality, frontend, artifact and MariaDB browser checks. [Security 37127282020](https://github.com/kumwe/app/actions/runs/37127282020) and [Compose 37127282036](https://github.com/kumwe/app/actions/runs/37127282036) passed. |
+
+The full MariaDB job completed in 130 minutes 48 seconds: repeat took 40 minutes 15.526 seconds,
+reverse order 57 minutes 48.789 seconds and recovery 55 seconds. PostgreSQL repeat/reverse took
+34 minutes 14 seconds with a 22-second restore drill; MySQL took 27 minutes 17 seconds with a
+72-second restore drill. These results verify the database repairs and the measured MariaDB job budget.
+
+Deployment qualification for the two new fixes remains pending. Production artifact qualification
+and signed beta publication also remain pending; these source results do not establish a
+release-readiness percentage.
 
 ### Focus before an RC
 
-1. Correct the release-source and PostgreSQL restore failures, pass the affected checks, merge the fix,
-   then build, qualify and publish the signed beta from the accepted source. Verify the actual image and
-   distribution digests through the existing release pipeline; no extra approval dossier is needed.
-2. Correct reproducible nightly browser failures and prove the affected Studio flows on Firefox and
-   WebKit. Keep the ordinary CI selection focused; broader scheduled evidence remains diagnostic.
-3. Drive Content create, author, save, reopen, preview and publish from the packaged PHP application,
-   including a successful hosted round trip beside an independent local Studio mount. Review the exact
-   candidate for remaining authorization, integrity and recovery defects before selecting the RC.
+1. Complete the remaining repair checks, merge the fix, then build, qualify and publish the signed beta
+   from accepted source. Verify the actual image and distribution digests through the existing release
+   pipeline; no extra approval dossier is needed.
+2. Drive Content create, author, save, reopen, preview and publish from the packaged PHP application,
+   including a successful hosted round trip beside an independent local Studio mount.
+3. Freeze RC scope explicitly around the remaining Studio capabilities below, and review the exact
+   candidate for authorization, integrity and recovery defects before selecting the RC.
+4. Profile the costly repeated schema/bootstrap work to shorten measured CI feedback. Keep this a focused
+   engineering follow-up; it adds no release gate or endurance requirement.
 
 Studio still lacks live-draft hosted preview, extension-owned authoring targets, and complete extension
 field-adapter/pattern/migration integration. The host guide identifies the owning SDK/Studio contracts
