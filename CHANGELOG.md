@@ -25,6 +25,8 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 - Preserve Studio keyboard visibility checks without creating an IntersectionObserver at every Tab
   stop. The WebKit keyboard journey no longer spends most of its deadline in observer initialization;
   focused controls must still be visible, named and intersect the viewport through clipping ancestors.
+  Give the focused mobile fixture the application's responsive viewport so its offscreen boundary
+  matches the browser's intersection root.
 - Align the active beta/RC status with merged #152 and the actual published releases, and publish the
   October 2 concurrent throughput and storage observations with unavailable measurements stated.
 

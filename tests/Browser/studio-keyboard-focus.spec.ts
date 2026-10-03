@@ -2,7 +2,9 @@ import { expect, test } from '@playwright/test';
 import { focusStop, hasViewportIntersection, tabStops } from './support/studio-authoring';
 
 test('Studio keyboard viewport checks retain clipping and native focus scrolling', async ({ page }) => {
+  // Mobile emulation needs the same responsive viewport as Studio for exact CSS-pixel boundaries.
   await page.setContent(`
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       body { margin: 0; }
       #scroller { width: 200px; height: 80px; overflow: auto; border: 4px solid; }
@@ -50,6 +52,7 @@ test('Studio keyboard viewport checks retain clipping and native focus scrolling
   expect(await edge.evaluate(hasViewportIntersection)).toBeNull();
 
   await page.setContent(`
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <div id="slot-host"><button style="display: block; margin-top: 80px">Clipped slotted control</button></div>
     <div style="overflow: hidden; height: 40px; width: 200px">
       <button style="position: absolute; top: 160px; left: 0">Escaped absolute control</button>
@@ -74,7 +77,8 @@ test('Studio keyboard viewport checks retain clipping and native focus scrolling
   }
 
   // Cover the repeated walk that exhausted the real Studio journey's budget in WebKit.
-  await page.setContent(`<main style="display: grid; grid-template-columns: repeat(6, 1fr)">${
+  await page.setContent(`<meta name="viewport" content="width=device-width, initial-scale=1">
+  <main style="display: grid; grid-template-columns: repeat(6, 1fr)">${
     Array.from({ length: 150 }, (_, index) => `<button>Control ${index + 1}</button>`).join('')
   }</main>`);
   const stops = await tabStops(page, 150);
