@@ -42,7 +42,7 @@ These runs all concern source commit `4fb53353`; they establish different facts.
 
 ### Repair in pull request #154
 
-[The repair](https://github.com/kumwe/app/pull/154) addresses six observed causes. These branch results
+[The repair](https://github.com/kumwe/app/pull/154) addresses seven observed causes. These branch results
 are separate from the merged-master evidence above and do not qualify or publish release bytes.
 
 | Cause | Repair and retained boundary |
@@ -51,28 +51,29 @@ are separate from the merged-master evidence above and do not qualify or publish
 | WebKit keyboard authoring exhausted its 90-second deadline in repeated viewport observer checks. | Common geometry uses a bounded synchronous check; browser-specific layout falls back to the native assertion. Visibility, clipping, accessibility, native focus scrolling and the original journey deadline remain enforced. |
 | Atomic PostgreSQL restore exhausted the shared lock table after the full suite retained 7,790 public relations with a lock budget of 64 and 100 connections. | The CI PostgreSQL service starts with `max_locks_per_transaction=256`. Atomic restore, retained data, signing, restored behavior and tamper checks remain intact. [Operator sizing](../operations/backup-restore.md) is documented without a universal production value. |
 | Healthy full MariaDB work exceeded the 90-minute job budget: the initial phase took about 39 minutes and one repeat took 46 minutes with 651 tests, 18,701 assertions and no failures/errors. | The canonical full job allows 180 minutes for coverage, repeat/reverse and recovery. Routine and other database jobs, individual test deadlines and assertions retain their existing budgets. |
-| Downstream MySQL deployment could not create the audit guards with binary logging enabled and `log_bin_trust_function_creators` absent. | Production Compose and the clean-restore MySQL server enable `log_bin_trust_function_creators=ON` at startup. Application credentials remain scoped to the installation schema; audit guards and binary logging remain enabled. Deployment qualification is pending. |
-| The PostgreSQL and MariaDB asset-inspection deployment fixture omitted the current-password proof required to approve its schema change. | The acceptance helper supplies the existing administrator credential through a protected temporary password file for approval risks that require it, then cleans up the file. Runtime authorization and schema-risk checks remain enforced. Deployment qualification is pending. |
+| Downstream MySQL deployment could not create the audit guards with binary logging enabled and `log_bin_trust_function_creators` absent. | Production Compose and the clean-restore MySQL server enable `log_bin_trust_function_creators=ON` at startup. Application credentials remain scoped to the installation schema; audit guards and binary logging remain enabled. The deployment qualification below passed. |
+| The PostgreSQL and MariaDB asset-inspection deployment fixture omitted the current-password proof required to approve its schema change. | The acceptance helper supplies the existing administrator credential through a protected temporary password file for approval risks that require it, then cleans up the file. Runtime authorization and schema-risk checks remain enforced. The deployment qualification below passed. |
+| A successful administrator login returned a 303 with the session cookie first and an expired CSRF cookie second; the acceptance helper selected the last header and used the CSRF cookie. | The helper selects the exact named administrator-session cookie and retains its existing strict 43–512-character base64url contract. Authentication behavior is unchanged; deployment qualification passed. |
 
 The new geometry regression fixture also needed responsive viewport metadata for mobile Chromium and
 a native fallback for root/body overflow semantics that differ across engines. Those corrections preserve
 the assertions. The final focused fixture passes desktop/mobile Chromium (2/2) and Firefox (1/1), and
 `npm run check` passes. Existing release-tool tests and release-documentation checks also pass.
 
-| Repair subject and lane | Verified result and pending work |
+| Repair subject and lane | Verified result and scope |
 |---|---|
-| [Full CI 37124609098](https://github.com/kumwe/app/actions/runs/37124609098), subject [`b646494b`](https://github.com/kumwe/app/commit/b646494bd0e4278856e3d65f5ee2a813e52b7761) | All three database lanes passed ordinary suites, repeat/reverse checks, signed backup, atomic restore, restored application behavior and tamper checks. All three browser lanes, quality, frontend and artifact checks passed. The overall run failed downstream in deployment acceptance at the two causes above; qualification of those repairs is pending. |
-| [Nightly 37124608881](https://github.com/kumwe/app/actions/runs/37124608881), before the final fixture correction | The real WebKit keyboard journey passed first attempt in 35.792 seconds and canvas authoring in 11.072 seconds. The run failed only the new geometry fixture's root/body assumption. |
+| [Full CI 37124609098](https://github.com/kumwe/app/actions/runs/37124609098), subject [`b646494b`](https://github.com/kumwe/app/commit/b646494bd0e4278856e3d65f5ee2a813e52b7761) | All three database lanes passed ordinary suites, repeat/reverse checks, signed backup, atomic restore, restored application behavior and tamper checks. All three browser lanes, quality, frontend and artifact checks passed. The overall run failed downstream at the MySQL audit-guard and schema-approval fixture defects; the subsequent deployment qualification below passed their repairs. |
 | [Corrected nightly 37127282091](https://github.com/kumwe/app/actions/runs/37127282091) and [routine CI 37127282181](https://github.com/kumwe/app/actions/runs/37127282181), subject [`a7e908c3`](https://github.com/kumwe/app/commit/a7e908c3263fac75aa6fb0f9d801522f097d3be9) | Nightly passed 274 of 274 journeys first attempt and all 20 critical journeys, with no failures, flakes, skips or retries. WebKit keyboard authoring took 48.342 seconds within its unchanged 90-second deadline. Routine CI passed all three ordinary database lanes, quality, frontend, artifact and MariaDB browser checks. [Security 37127282020](https://github.com/kumwe/app/actions/runs/37127282020) and [Compose 37127282036](https://github.com/kumwe/app/actions/runs/37127282036) passed. |
+| [Deployment qualification 37134654582](https://github.com/kumwe/app/actions/runs/37134654582), subject [`cc5aff40`](https://github.com/kumwe/app/commit/cc5aff4046e252772217a8cc805c83b57a1b2168) | Passed the Composer ZIP and all three production deployments: PostgreSQL in 6 minutes 21 seconds, MariaDB in 6 minutes 49 seconds and MySQL in 7 minutes 26 seconds. Full lifecycle checks, all three deployment repairs and signed clean-target restore passed. [Recovery 37134654432](https://github.com/kumwe/app/actions/runs/37134654432), [Security 37134654450](https://github.com/kumwe/app/actions/runs/37134654450) and [Compose 37134654464](https://github.com/kumwe/app/actions/runs/37134654464) also passed. |
 
 The full MariaDB job completed in 130 minutes 48 seconds: repeat took 40 minutes 15.526 seconds,
 reverse order 57 minutes 48.789 seconds and recovery 55 seconds. PostgreSQL repeat/reverse took
 34 minutes 14 seconds with a 22-second restore drill; MySQL took 27 minutes 17 seconds with a
 72-second restore drill. These results verify the database repairs and the measured MariaDB job budget.
 
-Deployment qualification for the two new fixes remains pending. Production artifact qualification
-and signed beta publication also remain pending; these source results do not establish a
-release-readiness percentage.
+Deployment qualification passed on `cc5aff40`; the latest PR checks determine readiness of later
+commits. Qualification of the tagged production release bytes and signed beta publication remain
+pending. These source results do not establish a release-readiness percentage.
 
 ### Focus before an RC
 
