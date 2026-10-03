@@ -420,7 +420,8 @@ jobs:
     name: PHP 8.5 / ${{ matrix.database.name }}
     runs-on: ubuntu-24.04
     # Database behavior runs on all engines; independent unit tests run once in quality.
-    timeout-minutes: 90
+    # Full MariaDB includes coverage plus repeat/reverse and recovery; a healthy repeat took 46 minutes.
+    timeout-minutes: ${{ matrix.database.coverage == 'true' && needs.changes.outputs.full == 'true' && 180 || 90 }}
     strategy:
       fail-fast: false
       matrix:
