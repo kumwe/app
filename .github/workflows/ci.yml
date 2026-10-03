@@ -359,6 +359,16 @@ jobs:
           composer audit --locked --abandoned=fail
           git diff --exit-code -- composer.json composer.lock
 
+      - name: Install Node.js for release-tool checks
+        if: needs.changes.outputs.packaging == 'true'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Verify release tooling before publication
+        if: needs.changes.outputs.packaging == 'true'
+        run: node --test tools/release-artifacts.test.mjs tools/source-sbom.test.mjs tools/release-docs.test.mjs
+
       # architecture:policy now runs the semantic dependency graph as well as the textual predicates, so
       # this step fails on an edge that points the wrong way and is not in the recorded baseline.
       - name: Verify source policy and dependency direction
@@ -410,7 +420,8 @@ jobs:
     name: PHP 8.5 / ${{ matrix.database.name }}
     runs-on: ubuntu-24.04
     # Database behavior runs on all engines; independent unit tests run once in quality.
-    timeout-minutes: 90
+    # Full MariaDB includes coverage plus repeat/reverse and recovery; a healthy repeat took 46 minutes.
+    timeout-minutes: ${{ matrix.database.coverage == 'true' && needs.changes.outputs.full == 'true' && 180 || 90 }}
     strategy:
       fail-fast: false
       matrix:
@@ -456,6 +467,9 @@ jobs:
           POSTGRES_DB: kumwe_test
           POSTGRES_USER: kumwe
           POSTGRES_PASSWORD: kumwe_test
+          # Repeated suites retain 7,790 public relations; atomic restore exhausted the default 64.
+          # Provision headroom for relation/constraint locks without splitting the restore transaction.
+          POSTGRES_INITDB_ARGS: '--set=max_locks_per_transaction=256'
         ports:
           - '${{ matrix.database.port }}:${{ matrix.database.port }}'
         options: ${{ matrix.database.health }}
@@ -685,6 +699,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Retain stderr only: never upload the backup, source manifest or signing/password files.
+          exec 2> >(tee "$RUNNER_TEMP/backup-restore-${DB_DRIVER}.log" >&2)
+          trap 'backup_failure_status=$?; printf "Backup acceptance failed at shell line %s (exit %s).\n" "$LINENO" "$backup_failure_status" >&2; exit "$backup_failure_status"' ERR
           recovery_root="$RUNNER_TEMP/kumwe-recovery-${DB_DRIVER}"
           backup_root="$recovery_root/backups"
           source_media="$recovery_root/source/media"
@@ -719,10 +736,18 @@ jobs:
             -p "$signing_root/backup-signing.pub" \
             -s "$signing_root/backup-signing.key" >/dev/null
           chmod 0600 "$signing_root/backup-signing.key"
+          echo 'Backup acceptance: seed the business runtime.' >&2
           php tests/Support/business-runtime-backup-acceptance.php seed > "$runtime_manifest"
           test -s "$runtime_manifest"
 
           if [[ "$DB_DRIVER" == pgsql ]]; then
+            echo 'PostgreSQL source relations and restore lock budget:' >&2
+            PGPASSWORD="$DB_PASSWORD" psql --no-password --no-psqlrc \
+              --host="$DB_HOST" --port="$DB_PORT" --username="$DB_USER" --dbname="$DB_NAME" \
+              --set=ON_ERROR_STOP=1 --command="SELECT count(*) AS public_relations, \
+                current_setting('max_locks_per_transaction') AS max_locks_per_transaction, \
+                current_setting('max_connections') AS max_connections \
+                FROM pg_class WHERE relnamespace = 'public'::regnamespace" >&2
             PGPASSWORD="$DB_PASSWORD" createdb \
               --host="$DB_HOST" --port="$DB_PORT" --username="$DB_USER" kumwe_restore_test
           else
@@ -751,6 +776,7 @@ jobs:
           export KUMWE_RELEASE=2.0.0
           export KUMWE_BACKUP_SIGNING_SECRET_KEY_FILE="$signing_root/backup-signing.key"
           backup_started="$(date +%s)"
+          echo 'Backup acceptance: create the signed backup.' >&2
           backup_path="$(bash tools/backup.sh)"
           backup_seconds="$(( $(date +%s) - backup_started ))"
           test -f "$backup_path/checksums.sha256.minisig"
@@ -769,10 +795,12 @@ jobs:
           export KUMWE_RESTORE_MEDIA_DIR="$restore_root/media"
           export KUMWE_RESTORE_PRIVATE_DIR="$restore_root/private"
           restore_started="$(date +%s)"
+          echo 'Backup acceptance: restore into the clean target.' >&2
           bash tools/restore.sh "$backup_path"
           restore_seconds="$(( $(date +%s) - restore_started ))"
           # The measured recovery time is written into the restored installation's own schema
           # recovery evidence, which is what the destructive-plan gate reads.
+          echo 'Backup acceptance: verify restored application behavior.' >&2
           DB_NAME=kumwe_restore_test \
           KUMWE_DRILL_REFERENCE="ci-${DB_DRIVER}-${GITHUB_RUN_ID}" \
           KUMWE_DRILL_BACKUP_MANIFEST_CHECKSUM="$(sha256sum "$backup_path/manifest.json" | cut -d' ' -f1)" \
@@ -780,6 +808,7 @@ jobs:
           KUMWE_DRILL_BACKUP_SECONDS="$backup_seconds" \
           KUMWE_DRILL_RESTORE_SECONDS="$restore_seconds" \
             php tests/Support/business-runtime-backup-acceptance.php verify "$runtime_manifest"
+          echo 'Backup acceptance: compare restored payloads and permissions.' >&2
           cmp "$source_media/probe.txt" "$restore_root/media/probe.txt"
           cmp \
             "$source_private/report-exports/objects/probe.csv" \
@@ -794,8 +823,18 @@ jobs:
           # drill damages copies of the backup that was just taken and requires each one to be
           # refused with the message that names the damage. The restored database is handed over as
           # the occupied target, so the "refuse a non-empty database" branch runs against a real one.
+          echo 'Backup acceptance: verify tampered backups and occupied targets are refused.' >&2
           KUMWE_TAMPER_DRILL_OCCUPIED_DB=kumwe_restore_test \
             bash tests/Support/backup-tamper-drill.sh "$backup_path"
+
+      - name: Preserve backup and restore failure details
+        if: failure() && needs.changes.outputs.full == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: backup-restore-failure-${{ matrix.database.driver }}
+          path: ${{ runner.temp }}/backup-restore-${{ matrix.database.driver }}.log
+          if-no-files-found: ignore
+          retention-days: 3
 
   artifact:
     needs: changes

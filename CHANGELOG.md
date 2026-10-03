@@ -14,6 +14,34 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ## [Unreleased]
 
+### Release and scheduled-build repair
+
+- Validate and package release documentation against the live CLI generation 3, including
+  `app:diagnostics` and the protected audit checkpoint input. Keep generations 1 and 2 unchanged.
+  Run the existing release-tool tests on packaging changes before publication and retain concise
+  release preflight failure output.
+- Retain clean-target backup/restore failure stderr and PostgreSQL catalog/lock-budget diagnostics
+  without uploading backup data or signing files. Provision the CI PostgreSQL service with a lock
+  budget of 256 after the repeated suite's retained catalog exhausted the default 64 during atomic
+  restore. Preserve the single transaction and all recovery assertions; document operator sizing.
+- Allow 180 minutes for the full MariaDB coverage/repeat/reverse/recovery job after a healthy repeat
+  alone took 46 minutes. Routine jobs retain their existing budget; test assertions and deadlines are
+  unchanged.
+- Provision bundled MySQL and the deployment clean-restore target to permit the schema-scoped account
+  to create append-only audit triggers while binary logging is enabled. Preserve audit enforcement,
+  vendor initialization and existing account grants; document the managed-database prerequisite.
+- Supply protected current-password proof when deployment acceptance approves a high-impact asset
+  schema change. Retain checksum confirmation, authorization checks and temporary credential cleanup.
+  Select the administrator session cookie by name when form login also expires its CSRF cookie.
+- Preserve Studio keyboard visibility checks without creating an IntersectionObserver at every Tab
+  stop. The WebKit keyboard journey no longer spends most of its deadline in observer initialization;
+  focused controls must still be visible, named and intersect the viewport through clipping ancestors.
+  Give the focused mobile fixture the application's responsive viewport so its offscreen boundary
+  matches the browser's intersection root.
+- Align the active beta/RC status and Studio pins with merged #152 and the actual published releases.
+  Record the October 2–3 concurrent throughput and storage observations, host variation and unavailable
+  measurements.
+
 ### #152 — Version 2 runtime completion
 
 - Accept simultaneous publication of an identical audit checkpoint without reporting a false storage

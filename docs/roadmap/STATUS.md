@@ -1,8 +1,103 @@
-# Programme status
+# Version 2 beta and release-candidate status
 
-This is a historical programme record. The current maintainer direction in [`AGENTS.md`](../../AGENTS.md)
-and the checks on the current pull-request head govern delivery. Older open ledger entries and scheduled
-diagnostic results do not add merge prerequisites.
+## Current position — 2026-10-03
+
+Pull request [#152](https://github.com/kumwe/app/pull/152) merged on 2026-09-30 as
+[`4fb53353`](https://github.com/kumwe/app/commit/4fb533531c0c28bf4cbb902d9fa7214cdcf6986f).
+Its runtime work is on `master`. The beta tag exists, but
+[release run 36766403378](https://github.com/kumwe/app/actions/runs/36766403378) failed before publishing
+qualified distributions. The latest published application release is `v2.0.0-alpha.23`; a tag alone does
+not make Beta 1 available. A successful signed beta release is the immediate delivery objective. Gate B
+and a stable Version 2 release have not been declared complete.
+
+The current maintainer direction in [`AGENTS.md`](../../AGENTS.md) governs delivery. Historical ledger
+counts below are retained for context; they are not a fresh audit of `master` or additional merge gates.
+No 24-hour or 72-hour endurance run, documentation inventory, or separate acceptance-record commit is
+required. Capacity evidence comes from bounded concurrent samples with their limitations stated.
+
+### What is implemented
+
+| Objective from the ERP runtime blueprint | Current implementation and practical boundary |
+|---|---|
+| Unified extension contributions | Signed, owner-aware contributions, immutable trusted runtime generations, diagnostics and executable withdrawal; [extension contracts](../extensions.md). Installed PHP is trusted in-process code, not sandboxed code. |
+| Business definitions | Immutable typed entities, fields, relations, views, actions, bounded expressions and compatibility plans; [definition runtime](../business-definitions.md). CMS content and business records remain separate. |
+| Transactional business runtime | Approved relational schema plans, exact values, optimistic concurrency, idempotency, revision/audit, relations and atomic header/line documents; [runtime](../business-runtime.md). |
+| Security and portal | Query and field policy, scoped identities, approvals, step-up and opt-in portal surfaces; [security](../business-security.md) and [portal](../portal.md). |
+| Generated delivery | Administrator, portal, REST/OpenAPI, CLI and MCP adapters use shared application services; [generated surfaces](../architecture/generated-business-surfaces.md). |
+| Integration and SDK | Durable events, inbox/outbox, jobs, schedules, processes, reports, exports, scaffolding and neutral proof extensions; [integration guide](../business-integrations.md). Current Extension SDK is `0.3.6`. |
+| Production qualification | Recovery, security, diagnostics and sampled capacity are implemented. The repair evidence below establishes specific source checks; qualified and published beta bytes remain pending. |
+| Contextual Studio | Content create/edit, save/reopen, reusable types, values, layout, localization, keyboard authoring, accepted-revision preview and public PHP rendering use Studio beta.9 with Producer `0.6.0`. [The host guide](../studio-composition-authoring.md) records the remaining product boundaries. |
+
+### Latest merged-master evidence
+
+These runs all concern source commit `4fb53353`; they establish different facts.
+
+| Lane | Result and scope |
+|---|---|
+| [CI 37103075988](https://github.com/kumwe/app/actions/runs/37103075988) | PostgreSQL backup/restore failed. MariaDB was cancelled at its 90-minute job deadline during repeat/reverse checks; this was not a fail-fast cancellation or a complete three-engine pass. |
+| [Nightly 37109109916](https://github.com/kumwe/app/actions/runs/37109109916) | Failed the same WebKit keyboard journey. 270 of 272 journeys passed first attempt; the canvas journey needed a retry, and all 20 critical journeys passed. A recovered retry is not first-attempt evidence. |
+| [Recovery 37109960693](https://github.com/kumwe/app/actions/runs/37109960693) | Passed its recovery workflow; this does not cancel the separate CI backup/restore failure. |
+| [Observability 37109995350](https://github.com/kumwe/app/actions/runs/37109995350) | Passed. |
+| [Sampled capacity 37110028732](https://github.com/kumwe/app/actions/runs/37110028732) | Passed on MariaDB, MySQL and PostgreSQL, with zero failures in 7,560 measured calls on fresh and 2,000-record aged workloads. [Current measurements, host variation and storage limits](../operations/capacity-estimate.md#workflow-sample-2026-10-03) are recorded separately from forecasts. |
+
+### Repair in pull request #154
+
+[The repair](https://github.com/kumwe/app/pull/154) addresses seven observed causes. These branch results
+are separate from the merged-master evidence above and do not qualify or publish release bytes.
+
+| Cause | Repair and retained boundary |
+|---|---|
+| Release documentation used retained CLI generation 2 and rejected the implemented generation-3 `app:diagnostics` command. | Inventory, packaged index and machine-contract validation use generation 3, including the existing audit checkpoint input. Retained generation-1/2 contracts remain intact. |
+| WebKit keyboard authoring exhausted its 90-second deadline in repeated viewport observer checks. | Common geometry uses a bounded synchronous check; browser-specific layout falls back to the native assertion. Visibility, clipping, accessibility, native focus scrolling and the original journey deadline remain enforced. |
+| Atomic PostgreSQL restore exhausted the shared lock table after the full suite retained 7,790 public relations with a lock budget of 64 and 100 connections. | The CI PostgreSQL service starts with `max_locks_per_transaction=256`. Atomic restore, retained data, signing, restored behavior and tamper checks remain intact. [Operator sizing](../operations/backup-restore.md) is documented without a universal production value. |
+| Healthy full MariaDB work exceeded the 90-minute job budget: the initial phase took about 39 minutes and one repeat took 46 minutes with 651 tests, 18,701 assertions and no failures/errors. | The canonical full job allows 180 minutes for coverage, repeat/reverse and recovery. Routine and other database jobs, individual test deadlines and assertions retain their existing budgets. |
+| Downstream MySQL deployment could not create the audit guards with binary logging enabled and `log_bin_trust_function_creators` absent. | Production Compose and the clean-restore MySQL server enable `log_bin_trust_function_creators=ON` at startup. Application credentials remain scoped to the installation schema; audit guards and binary logging remain enabled. The deployment qualification below passed. |
+| The PostgreSQL and MariaDB asset-inspection deployment fixture omitted the current-password proof required to approve its schema change. | The acceptance helper supplies the existing administrator credential through a protected temporary password file for approval risks that require it, then cleans up the file. Runtime authorization and schema-risk checks remain enforced. The deployment qualification below passed. |
+| A successful administrator login returned a 303 with the session cookie first and an expired CSRF cookie second; the acceptance helper selected the last header and used the CSRF cookie. | The helper selects the exact named administrator-session cookie and retains its existing strict 43–512-character base64url contract. Authentication behavior is unchanged; deployment qualification passed. |
+
+The new geometry regression fixture also needed responsive viewport metadata for mobile Chromium and
+a native fallback for root/body overflow semantics that differ across engines. Those corrections preserve
+the assertions. The final focused fixture passes desktop/mobile Chromium (2/2) and Firefox (1/1), and
+`npm run check` passes. Existing release-tool tests and release-documentation checks also pass.
+
+| Repair subject and lane | Verified result and scope |
+|---|---|
+| [Full CI 37124609098](https://github.com/kumwe/app/actions/runs/37124609098), subject [`b646494b`](https://github.com/kumwe/app/commit/b646494bd0e4278856e3d65f5ee2a813e52b7761) | All three database lanes passed ordinary suites, repeat/reverse checks, signed backup, atomic restore, restored application behavior and tamper checks. All three browser lanes, quality, frontend and artifact checks passed. The overall run failed downstream at the MySQL audit-guard and schema-approval fixture defects; the subsequent deployment qualification below passed their repairs. |
+| [Corrected nightly 37127282091](https://github.com/kumwe/app/actions/runs/37127282091) and [routine CI 37127282181](https://github.com/kumwe/app/actions/runs/37127282181), subject [`a7e908c3`](https://github.com/kumwe/app/commit/a7e908c3263fac75aa6fb0f9d801522f097d3be9) | Nightly passed 274 of 274 journeys first attempt and all 20 critical journeys, with no failures, flakes, skips or retries. WebKit keyboard authoring took 48.342 seconds within its unchanged 90-second deadline. Routine CI passed all three ordinary database lanes, quality, frontend, artifact and MariaDB browser checks. [Security 37127282020](https://github.com/kumwe/app/actions/runs/37127282020) and [Compose 37127282036](https://github.com/kumwe/app/actions/runs/37127282036) passed. |
+| [Deployment qualification 37134654582](https://github.com/kumwe/app/actions/runs/37134654582), subject [`cc5aff40`](https://github.com/kumwe/app/commit/cc5aff4046e252772217a8cc805c83b57a1b2168) | Passed the Composer ZIP and all three production deployments: PostgreSQL in 6 minutes 21 seconds, MariaDB in 6 minutes 49 seconds and MySQL in 7 minutes 26 seconds. Full lifecycle checks, all three deployment repairs and signed clean-target restore passed. [Recovery 37134654432](https://github.com/kumwe/app/actions/runs/37134654432), [Security 37134654450](https://github.com/kumwe/app/actions/runs/37134654450) and [Compose 37134654464](https://github.com/kumwe/app/actions/runs/37134654464) also passed. |
+
+The full MariaDB job completed in 130 minutes 48 seconds: repeat took 40 minutes 15.526 seconds,
+reverse order 57 minutes 48.789 seconds and recovery 55 seconds. PostgreSQL repeat/reverse took
+34 minutes 14 seconds with a 22-second restore drill; MySQL took 27 minutes 17 seconds with a
+72-second restore drill. These results verify the database repairs and the measured MariaDB job budget.
+
+Deployment qualification passed on `cc5aff40`; the latest PR checks determine readiness of later
+commits. Qualification of the tagged production release bytes and signed beta publication remain
+pending. These source results do not establish a release-readiness percentage.
+
+### Focus before an RC
+
+1. Complete the remaining repair checks, merge the fix, then build, qualify and publish the signed beta
+   from accepted source. Verify the actual image and distribution digests through the existing release
+   pipeline; no extra approval dossier is needed.
+2. Drive Content create, author, save, reopen, preview and publish from the packaged PHP application,
+   including a successful hosted round trip beside an independent local Studio mount.
+3. Freeze RC scope explicitly around the remaining Studio capabilities below, and review the exact
+   candidate for authorization, integrity and recovery defects before selecting the RC.
+4. Profile the costly repeated schema/bootstrap work to shorten measured CI feedback. Keep this a focused
+   engineering follow-up; it adds no release gate or endurance requirement.
+
+Studio still lacks live-draft hosted preview, extension-owned authoring targets, and complete extension
+field-adapter/pattern/migration integration. The host guide identifies the owning SDK/Studio contracts
+and App follow-through. Accepted-revision preview works; it is not live-draft preview. Decide the scope
+of these remaining capabilities explicitly when setting the RC feature freeze instead of treating an
+old ledger count as product readiness. Demo redesign and the Version 3 native client remain separate.
+
+## Historical programme evidence
+
+The remaining tables describe the pre-merge programme record. Their `open` states, old agent names,
+package blockers and generated counts have not been re-assessed against merged `master`. The current
+status and priorities above, the actual code and current workflow outcomes take precedence.
 
 **Exact machine-evidence candidate** [`67cf6c02`](https://github.com/kumwe/app/commit/67cf6c02360f8af4220f8bde7c24297854d45dad)
 

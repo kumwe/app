@@ -201,6 +201,26 @@ services:
   database:
     image: ${KUMWE_DATABASE_IMAGE:-mariadb:lts}
     pull_policy: ${KUMWE_INFRASTRUCTURE_PULL_POLICY:-always}
+    entrypoint: [/bin/sh, -ec]
+    command:
+      - |
+        case "$${DB_DRIVER}" in
+          mysql)
+            # Binary logging otherwise requires global privileges to create audit triggers.
+            exec /usr/local/bin/docker-entrypoint.sh mysqld \
+              --log-bin-trust-function-creators=ON
+            ;;
+          mariadb)
+            exec /usr/local/bin/docker-entrypoint.sh mariadbd
+            ;;
+          pgsql)
+            exec /usr/local/bin/docker-entrypoint.sh postgres
+            ;;
+          *)
+            echo 'Unsupported database driver.' >&2
+            exit 78
+            ;;
+        esac
     environment:
       DB_DRIVER: ${KUMWE_DB_DRIVER:-mariadb}
       MARIADB_DATABASE: ${KUMWE_DB_NAME:-kumwe}
