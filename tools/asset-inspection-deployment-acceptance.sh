@@ -497,6 +497,23 @@ header_value() {
     sed -n "s/^${name}:[[:space:]]*//Ip" "$file" | tr -d '\r' | tail -n 1
 }
 
+response_cookie() {
+    local name="$1"
+    local file="$2"
+    awk -v name="$name" '
+        tolower($0) ~ /^set-cookie:/ {
+            value = $0
+            sub(/^[^:]+:[[:space:]]*/, "", value)
+            sub(/\r$/, "", value)
+            sub(/;.*/, "", value)
+            if (index(value, name "=") == 1) {
+                cookie = value
+            }
+        }
+        END { print cookie }
+    ' "$file"
+}
+
 exercise_mcp_report() {
     local token
     token="$(<"$mcp_token_file")"
@@ -806,8 +823,9 @@ admin_password="$(<"$KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE")"
     --write-out '%{http_code}' --data-urlencode "email=$admin_email" \
     --data-urlencode "password=$admin_password" "$base_url/administrator/login")" == 303 ]] \
     || fail 'administrator login failed before contributed-page proof'
-admin_cookie="$(header_value set-cookie "$admin_headers" | cut -d';' -f1)"
-[[ "$admin_cookie" == kumwe_administrator=* ]] || fail 'administrator login omitted its session cookie'
+admin_cookie="$(response_cookie kumwe_administrator "$admin_headers")"
+[[ "$admin_cookie" =~ ^kumwe_administrator=[A-Za-z0-9_-]{43,512}$ ]] \
+    || fail 'administrator login omitted its session cookie'
 admin_page="$work_root/asset-inspection-administrator.html"
 admin_status="$(curl --silent --show-error --output "$admin_page" --write-out '%{http_code}' \
     --header "Cookie: $admin_cookie" \
