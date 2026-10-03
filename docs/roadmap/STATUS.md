@@ -34,11 +34,11 @@ These runs all concern source commit `4fb53353`; they establish different facts.
 
 | Lane | Result and scope |
 |---|---|
-| [CI 36976157692](https://github.com/kumwe/app/actions/runs/36976157692) | Failed in PostgreSQL backup/restore. Quality and browser jobs passed; MariaDB was cancelled, so this run is not a complete three-engine pass. |
-| [Nightly 36985200275](https://github.com/kumwe/app/actions/runs/36985200275) | Broader Firefox/WebKit browser evidence failed. Its performance lane passed. Preserve and repair the failing journeys rather than infer readiness from a passing subset. |
-| [Recovery 36986638272](https://github.com/kumwe/app/actions/runs/36986638272) | Passed its recovery workflow; this does not cancel the separate CI backup/restore failure. |
+| [CI 37103075988](https://github.com/kumwe/app/actions/runs/37103075988) | PostgreSQL backup/restore failed. MariaDB was cancelled at its 90-minute job deadline during repeat/reverse checks; this was not a fail-fast cancellation or a complete three-engine pass. |
+| [Nightly 37109109916](https://github.com/kumwe/app/actions/runs/37109109916) | Failed the same WebKit keyboard journey. 270 of 272 journeys passed first attempt; the canvas journey needed a retry, and all 20 critical journeys passed. A recovered retry is not first-attempt evidence. |
+| [Recovery 37109960693](https://github.com/kumwe/app/actions/runs/37109960693) | Passed its recovery workflow; this does not cancel the separate CI backup/restore failure. |
 | [Observability 36986988538](https://github.com/kumwe/app/actions/runs/36986988538) | Passed. |
-| [Sampled capacity 36987101673](https://github.com/kumwe/app/actions/runs/36987101673) | Passed on MariaDB, MySQL and PostgreSQL, with zero measured call failures on fresh and 2,000-record aged workloads. [Current measurements and storage limits](../operations/capacity-estimate.md#workflow-sample-2026-10-02) are recorded separately from forecasts. |
+| [Sampled capacity 37110028732](https://github.com/kumwe/app/actions/runs/37110028732) | Passed on MariaDB, MySQL and PostgreSQL, with zero failures in 7,560 measured calls on fresh and 2,000-record aged workloads. [Current measurements, host variation and storage limits](../operations/capacity-estimate.md#workflow-sample-2026-10-03) are recorded separately from forecasts. |
 
 The repair reproduces the release documentation failure: its inventory used retained CLI generation 2
 and rejected the implemented `app:diagnostics` command from generation 3. Documentation validation and
@@ -67,6 +67,14 @@ The unchanged full recovery lane must verify that correction. All three browser 
 frontend, artifact, security and Compose checks passed on the diagnostic source; these do not qualify
 or publish a beta. [The restore guide](../operations/backup-restore.md) records the operator sizing
 implication without prescribing a universal production value.
+
+The October 3 MariaDB idempotency artifact records a complete repeat with 651 tests, 18,701 assertions
+and no failures/errors in 46 minutes. The initial phase had already consumed about 39 minutes of the
+90-minute job budget; reverse order was cancelled before completing. The full canonical MariaDB job
+now allows 180 minutes for coverage, repeat/reverse and recovery. Routine and other database jobs retain
+their existing budget, and individual test deadlines and assertions remain unchanged. The full lane
+still has to finish successfully. The final viewport fixture also passes Firefox in 10.2 seconds;
+WebKit's full nightly qualification is being re-run against the repair.
 
 ### Focus before an RC
 

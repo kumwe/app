@@ -95,6 +95,59 @@ keeps the older per-worker-count time extrapolation (repeat mean × 86,400, obse
   `docs/operations/scale-topology.md`) and is not folded into these throughput figures.
 - Extrapolations assume the same data size and configuration at every concurrency.
 
+## Workflow sample, 2026-10-03
+
+[Capacity run 37110028732](https://github.com/kumwe/app/actions/runs/37110028732) passed all three engines
+on unchanged merged source [`4fb53353`](https://github.com/kumwe/app/commit/4fb533531c0c28bf4cbb902d9fa7214cdcf6986f).
+The plan remained 1, 2 and 4 workers, 30 measured calls per worker per repeat, five warm-ups and three
+repeats, on fresh and 2,000-record aged workloads with seed 20260924. Across both operations, both
+datasets and all engines, 7,560 measured calls had zero failures; integrity checks passed and the
+four-worker batches reached four overlapping calls. Each four-worker row pools 360 calls.
+
+Each host exposed four logical CPUs and 15.6 GiB RAM, with PHP 8.5.11 and native engine 1.0.3. CPU models
+differed: MariaDB used AMD EPYC 9V74, MySQL EPYC 9V45 and PostgreSQL EPYC 7763. The database and workers
+shared each host. Database versions remained MariaDB 12.3.3, MySQL 8.4.11 and PostgreSQL 17.11;
+`application_image_digest=null` still identifies source-workflow samples, not a qualified release image.
+
+### Latest aged small-create throughput at four workers
+
+| Engine | LBT/s mean | 95% CI | Throughput CV | p95 / p99 ms | Failed calls |
+|---|---:|---|---:|---|---:|
+| MariaDB | 168.5 | 20.2–316.9 | 0.35 | 88.4 / 108.6 | 0 |
+| MySQL | 243.3 | 234.8–251.7 | 0.01 | 19.5 / 21.2 | 0 |
+| PostgreSQL | 117.3 | 114.3–120.3 | 0.01 | 39.9 / 46.0 | 0 |
+
+MariaDB's wide interval reflects substantial repeat variation. The higher MySQL rate than October 2
+comes from the same source on a different host; neither change establishes a product improvement or
+regression. Durability still differs: MariaDB has `log_bin=0`, `sync_binlog=0`; MySQL has `log_bin=1`,
+`sync_binlog=1`; PostgreSQL has `fsync=on`, `synchronous_commit=on`. These are not an engine ranking under
+identical production conditions or an observed daily capacity.
+
+### Latest create and document storage samples
+
+The run sampled 200 LBT per workload. A document contains one header and ten owned lines. These are
+net allocated table/index growth including platform ledgers, not raw record payloads or physical writes.
+
+| Engine | Workload | Table + index bytes/LBT | WAL bytes/LBT | Logical dump growth bytes/LBT |
+|---|---|---:|---:|---:|
+| MariaDB | Create | 21,626.9 | unavailable | unavailable |
+| MariaDB | Ten-line document | 23,183.3 | unavailable | unavailable |
+| MySQL | Create | 6,307.8 | unavailable | 7,148.0 |
+| MySQL | Ten-line document | 12,943.4 | unavailable | 8,121.3 |
+| PostgreSQL | Create | 9,543.7 | 15,418.5 | unavailable |
+| PostgreSQL | Ten-line document | 9,625.6 | 17,734.1 | unavailable |
+
+MariaDB's create allocation rose from 11,386.9 to 21,626.9 bytes/LBT on unchanged source. Coarse page
+and extent allocation makes these short storage deltas variable; use repeated representative samples
+and a declared workload mix for sizing. MySQL-family binary-log growth and MariaDB/PostgreSQL logical
+dump growth remain unavailable, not zero. Update and aged-create measurements remain in the full reports.
+
+The latest artifacts are [capacity-samples-mariadb](https://github.com/kumwe/app/actions/runs/37110028732/artifacts/11269676254),
+[capacity-samples-mysql](https://github.com/kumwe/app/actions/runs/37110028732/artifacts/11269526472) and
+[capacity-samples-pgsql](https://github.com/kumwe/app/actions/runs/37110028732/artifacts/11269017835), retained until October 17.
+They contain fresh/aged summaries, storage reports and raw observations/logs. The October 2 sample below
+is retained for comparison with its own host and measurement limits.
+
 ## Workflow sample, 2026-10-02
 
 [Capacity run 36987101673](https://github.com/kumwe/app/actions/runs/36987101673) passed all three engines
