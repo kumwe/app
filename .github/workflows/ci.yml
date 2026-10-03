@@ -466,6 +466,9 @@ jobs:
           POSTGRES_DB: kumwe_test
           POSTGRES_USER: kumwe
           POSTGRES_PASSWORD: kumwe_test
+          # Repeated suites retain 7,790 public relations; atomic restore exhausted the default 64.
+          # Provision headroom for relation/constraint locks without splitting the restore transaction.
+          POSTGRES_INITDB_ARGS: '--set=max_locks_per_transaction=256'
         ports:
           - '${{ matrix.database.port }}:${{ matrix.database.port }}'
         options: ${{ matrix.database.health }}

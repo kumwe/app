@@ -91,9 +91,17 @@ export function hasViewportIntersection(element: Element): boolean | null {
       || (style.zoom && !['1', 'normal', '100%'].includes(style.zoom))) return null;
     if (ancestor !== element) {
       const paintContained = /(?:^|\s)(?:paint|strict|content)(?:\s|$)/u.test(style.contain);
-      const clipX = paintContained || style.overflowX !== 'visible';
-      const clipY = paintContained || style.overflowY !== 'visible';
+      const rootStyle = ancestor === document.body ? getComputedStyle(document.documentElement) : null;
+      // Root overflow, and body overflow propagated through a visible root, clip the viewport above.
+      const viewportOverflow = ancestor === document.documentElement
+        || (rootStyle?.overflowX === 'visible' && rootStyle.overflowY === 'visible');
+      if (viewportOverflow && paintContained) return null;
+      const clipX = paintContained || (!viewportOverflow && style.overflowX !== 'visible');
+      const clipY = paintContained || (!viewportOverflow && style.overflowY !== 'visible');
       if (clipX || clipY) {
+        // Boxless/inline ancestors do not supply this rectangle; overflow clips may also be expanded.
+        if (style.display === 'contents' || style.display === 'inline'
+          || (style.overflowClipMargin && style.overflowClipMargin !== '0px')) return null;
         const clip = ancestor.getBoundingClientRect();
         const clipLeft = clip.left + ancestor.clientLeft;
         const clipTop = clip.top + ancestor.clientTop;

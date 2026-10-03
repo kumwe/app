@@ -373,6 +373,17 @@ through the import leaves a partly populated database; the re-run says so and as
 database rather than importing over the remains. Dropping and recreating the scratch database, then re-running,
 recovers it.
 
+PostgreSQL's atomic import also needs enough shared lock-table capacity for the complete catalog,
+including retained extension tables and indexes. If `pg_restore` reports `out of shared memory` with
+the hint to increase `max_locks_per_transaction`, increase that server-start setting on the restore
+target and restart PostgreSQL before retrying the same backup. Size the budget for the actual catalog
+and concurrent work; it is a shared budget, not a per-transaction object limit. The repeated CI suite
+retained 7,790 public relations and exhausted the default 64; its fresh PostgreSQL service now uses
+256. That CI setting is not a universal production sizing value. Keep `--single-transaction` so a
+failed import still leaves the target empty. See PostgreSQL's
+[lock management](https://www.postgresql.org/docs/17/runtime-config-locks.html) and
+[`pg_restore` options](https://www.postgresql.org/docs/17/app-pgrestore.html).
+
 `tools/restore-interruption-drill.sh` is the evidence for all of this and the way to re-qualify it after changing
 either script. It takes a real backup, restores it into a scratch database and scratch targets, `SIGKILL`s the
 restore at the moment it begins publishing targets, re-runs it unchanged, and compares every restored tree

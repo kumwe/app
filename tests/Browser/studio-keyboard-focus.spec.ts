@@ -4,6 +4,7 @@ import { focusStop, hasViewportIntersection, tabStops } from './support/studio-a
 test('Studio keyboard viewport checks retain clipping and native focus scrolling', async ({ page }) => {
   // Mobile emulation needs the same responsive viewport as Studio for exact CSS-pixel boundaries.
   await page.setContent(`
+    <!doctype html>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       body { margin: 0; }
@@ -52,11 +53,17 @@ test('Studio keyboard viewport checks retain clipping and native focus scrolling
   expect(await edge.evaluate(hasViewportIntersection)).toBeNull();
 
   await page.setContent(`
+    <!doctype html>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <div id="slot-host"><button style="display: block; margin-top: 80px">Clipped slotted control</button></div>
     <div style="overflow: hidden; height: 40px; width: 200px">
       <button style="position: absolute; top: 160px; left: 0">Escaped absolute control</button>
       <button style="position: fixed; top: 200px; left: 0">Escaped fixed control</button>
+    </div>
+    <div style="display: contents; overflow: hidden"><button>Boxless wrapper control</button></div>
+    <span style="overflow: hidden; width: 10px"><button>Inline wrapper control</button></span>
+    <div style="height: 40px; width: 200px; overflow: clip; overflow-clip-margin: 100px">
+      <button style="margin-top: 80px">Expanded clip control</button>
     </div>
   `);
   await page.locator('#slot-host').evaluate((host) => {
@@ -68,16 +75,44 @@ test('Studio keyboard viewport checks retain clipping and native focus scrolling
   await slotted.evaluate((element) => { (element as HTMLElement).focus({ preventScroll: true }); });
   await expect(slotted).not.toBeInViewport();
   await expect(focusStop(page, 1_000)).rejects.toThrow('A focused control must be scrolled into the viewport.');
-  for (const name of ['Escaped absolute control', 'Escaped fixed control']) {
+  for (const name of [
+    'Escaped absolute control', 'Escaped fixed control', 'Boxless wrapper control', 'Inline wrapper control',
+  ]) {
     const control = page.getByRole('button', { name });
     expect(await control.evaluate(hasViewportIntersection)).toBeNull();
     await control.evaluate((element) => { (element as HTMLElement).focus({ preventScroll: true }); });
     expect((await focusStop(page)).name).toBe(name);
     await expect(control).toBeInViewport();
   }
+  const expandedClip = page.getByRole('button', { name: 'Expanded clip control' });
+  if (await page.evaluate(() => CSS.supports('overflow-clip-margin', '100px'))) {
+    expect(await expandedClip.evaluate(hasViewportIntersection)).toBeNull();
+    await expandedClip.evaluate((element) => { (element as HTMLElement).focus({ preventScroll: true }); });
+    expect((await focusStop(page)).name).toBe('Expanded clip control');
+    await expect(expandedClip).toBeInViewport();
+  } else {
+    // An engine that does not implement the expansion retains the ordinary rectangular clip.
+    expect(await expandedClip.evaluate(hasViewportIntersection)).toBe(false);
+    await expect(expandedClip).not.toBeInViewport();
+  }
+
+  await page.setContent(`<!doctype html>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>body { margin: 0; height: 20px; overflow: hidden; }</style>
+    <button style="position: relative; top: 80px">Viewport overflow control</button>`);
+  const viewportOverflow = page.getByRole('button', { name: 'Viewport overflow control' });
+  await expect(viewportOverflow).toBeInViewport();
+  expect(await viewportOverflow.evaluate(hasViewportIntersection)).toBe(true);
+  await page.locator('html').evaluate((element) => { (element as HTMLElement).style.overflow = 'hidden'; });
+  await expect(viewportOverflow).not.toBeInViewport();
+  expect(await viewportOverflow.evaluate(hasViewportIntersection)).toBe(false);
+  await page.locator('html').evaluate((element) => { (element as HTMLElement).style.overflow = 'visible'; });
+  await page.locator('body').evaluate((element) => { (element as HTMLElement).style.contain = 'paint'; });
+  expect(await viewportOverflow.evaluate(hasViewportIntersection)).toBeNull();
+  await expect(viewportOverflow).not.toBeInViewport();
 
   // Cover the repeated walk that exhausted the real Studio journey's budget in WebKit.
-  await page.setContent(`<meta name="viewport" content="width=device-width, initial-scale=1">
+  await page.setContent(`<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1">
   <main style="display: grid; grid-template-columns: repeat(6, 1fr)">${
     Array.from({ length: 150 }, (_, index) => `<button>Control ${index + 1}</button>`).join('')
   }</main>`);
