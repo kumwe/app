@@ -1,5 +1,5 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["js/studio-composition-BEwYoMMe.js","js/reveal-validation-BVQF1cmE.js","js/preview-identity-Bvgz1vbs.js","js/studio-launch-CqvmjJFh.js"])))=>i.map(i=>d[i]);
-import { a as n, c as A, d as b, i as r, n as setupCopyValues, o as t, p as i$1, r as __decorate, s as i, t as setupValidationReveal } from "./reveal-validation-BVQF1cmE.js";
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["js/studio-composition-ByCf6785.js","js/reveal-validation-DUOMRzvA.js","js/preview-identity-Bvgz1vbs.js","js/studio-launch-Dc2GSwB3.js"])))=>i.map(i=>d[i]);
+import { a as n, c as A, d as b, i as r, n as setupCopyValues, o as t, p as i$1, r as __decorate, s as i, t as setupValidationReveal } from "./reveal-validation-DUOMRzvA.js";
 import { t as setupAppearance } from "./appearance-AWH5eFRF.js";
 //#region assets/administrator/components/command-palette.ts
 var KumweCommandPalette = class KumweCommandPalette extends i {
@@ -1120,10 +1120,13 @@ var assetsURL = function(dep) {
 	return "/assets/build/" + dep;
 };
 var seen = {};
+var isCssPreloadUrl = function isCssPreloadUrl(url) {
+	return url.pathname.endsWith(".css");
+};
 var __vitePreload = function preload(baseModule, deps, importerUrl) {
 	let promise = Promise.resolve();
 	if (deps && deps.length > 0) {
-		const links = document.getElementsByTagName("link");
+		let preloadedHrefs;
 		const cspNonceMeta = document.querySelector("meta[property=csp-nonce]");
 		const cspNonce = cspNonceMeta?.nonce || cspNonceMeta?.getAttribute("nonce");
 		function allSettled(promises) {
@@ -1136,35 +1139,44 @@ var __vitePreload = function preload(baseModule, deps, importerUrl) {
 			}))));
 		}
 		function importMetaResolve(specifier) {
-			if (import.meta.resolve) return import.meta.resolve(specifier);
+			if (import.meta.resolve) return new URL(import.meta.resolve(specifier));
 			return new URL(
 				specifier,
 				/** #__KEEP__ */
 				import.meta.url
-			).href;
+			);
 		}
-		promise = allSettled(deps.map((dep) => {
-			dep = assetsURL(dep, importerUrl);
-			dep = importMetaResolve(dep);
-			if (dep in seen) return;
-			seen[dep] = true;
-			const isCss = dep.endsWith(".css");
-			for (let i = links.length - 1; i >= 0; i--) {
-				const link = links[i];
-				if (link.href === dep && (!isCss || link.rel === "stylesheet")) return;
+		promise = allSettled(deps.map((depString) => {
+			depString = assetsURL(depString, importerUrl);
+			const dep = importMetaResolve(depString);
+			if (dep.href in seen) return;
+			seen[dep.href] = true;
+			const isCss = isCssPreloadUrl(dep);
+			if (preloadedHrefs === void 0) {
+				preloadedHrefs = {
+					all: /* @__PURE__ */ new Set(),
+					styles: /* @__PURE__ */ new Set()
+				};
+				const links = document.getElementsByTagName("link");
+				for (let i = links.length - 1; i >= 0; i--) {
+					const link = links[i];
+					preloadedHrefs.all.add(link.href);
+					if (link.rel === "stylesheet") preloadedHrefs.styles.add(link.href);
+				}
 			}
+			if ((isCss ? preloadedHrefs.styles : preloadedHrefs.all).has(dep.href)) return;
 			const link = document.createElement("link");
 			link.rel = isCss ? "stylesheet" : scriptRel;
 			if (!isCss) link.as = "script";
 			link.crossOrigin = "";
-			link.href = dep;
+			link.href = dep.href;
 			if (cspNonce) link.setAttribute("nonce", cspNonce);
 			document.head.appendChild(link);
 			if (isCss) return new Promise((res, rej) => {
 				link.addEventListener("load", res);
 				link.addEventListener("error", () => rej(/* @__PURE__ */ new Error(`Unable to preload CSS for ${dep}`)));
 			});
-		}));
+		}).filter((p) => p !== void 0));
 	}
 	function handlePreloadError(err) {
 		const e = new Event("vite:preloadError", { cancelable: true });
@@ -1280,11 +1292,11 @@ setupValidationReveal();
 setupNavigationTargets();
 setupPolicyStepFlows();
 if (document.querySelector("[data-studio-composition]") !== null) __vitePreload(async () => {
-	const { setupStudioComposition } = await import("./studio-composition-BEwYoMMe.js");
+	const { setupStudioComposition } = await import("./studio-composition-ByCf6785.js");
 	return { setupStudioComposition };
 }, __vite__mapDeps([0,1,2])).then(({ setupStudioComposition }) => setupStudioComposition());
 if (document.querySelector("[data-kumwe-studio][data-studio-module-url]") !== null) __vitePreload(async () => {
-	const { setupStudioLaunch } = await import("./studio-launch-CqvmjJFh.js");
+	const { setupStudioLaunch } = await import("./studio-launch-Dc2GSwB3.js");
 	return { setupStudioLaunch };
 }, __vite__mapDeps([3,2])).then(({ setupStudioLaunch }) => setupStudioLaunch());
 //#endregion

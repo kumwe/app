@@ -483,6 +483,7 @@
     .kis-master-detail-grid { grid-template-columns: 1fr; }
   }
 }
+
 @layer components {
   .kis-phase-five-public,
   .kis-phase-five-public > *,

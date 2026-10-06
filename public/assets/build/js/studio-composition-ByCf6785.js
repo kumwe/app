@@ -1,5 +1,5 @@
-import { c as A$10, d as b$13, f as w$13, l as D$11, p as i$18, s as i$19, u as E$13 } from "./reveal-validation-BVQF1cmE.js";
-import { t as __vitePreload } from "./administrator-DG5TFL6y.js";
+import { c as A$10, d as b$13, f as w$13, l as D$11, p as i$18, s as i$19, u as E$13 } from "./reveal-validation-DUOMRzvA.js";
+import { t as __vitePreload } from "./administrator-Ba-xE-82.js";
 import { a as createCoreLayoutBlockDefinitions, c as STUDIO_STALE_SESSION_GENERATION_DIAGNOSTIC_CODE, d as canonicalStringify, i as coreLayoutInitialProperties, l as STUDIO_WIRE_PROTOCOL_VERSION, n as CORE_LAYOUT_BLOCK_TYPES, o as isCoreLayoutBlockType, r as CORE_LAYOUT_THEME_CONTROLS, s as STUDIO_CONTRACT_VERSION, t as computePreviewDraftDigest, u as cloneContractValue } from "./preview-identity-Bvgz1vbs.js";
 //#region node_modules/@kumwe/studio-core/dist/binding-projection.js
 function projectBlueprintFieldBindings(t, i, a) {
@@ -15487,7 +15487,7 @@ function l$5() {
 var u$4 = class {
 	async mount(e) {
 		let t = (await __vitePreload(async () => {
-			const { default: __vite_default__ } = await import("./editorjs-BQPU4-8b.js");
+			const { default: __vite_default__ } = await import("./editorjs-BrtjeKFi.js");
 			return { default: __vite_default__ };
 		}, [])).default, n = new t({
 			data: d$4(e.initialValue),

@@ -483,6 +483,7 @@
     .kis-master-detail-grid { grid-template-columns: 1fr; }
   }
 }
+
 @layer components {
   .kis-dashboard-workspace,
   .kis-dashboard-widget-body,
@@ -1053,6 +1054,7 @@
     }
   }
 }
+
 @layer components {
   .kis-phase-five,
   .kis-phase-five > *,
