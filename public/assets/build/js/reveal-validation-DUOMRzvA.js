@@ -657,7 +657,7 @@ function n(t) {
 	});
 }
 //#endregion
-//#region \0@oxc-project+runtime@0.143.0/helpers/esm/decorate.js
+//#region \0@oxc-project+runtime@0.152.0/helpers/esm/decorate.js
 function __decorate(decorators, target, key, desc) {
 	var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
 	if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);

@@ -502,9 +502,7 @@ var u = class u {
 			case "submit":
 			case "button":
 			case "image":
-			case "reset":
-				t = !1;
-				break;
+			case "reset": t = !1;
 		}
 		else t = u.isContentEditable(e);
 		return t;
@@ -3381,9 +3379,7 @@ var ce = class ce {
 				case y.DOWN:
 					this.flipRight();
 					break;
-				case y.ENTER:
-					this.handleEnterPress(t);
-					break;
+				case y.ENTER: this.handleEnterPress(t);
 			}
 		}, this.iterator = new ke(e.items, e.focusedItemClass), this.activateCallback = e.activateCallback, this.allowedKeys = e.allowedKeys || ce.usedKeys;
 	}
@@ -5904,9 +5900,7 @@ function Ps(n) {
 		case "submit":
 		case "button":
 		case "image":
-		case "reset":
-			e = !1;
-			break;
+		case "reset": e = !1;
 	}
 	else e = (0, Ls.isContentEditable)(n);
 	return e;
@@ -10762,7 +10756,7 @@ var Ia = class extends E {
 			return;
 		}
 		const i = o.closest(`.${R.CSS.content}`);
-		(i === null || i.closest(`.${b.CSS.editorWrapper}`) !== this.nodes.wrapper) && (this.Editor.InlineToolbar.containsNode(o) || this.Editor.InlineToolbar.close(), !(o.dataset.inlineToolbar === "true")) || (this.Editor.BlockManager.currentBlock || this.Editor.BlockManager.setCurrentBlockByChildNode(o), this.Editor.InlineToolbar.tryToShow(!0));
+		(i === null || i.closest(`.${b.CSS.editorWrapper}`) !== this.nodes.wrapper) && (this.Editor.InlineToolbar.containsNode(o) || this.Editor.InlineToolbar.close(), o.dataset.inlineToolbar !== "true") || (this.Editor.BlockManager.currentBlock || this.Editor.BlockManager.setCurrentBlockByChildNode(o), this.Editor.InlineToolbar.tryToShow(!0));
 	}
 	/**
 	* Editor.js provides and ability to show placeholders for empty contenteditable elements

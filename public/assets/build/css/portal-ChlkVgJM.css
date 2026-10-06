@@ -1,4 +1,6 @@
-@layer reset, tokens, base, layout, components, utilities, overrides;:root {
+@layer reset, tokens, base, layout, components, utilities, overrides;
+
+:root {
     color-scheme: light dark;
     --portal-ink: #12231f;
     --portal-muted: #52645f;
@@ -640,6 +642,7 @@ main { width: 100%; min-width: 0; max-width: 76rem; padding: clamp(1.25rem, 4vw,
     .kis-master-detail-grid { grid-template-columns: 1fr; }
   }
 }
+
 @layer components {
   .kis-dashboard-workspace,
   .kis-dashboard-widget-body,
@@ -1210,6 +1213,7 @@ main { width: 100%; min-width: 0; max-width: 76rem; padding: clamp(1.25rem, 4vw,
     }
   }
 }
+
 @layer components {
   .kis-phase-five-portal {
     display: grid;
