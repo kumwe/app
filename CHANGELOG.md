@@ -26,7 +26,9 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
   (#155) and rebuild the committed browser assets and site fallback stylesheet under the new
   bundler. The eight `@kumwe/studio` packages stay at `0.1.0-beta.9`: the group also offered the
   quarantined `0.1.0-rc.1` snapshot, which semver orders above every beta but which predates the
-  APIs the administrator build imports and the coordinate `kumwe/producer` 0.6.0 realizes.
+  APIs the administrator build imports and the coordinate `kumwe/producer` 0.6.0 realizes. The
+  refreshed lockfile resolves `source-map-js` 1.2.2, which clears the high-severity advisory
+  GHSA-68fv-2mgg-jv7q that fails `npm audit --audit-level=high` on `master`.
 - Exclude `@kumwe/*` npm packages and `kumwe/*` Composer libraries from Dependabot version updates.
   Those pins advance only through the reviewed Studio, Producer and Extension SDK re-pin chain that
   `npm run check:studio-release` and `composer studio:dependencies` enforce; a bot update of one
