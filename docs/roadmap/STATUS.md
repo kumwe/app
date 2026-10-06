@@ -75,6 +75,22 @@ Deployment qualification passed on `cc5aff40`; the latest PR checks determine re
 commits. Qualification of the tagged production release bytes and signed beta publication remain
 pending. These source results do not establish a release-readiness percentage.
 
+### Release-lane cause found after #154
+
+[Release run 36766403378](https://github.com/kumwe/app/actions/runs/36766403378) for `v2.0.0-beta.1`
+stopped in "Build immutable release candidate" at `composer test`, before any image or distribution was
+built: four `AuditRetentionAuthorityIntegrationTest` cases ended with
+`Access denied for user 'root'@'172.18.0.1' (using password: NO)`. Those tests create and drop their own
+database principals through `tests/Support/DatabaseAdministrator`, which signs in as root without a
+password and rethrows a refusal under CI. The release workflow's MariaDB service generated a random root
+password while every other workflow that hosts the suite allows the empty root login.
+[#156](https://github.com/kumwe/app/pull/156) grants the release service the same login. It also adopts
+the Playwright, Vite and Node-types updates from Dependabot [#155](https://github.com/kumwe/app/pull/155)
+without the quarantined Studio `0.1.0-rc.1` snapshot that group carried, and excludes the governed
+`@kumwe/*` npm and `kumwe/*` Composer pins from Dependabot version updates. A tag cut from `master`
+before #156 merges fails the release lane the same way; after the merge, the release workflow can be
+dispatched from `master` against that existing tag.
+
 ### Focus before an RC
 
 1. Complete the remaining repair checks, merge the fix, then build, qualify and publish the signed beta
