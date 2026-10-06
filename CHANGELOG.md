@@ -14,8 +14,14 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ## [Unreleased]
 
-### Dependency policy and development-tool updates
+### Release lane repair, dependency policy and development-tool updates
 
+- Let the release workflow's complete test suite sign in to its MariaDB service as root: the service
+  now allows the empty root login every other workflow grants instead of generating a random root
+  password. The audit retention tests create and drop their own database principals through that
+  login and treat a refusal as an error under CI, which is where the `v2.0.0-beta.1` build stopped
+  (four `Access denied for user 'root'` errors in `composer test`) before any distribution was
+  built or signed.
 - Adopt Playwright 1.63.0, Vite 8.3.2 and Node type definitions 26.6.4 from Dependabot's npm group
   (#155) and rebuild the committed browser assets and site fallback stylesheet under the new
   bundler. The eight `@kumwe/studio` packages stay at `0.1.0-beta.9`: the group also offered the
