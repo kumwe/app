@@ -45,7 +45,12 @@ jobs:
           MARIADB_DATABASE: kumwe_release
           MARIADB_USER: kumwe
           MARIADB_PASSWORD: kumwe_release
-          MARIADB_RANDOM_ROOT_PASSWORD: 'yes'
+          # The release lane runs the complete test suite, and the audit retention tests create and drop
+          # their own database principals through tests/Support/DatabaseAdministrator, which signs in as
+          # root without a password and treats a refusal as an error under CI. Every other workflow that
+          # hosts this suite grants that login; a random root password here is what stopped the
+          # v2.0.0-beta.1 build at `composer test` with four "Access denied for user 'root'" errors.
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
         ports:
           - 3306:3306
         options: >-
