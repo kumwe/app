@@ -25,6 +25,12 @@ updates:
       - dependencies
     commit-message:
       prefix: 'composer'
+    # Every kumwe/* library is an exact pin selected by the package release train: kumwe/extension-sdk
+    # names the Producer release it was generated against, Producer names the Studio release it
+    # realizes, and `composer studio:dependencies` refuses any other combination. A bump of one member
+    # on its own cannot install; the set advances together through a reviewed re-pin.
+    ignore:
+      - dependency-name: 'kumwe/*'
     groups:
       composer-runtime:
         applies-to: version-updates
@@ -52,6 +58,14 @@ updates:
       - dependencies
     commit-message:
       prefix: 'npm'
+    # The eight @kumwe/studio* packages are one coordinated Studio release family. The App pins them
+    # at the exact version kumwe/producer realizes (resources/studio-contract/PIN.json), and
+    # `npm run check:studio-release` fails on any other coordinate. They move only through a deliberate
+    # re-pin of the whole Studio -> Producer -> App chain, never through a version update: left to
+    # itself, Dependabot offers the quarantined 0.1.0-rc.1 snapshot because semver orders an rc above
+    # every beta, and that snapshot predates the APIs the administrator build imports.
+    ignore:
+      - dependency-name: '@kumwe/*'
     groups:
       npm-all:
         applies-to: version-updates
