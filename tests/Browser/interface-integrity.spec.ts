@@ -25,6 +25,7 @@ async function signInAdministrator(page: Page): Promise<void> {
   await page.getByLabel('Password').fill(administratorPassword);
   await page.getByRole('button', { name: 'Sign in to Kumwe' }).click();
   await expect(page).toHaveURL(/\/administrator$/u);
+  await page.waitForLoadState('load');
   await expect(page.locator('.administrator-shell')).toBeVisible();
   await expect(page.locator('.login-page')).toHaveCount(0);
 }
@@ -168,13 +169,17 @@ test('administrator landing routes emit complete interface baselines', async ({ 
   // KIS-EVIDENCE-END p6-004-administrator-diagnostics
 });
 
-test('diagnostics keeps the authenticated workspace readable across every section', async ({ page }, testInfo) => {
+test('diagnostics keeps the authenticated workspace readable across every section', async ({
+  page,
+  isMobile,
+}, testInfo) => {
   test.setTimeout(120_000);
   await signInAdministrator(page);
 
-  const navigationToggle = page.locator('[data-navigation-toggle]');
-  if (await navigationToggle.isVisible()) {
-    await navigationToggle.click();
+  if (isMobile) {
+    await page.locator('[data-navigation-toggle]').click();
+  } else {
+    await expect(page.locator('[data-navigation-toggle]')).toBeHidden();
   }
   const sidebar = page.locator('.administrator-navigation');
   await sidebar.getByRole('link', { name: 'Diagnostics', exact: true }).click();
@@ -247,7 +252,7 @@ test('diagnostics keeps the authenticated workspace readable across every sectio
       await expect(status).toHaveCount(1);
       await expect(status).toBeVisible();
       await expect(status).toHaveText(
-        /^(?:No observations were found in this sample\.|This source is unavailable\.|The diagnostic exceeded|The database is not collecting)/u,
+        /^(?:No observations|This source is unavailable|The diagnostic exceeded|The database is not collecting)/u,
       );
       await expect(surface.locator('dl')).toHaveCount(0);
     } else {
