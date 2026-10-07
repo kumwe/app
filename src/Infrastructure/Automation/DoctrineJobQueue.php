@@ -327,14 +327,12 @@ final readonly class DoctrineJobQueue implements JobQueue, JobOriginLookup
                     return null;
                 }
 
+                $jobId = $this->requiredString($row, 'id');
                 $executionClass = $this->jobScope->assertStoredClass(
                     $this->requiredString($row, 'job_type'),
                     $this->requiredString($row, 'execution_scope'),
                 );
-                if (
-                    $executionClass === JobExecutionClass::Site
-                    && !$this->lockEnabledOwner($this->requiredString($row, 'id'))
-                ) {
+                if ($executionClass === JobExecutionClass::Site && !$this->lockEnabledOwner($jobId)) {
                     return null;
                 }
 
@@ -349,7 +347,7 @@ final readonly class DoctrineJobQueue implements JobQueue, JobOriginLookup
                     $this->database->update(
                         $this->tables->raw('jobs'),
                         ['maximum_attempts' => $effectiveMaximum, 'updated_at' => $now],
-                        ['id' => $row['id']],
+                        ['id' => $jobId],
                         ['maximum_attempts' => Types::SMALLINT, 'updated_at' => Types::DATETIME_IMMUTABLE],
                     );
                     $row['maximum_attempts'] = $effectiveMaximum;
@@ -372,7 +370,7 @@ final readonly class DoctrineJobQueue implements JobQueue, JobOriginLookup
                         $policy,
                         $now,
                         'job',
-                        $row['id'],
+                        $jobId,
                         '',
                         $token,
                         $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
@@ -392,7 +390,7 @@ final readonly class DoctrineJobQueue implements JobQueue, JobOriginLookup
                     $now,
                     $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
                     $now,
-                    $row['id'],
+                    $jobId,
                     $now,
                     $now,
                 ], [
