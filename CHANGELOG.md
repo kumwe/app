@@ -14,6 +14,14 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ## [Unreleased]
 
+### Diagnostics administrator layout
+
+- Render every Diagnostics section inside the authenticated administrator shell with the session's
+  real logout CSRF token and the Diagnostics sidebar entry marked current. Extend the existing HTTP
+  and browser checks to cover shell wiring and usable desktop/mobile content width, including
+  unavailable sources. Document optional Docker database-statistics access without changing account
+  privileges; verification of a reporter's running image and database account remains deployment-specific.
+
 ### Clean Composer distribution and engine-neutral queue claims
 
 - Keep the Composer distribution free of the build checkout's runtime state. `composer archive` packs

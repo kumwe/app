@@ -19,10 +19,14 @@ const portalPassword = process.env.KUMWE_BROWSER_PORTAL_PASSWORD ?? 'browser por
 
 async function signInAdministrator(page: Page): Promise<void> {
   await page.goto('/administrator/login');
+  await expect(page.locator('.login-page')).toBeVisible();
+  await expect(page.locator('.administrator-shell')).toHaveCount(0);
   await page.getByLabel('Email address').fill(administratorEmail);
   await page.getByLabel('Password').fill(administratorPassword);
   await page.getByRole('button', { name: 'Sign in to Kumwe' }).click();
   await expect(page).toHaveURL(/\/administrator$/u);
+  await expect(page.locator('.administrator-shell')).toBeVisible();
+  await expect(page.locator('.login-page')).toHaveCount(0);
 }
 
 async function signInPortal(page: Page): Promise<void> {
@@ -162,6 +166,124 @@ test('administrator landing routes emit complete interface baselines', async ({ 
     await attachEvidence(page, testInfo, surface, report);
   }
   // KIS-EVIDENCE-END p6-004-administrator-diagnostics
+});
+
+test('diagnostics keeps the authenticated workspace readable across every section', async ({ page }, testInfo) => {
+  test.setTimeout(120_000);
+  await signInAdministrator(page);
+
+  const navigationToggle = page.locator('[data-navigation-toggle]');
+  if (await navigationToggle.isVisible()) {
+    await navigationToggle.click();
+  }
+  const sidebar = page.locator('.administrator-navigation');
+  await sidebar.getByRole('link', { name: 'Diagnostics', exact: true }).click();
+  await expect(page).toHaveURL(/\/administrator\/diagnostics$/u);
+
+  const surface = page.locator('[data-kis-surface="core.administrator.diagnostics"]');
+  const sections = surface.getByRole('navigation', { name: 'Diagnostics', exact: true });
+  const baseline = routesFor('administrator').find((item) => item.id === 'administrator.diagnostics');
+  if (baseline === undefined) {
+    throw new Error('The Diagnostics landing route is missing from the interface manifest.');
+  }
+
+  const diagnosticSections = [
+    { id: 'contention', heading: 'Contention' },
+    { id: 'queues', heading: 'Queues' },
+    { id: 'slow', heading: 'Slow queries' },
+    { id: 'backlog', heading: 'Backlog' },
+    { id: 'retention', heading: 'Retention' },
+  ];
+  await expect(sections.getByRole('link')).toHaveCount(diagnosticSections.length);
+
+  for (const section of diagnosticSections) {
+    const tab = sections.getByRole('link', { name: section.heading, exact: true });
+    await tab.scrollIntoViewIfNeeded();
+    await expect(tab).toBeInViewport({ ratio: 1 });
+    await tab.click();
+    await expect(page).toHaveURL(new RegExp(`/administrator/diagnostics\\?section=${section.id}$`, 'u'));
+    await expect(page.locator('.administrator-shell')).toBeVisible();
+    await expect(page.locator('.administrator-topbar')).toBeVisible();
+    await expect(page.locator('.login-page')).toHaveCount(0);
+    await expect(surface.getByRole('heading', { level: 1, name: 'Diagnostics', exact: true })).toBeVisible();
+    await expect(surface.getByRole('heading', { level: 2, name: section.heading, exact: true })).toBeVisible();
+    await expect(sidebar.locator('a[aria-current="page"]')).toHaveCount(1);
+    await expect(sidebar.locator('a[aria-current="page"]')).toHaveAttribute('href', '/administrator/diagnostics');
+    await expect(sections.locator('a[aria-current="page"]')).toHaveCount(1);
+    await expect(tab).toHaveAttribute('aria-current', 'page');
+
+    // A narrow main column can wrap every word without producing horizontal overflow.
+    // Assert usable space separately so the original collapsed-shell failure cannot pass.
+    const geometry = await surface.evaluate((element) => {
+      const main = element.closest('main');
+      const panel = element.querySelector('section.panel');
+      const sectionLinks = [...element.querySelectorAll<HTMLElement>('nav a')];
+      if (main === null || panel === null) {
+        throw new Error('The Diagnostics workspace is missing its main region or result panel.');
+      }
+      return {
+        viewportWidth: window.innerWidth,
+        mainWidth: main.getBoundingClientRect().width,
+        panelWidth: panel.getBoundingClientRect().width,
+        tabs: sectionLinks.map((link) => ({
+          width: link.getBoundingClientRect().width,
+          height: link.getBoundingClientRect().height,
+          fontSize: Number.parseFloat(getComputedStyle(link).fontSize),
+        })),
+      };
+    });
+    expect(geometry.mainWidth).toBeGreaterThanOrEqual(
+      geometry.viewportWidth * (geometry.viewportWidth <= 768 ? 0.95 : 0.65),
+    );
+    expect(geometry.panelWidth).toBeGreaterThanOrEqual(Math.min(280, geometry.viewportWidth * 0.7));
+    for (const dimensions of geometry.tabs) {
+      expect(dimensions.width).toBeGreaterThanOrEqual(44);
+      expect(dimensions.height).toBeGreaterThanOrEqual(44);
+      expect(dimensions.fontSize).toBeGreaterThanOrEqual(12);
+    }
+
+    const status = surface.getByRole('status');
+    if (await status.count() > 0) {
+      await expect(status).toHaveCount(1);
+      await expect(status).toBeVisible();
+      await expect(status).toHaveText(
+        /^(?:No observations were found in this sample\.|This source is unavailable\.|The diagnostic exceeded|The database is not collecting)/u,
+      );
+      await expect(surface.locator('dl')).toHaveCount(0);
+    } else {
+      await expect(surface.getByText('Results are bounded samples.', { exact: false })).toBeVisible();
+      expect(await surface.locator('dl').count()).toBeGreaterThan(0);
+      for (const label of await surface.locator('dt').allTextContents()) {
+        expect(label.trim()).not.toBe('');
+      }
+      for (const value of await surface.locator('dd').allTextContents()) {
+        expect(value.trim()).not.toBe('');
+      }
+    }
+    const report = await expectNoDocumentOverflow(page, { root: '#administrator-content' });
+    expect(report.findings, JSON.stringify({ section, report }, null, 2)).toEqual([]);
+    await expectAccessible(page);
+    await attachEvidence(page, testInfo, {
+      ...baseline,
+      id: `${baseline.id}.${section.id}`,
+      path: `${baseline.path}?section=${section.id}`,
+    }, report);
+
+    if (section.id === 'retention' && await surface.locator('dd').count() > 0) {
+      // Exercise a long diagnostic identifier after recording the unmodified live page.
+      const value = surface.locator('dd').first();
+      const original = await value.textContent();
+      await value.evaluate((element) => {
+        element.textContent = 'browser-diagnostic-ledger-'.repeat(6).slice(0, 128);
+      });
+      try {
+        const longValueReport = await expectNoDocumentOverflow(page, { root: '#administrator-content' });
+        expect(longValueReport.findings, JSON.stringify(longValueReport, null, 2)).toEqual([]);
+      } finally {
+        await value.evaluate((element, text) => { element.textContent = text; }, original);
+      }
+    }
+  }
 });
 
 test('portal landing routes emit complete interface baselines', async ({ page }, testInfo) => {

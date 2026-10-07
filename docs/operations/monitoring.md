@@ -45,6 +45,49 @@ has no `pg_stat_statements` extension), `source_unreadable` (the role lacks acce
 `PROCESS` — or the database is unreachable), or, with status `budget_exceeded`, `time` or `bytes`. Reads do
 not change data, the console exits `1` unless the answer is available, and HTTP responses are not cached.
 
+### An unavailable statistics source in Docker
+
+The authenticated Diagnostics page remains usable when an optional engine source is unavailable.
+Normal database reads and writes do not prove that the application account can read engine statistics.
+`source_unreadable` also covers rejected queries and connection failures; the reader deliberately does
+not return or log the original driver exception. Do not infer the cause from this status alone.
+
+Investigate from the deployed application, using its configured database account:
+
+1. Record the running `app` image ID/digest and release, and the database image and actual server version.
+   Map the application digest to its verified release manifest for the source commit. A checkout's commit
+   or a mutable image tag does not establish the revision running in the container.
+2. Open Diagnostics with an authorized administrator, or run `app:diagnostics` inside the `app` container
+   with an existing operator token. Record `engine`, `status` and `status_reason`. In production Compose,
+   invoke PHP through `/usr/local/bin/kumwe-entrypoint`, as the health check does, so it reads the mounted
+   secrets and drops to the runtime user. A successful database-root probe does not verify application access.
+3. Use the same configured database credentials to check the source below and review the effective grants.
+   Keep credentials, authentication hashes and raw statement text out of issue comments. If the source is
+   readable but the bounded diagnostic still fails, retain only the SQLSTATE/error code for investigation.
+
+| Engine | Contention access | Slow-query prerequisites |
+|---|---|---|
+| MariaDB | The `information_schema.INNODB_LOCK_WAITS` and `INNODB_LOCKS` sources require server-level `PROCESS`. The default Docker application user receives database-scoped grants, which do not include it. | Enable `performance_schema` at server startup, enable the `statements_digest` consumer and statement instrumentation, and permit `SELECT` on `performance_schema.setup_consumers` and `events_statements_summary_by_digest`. |
+| MySQL 8.4 | Enable `performance_schema` and permit `SELECT` on `performance_schema.data_lock_waits` and `data_locks`. These sources do not require `PROCESS`. | Enable statement instrumentation and the `statements_digest` consumer, and permit `SELECT` on `performance_schema.setup_consumers` and `events_statements_summary_by_digest`. |
+| PostgreSQL 17 | `pg_locks` and the general session/database properties used from `pg_stat_activity` are readable by an ordinary application role. | Preload `pg_stat_statements`, restart the server, and install the extension in the application database. Keep query identifiers and statement tracking enabled; other roles' statement text is restricted without `pg_read_all_stats`. |
+
+Statistics privileges are optional deployment choices. MariaDB `PROCESS` and PostgreSQL
+`pg_read_all_stats` expose information across the server; evaluate that scope before granting them.
+Kumwe does not grant them automatically. When the deployment intentionally withholds access, an
+unavailable contention or slow-query result is expected, while queues and retention can remain available.
+Database users and grants persist in Docker volumes: changing initialization environment variables or
+recreating a container does not update an existing account. Apply any approved grant/configuration change
+to the existing database, then repeat the probe with the application account.
+
+The database CI matrix exercises the reader with its configured application account on all three engines.
+An unavailable result in those default service configurations verifies safe handling, not a reporter's
+server, grants or optional statistics setup. Record inaccessible deployment verification as pending.
+
+See the engine references for [MariaDB lock access](https://mariadb.com/docs/server/reference/system-tables/information-schema/information-schema-tables/information-schema-innodb-tables/information-schema-innodb_lock_waits-table),
+[MariaDB Docker initialization](https://mariadb.com/docs/server/server-management/automated-mariadb-deployment-and-administration/docker-and-mariadb/mariadb-server-docker-official-image-environment-variables),
+[MySQL lock access](https://dev.mysql.com/doc/refman/8.4/en/performance-schema-data-lock-waits-table.html),
+and [PostgreSQL statement statistics](https://www.postgresql.org/docs/17/pgstatstatements.html).
+
 ## Minimum signals
 
 Collect and alert on:

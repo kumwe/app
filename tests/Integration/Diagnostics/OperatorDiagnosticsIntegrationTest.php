@@ -301,13 +301,15 @@ final class OperatorDiagnosticsIntegrationTest extends TestCase
             $document = new DOMDocument();
             @$document->loadHTML($html);
             $xpath = new DOMXPath($document);
-            foreach ([
+            foreach (
+                [
                 '//*[@data-administrator-shell]',
                 '//aside[@class="administrator-sidebar"]',
                 '//header[@class="administrator-topbar"]',
                 '//main[@class="administrator-main"]/*[@class="administrator-content"]',
                 '//aside//a[@href="/administrator/diagnostics" and @aria-current="page"]',
-            ] as $selector) {
+                ] as $selector
+            ) {
                 self::assertSame(1.0, $xpath->evaluate('count(' . $selector . ')'), $section . ': ' . $selector);
             }
             self::assertSame(0.0, $xpath->evaluate('count(//main[@class="login-page"])'), $section);
