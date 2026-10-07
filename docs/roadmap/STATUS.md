@@ -117,7 +117,8 @@ release artifact.
   the sort examines, and the scan's next-key locks deadlock against a sibling's reservation; the queue
   fairness lane already locked by primary key for the same reason.
 
-The follow-up pull request excludes runtime state from the Composer archive and refuses a leaking
+The follow-up pull request [#158](https://github.com/kumwe/app/pull/158) excludes runtime state from the
+Composer archive and refuses a leaking
 archive at build time, locks claim candidates by primary key on every engine, and prints a failed
 worker's error log in the drain output. The next tag cut after it merges re-runs the lane; if MySQL or
 MariaDB still loses a worker, the job log now carries the worker's stderr.
