@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Integration\Diagnostics;
 
 use DateTimeImmutable;
+use DOMDocument;
+use DOMXPath;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
@@ -287,13 +289,31 @@ final class OperatorDiagnosticsIntegrationTest extends TestCase
         $handler = $this->container->get(AdministratorDiagnosticsHandler::class);
         self::assertInstanceOf(AdministratorDiagnosticsHandler::class, $handler);
         foreach (OperatorDiagnostics::SECTIONS as $section) {
-            $page = $handler->handle($this->request($section));
+            $request = $this->request($section);
+            $session = $request->getAttribute(AdministratorSession::REQUEST_ATTRIBUTE);
+            self::assertInstanceOf(AdministratorSession::class, $session);
+            $page = $handler->handle($request);
             $html = (string) $page->getBody();
             self::assertSame(200, $page->getStatusCode());
             self::assertSame('no-store', $page->getHeaderLine('Cache-Control'));
             self::assertStringContainsString('data-kis-surface="core.administrator.diagnostics"', $html);
             self::assertStringContainsString('Statement limit:', $html, $section);
-            self::assertStringContainsString('aria-current="page"', $html);
+            $document = new DOMDocument();
+            @$document->loadHTML($html);
+            $xpath = new DOMXPath($document);
+            foreach ([
+                '//*[@data-administrator-shell]',
+                '//aside[@class="administrator-sidebar"]',
+                '//header[@class="administrator-topbar"]',
+                '//main[@class="administrator-main"]/*[@class="administrator-content"]',
+                '//aside//a[@href="/administrator/diagnostics" and @aria-current="page"]',
+            ] as $selector) {
+                self::assertSame(1.0, $xpath->evaluate('count(' . $selector . ')'), $section . ': ' . $selector);
+            }
+            self::assertSame(0.0, $xpath->evaluate('count(//main[@class="login-page"])'), $section);
+            self::assertSame($session->csrfToken, $xpath->evaluate(
+                'string(//header//form[@action="/administrator/logout"]//input[@name="_csrf"]/@value)',
+            ), $section);
         }
     }
 
