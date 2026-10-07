@@ -223,6 +223,20 @@ jobs:
           install -d dist/archive dist/package
           composer archive --format=zip --dir=dist --file="kumwe-composer-$version"
           unzip -q "dist/kumwe-composer-$version.zip" -d dist/package
+          # The archive is cut from a working tree that has just run the complete test suite and holds
+          # installed packages; composer.json's archive exclusions keep that state out of it. A leak is a
+          # release defect rather than something to clean up quietly: a materialized extension runtime
+          # map shipped inside the Composer distribution verifies under the testing signing key and
+          # refuses the first migration of a fresh install as a rollback.
+          if find dist/package -mindepth 1 -type f \( -path 'dist/package/storage/*' \
+                  -o -path 'dist/package/extensions/*' -o -path 'dist/package/public/assets/extensions/*' \) \
+                  ! -name .gitkeep -print -quit | grep -q . \
+              || [ -e dist/package/vendor ] \
+              || [ -e dist/package/node_modules ] \
+              || [ -e dist/package/.env ]; then
+              echo 'The Composer archive carries runtime state or installed packages.' >&2
+              exit 1
+          fi
           node tools/release-artifacts.mjs composer
           COMPOSER_ROOT_VERSION="$version" composer install \
             --working-dir=dist/package \
@@ -233,7 +247,6 @@ jobs:
             --no-progress \
             --no-scripts \
             --prefer-dist
-          find dist/package/storage -mindepth 1 -type f ! -name .gitkeep -delete
           if find dist/package -type l -print -quit | grep -q .; then
               echo 'Release package contains a symbolic link.' >&2
               exit 1

@@ -124,11 +124,20 @@ try {
     $started = microtime(true);
     file_put_contents($directory . '/start', 'drain');
     foreach ($processes as $index => $process) {
-        if (proc_close($process) !== 0) {
-            unset($processes[$index]);
+        $status = proc_close($process);
+        unset($processes[$index]);
+        if ($status !== 0) {
+            // The job log is the first place a release failure is read; the retained artifact is the second.
+            $errorLog = $directory . '/worker-' . $index . '.error.log';
+            $errors = is_file($errorLog) ? file_get_contents($errorLog) : false;
+            fwrite(STDERR, sprintf(
+                "Backlog worker %d exited with status %d. Retained error log:\n%s\n",
+                $index,
+                $status,
+                is_string($errors) && trim($errors) !== '' ? $errors : '(empty)',
+            ));
             throw new RuntimeException('A backlog worker failed; inspect its retained error log.');
         }
-        unset($processes[$index]);
     }
     $elapsed = microtime(true) - $started;
     $workers = [];

@@ -185,3 +185,16 @@ fi
       env: { ...env, MOCK_STATUS: "missing", MOCK_COPY: "changed" }, stdio: "pipe" }));
   },
 ));
+
+test("the Composer archive excludes the runtime state and installed packages a tested checkout carries", () => {
+  const excluded = JSON.parse(readFileSync("composer.json", "utf8")).archive.exclude;
+  for (const pattern of ["/vendor", "/node_modules", "/.env", "/storage/cache/*", "/storage/logs/*",
+    "/storage/media", "/storage/operations/*", "/storage/private/*", "/storage/sessions/*", "/storage/tmp/*",
+    "/extensions/*", "/public/assets/extensions"]) {
+    assert.ok(excluded.includes(pattern), `composer.json archive.exclude must name ${pattern}.`);
+  }
+  for (const placeholder of ["storage/cache", "storage/logs", "storage/operations", "storage/private",
+    "storage/sessions", "storage/tmp", "extensions"]) {
+    assert.ok(excluded.includes(`!/${placeholder}/.gitkeep`), `The ${placeholder} placeholder must ship.`);
+  }
+});

@@ -42,8 +42,9 @@ use Throwable;
  * Doctrine-backed job queue that hands each job to exactly one worker under a fenced, expiring lease.
  *
  * This is the `JobQueue` the runtime wires, and it keeps the whole queue in the `jobs` and `failed_jobs`
- * tables rather than in a broker. A claim takes one row with `FOR UPDATE SKIP LOCKED`, so any number of
- * workers may poll the same queue without blocking each other, and stamps a fresh UUID token onto it.
+ * tables rather than in a broker. A claim locks one row by primary key with `FOR UPDATE SKIP LOCKED`, so
+ * any number of workers may poll the same queue without blocking each other on any supported engine, and
+ * stamps a fresh UUID token onto it.
  * Every later write matches on that token as well as the identifier, so a worker whose lease expired
  * while a sibling re-claimed the row changes nothing instead of overwriting the new holder's outcome —
  * which is what makes an expired lease safe to reap. Rows that have used their attempt budget are
@@ -88,6 +89,26 @@ final readonly class DoctrineJobQueue implements JobQueue, JobOriginLookup
      * @since  2.0.0
      */
     public const int EXHAUSTED_REAP_LIMIT = 100;
+
+    /**
+     * Most runnable rows one claim pass reads, in claim order, before locking them one at a time.
+     *
+     * Siblings hold at most one row lock each while they claim, so a pass this wide finds a free row
+     * whenever that many runnable rows exist; past it the claim reports nothing runnable right now.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const int CLAIM_CANDIDATE_LIMIT = 64;
+
+    /**
+     * Runnable-row predicate over the `j` alias: pending and available, or reserved under a lapsed lease.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string RUNNABLE_PREDICATE = "((j.status = 'pending' AND j.available_at <= ?) OR "
+        . "(j.status = 'reserved' AND (j.lease_expires_at IS NULL OR j.lease_expires_at <= ?)))";
 
     /**
      * Wire the queue to its connection, clock and authorization collaborators.
@@ -232,9 +253,10 @@ final readonly class DoctrineJobQueue implements JobQueue, JobOriginLookup
     /**
      * Reserve the next runnable job on a queue for this worker under a fenced, expiring lease.
      *
-     * The row is taken with `FOR UPDATE SKIP LOCKED` and reserved with a freshly minted UUID token, so
-     * concurrent workers take different rows and the token stamped here is the only proof that later
-     * settles the job. Both pending rows whose availability has arrived and reserved rows whose lease has
+     * Candidates are read in claim order and the first one still runnable is locked by primary key with
+     * `FOR UPDATE SKIP LOCKED`, then reserved with a freshly minted UUID token, so concurrent workers take
+     * different rows and the token stamped here is the only proof that later settles the job. Both
+     * pending rows whose availability has arrived and reserved rows whose lease has
      * lapsed are eligible, which is how work abandoned by a dead worker comes back. Rows that have
      * already spent their attempt budget are dead-lettered instead of claimed and the scan moves on,
      * giving up after `EXHAUSTED_REAP_LIMIT` of them so one poll cannot run indefinitely.
@@ -297,46 +319,11 @@ final readonly class DoctrineJobQueue implements JobQueue, JobOriginLookup
                 }
             }
             $reaped = 0;
-            $jobOwnershipId = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
-                ? 'CAST(j.id AS VARCHAR)'
-                : 'j.id';
 
             while ($reaped < self::EXHAUSTED_REAP_LIMIT) {
-                $row = $this->database->fetchAssociative(sprintf(
-                    'SELECT j.* FROM %s j WHERE j.queue = ?%s AND (j.execution_scope = ? OR '
-                    . '(j.execution_scope = ? AND EXISTS (SELECT 1 FROM %s o INNER JOIN %s s '
-                    . 'ON s.identifier = o.site_identifier WHERE o.resource_type = ? '
-                    . 'AND o.resource_id = %s AND s.enabled = ?))) AND ('
-                    . "(j.status = 'pending' AND j.available_at <= ?) OR "
-                    . "(j.status = 'reserved' AND (j.lease_expires_at IS NULL OR j.lease_expires_at <= ?))"
-                    . ') ORDER BY j.priority DESC, j.available_at, j.created_at, j.id '
-                    . 'LIMIT 1 FOR UPDATE SKIP LOCKED',
-                    $this->tables->quoted('jobs'),
-                    $scope === null ? '' : ' AND j.worker_scope = ?',
-                    $this->tables->quoted('resource_site_ownership'),
-                    $this->tables->quoted('sites'),
-                    $jobOwnershipId,
-                ), [
-                    $queue,
-                    ...($scope === null ? [] : [$scope]),
-                    JobExecutionClass::Installation->value,
-                    JobExecutionClass::Site->value,
-                    'job',
-                    true,
-                    $now,
-                    $now,
-                ], [
-                    Types::STRING,
-                    ...($scope === null ? [] : [Types::STRING]),
-                    Types::STRING,
-                    Types::STRING,
-                    Types::STRING,
-                    Types::BOOLEAN,
-                    Types::DATETIME_IMMUTABLE,
-                    Types::DATETIME_IMMUTABLE,
-                ]);
+                $row = $this->lockRunnableRow($queue, $scope, $now);
 
-                if ($row === false || !is_string($row['id'] ?? null)) {
+                if ($row === null) {
                     return null;
                 }
 
@@ -439,6 +426,82 @@ final readonly class DoctrineJobQueue implements JobQueue, JobOriginLookup
         $this->openFrame($context, $job, $origin);
 
         return $job;
+    }
+
+    /**
+     * Lock the first runnable row of a queue by primary key, in claim order, without waiting on a sibling.
+     *
+     * Candidates are read in claim order without locks, then each is re-read by primary key with
+     * `FOR UPDATE SKIP LOCKED` and its eligibility re-checked under that lock, so a row a sibling has
+     * reserved or settled since the candidate read is passed over. One sorted locking read would be
+     * shorter, but MySQL and MariaDB lock every row such a read examines before the sort and limit apply:
+     * one worker then holds the whole backlog, `SKIP LOCKED` hides it from every sibling, and the next-key
+     * locks the scan leaves in the claim index deadlock against the status change a sibling's reservation
+     * writes. A primary-key read takes one record lock and no gap, on every supported engine.
+     *
+     * @param   string             $queue  Queue the row must belong to.
+     * @param   ?string            $scope  Fairness lane the row must carry, or null when the queue has no
+     *          contributed policy.
+     * @param   DateTimeImmutable  $now    Instant availability and lease expiry are judged against.
+     *
+     * @return  array<string, mixed>|null  The locked row with every column, or null when no runnable row
+     *          could be locked right now.
+     *
+     * @throws  RuntimeException  When a candidate identifier read from the queue is malformed.
+     *
+     * @since   2.0.0
+     */
+    private function lockRunnableRow(string $queue, ?string $scope, DateTimeImmutable $now): ?array
+    {
+        $jobOwnershipId = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
+            ? 'CAST(j.id AS VARCHAR)'
+            : 'j.id';
+        $candidates = $this->database->fetchFirstColumn(sprintf(
+            'SELECT j.id FROM %s j WHERE j.queue = ?%s AND (j.execution_scope = ? OR '
+            . '(j.execution_scope = ? AND EXISTS (SELECT 1 FROM %s o INNER JOIN %s s '
+            . 'ON s.identifier = o.site_identifier WHERE o.resource_type = ? '
+            . 'AND o.resource_id = %s AND s.enabled = ?))) AND ' . self::RUNNABLE_PREDICATE
+            . ' ORDER BY j.priority DESC, j.available_at, j.created_at, j.id LIMIT %d',
+            $this->tables->quoted('jobs'),
+            $scope === null ? '' : ' AND j.worker_scope = ?',
+            $this->tables->quoted('resource_site_ownership'),
+            $this->tables->quoted('sites'),
+            $jobOwnershipId,
+            self::CLAIM_CANDIDATE_LIMIT,
+        ), [
+            $queue,
+            ...($scope === null ? [] : [$scope]),
+            JobExecutionClass::Installation->value,
+            JobExecutionClass::Site->value,
+            'job',
+            true,
+            $now,
+            $now,
+        ], [
+            Types::STRING,
+            ...($scope === null ? [] : [Types::STRING]),
+            Types::STRING,
+            Types::STRING,
+            Types::STRING,
+            Types::BOOLEAN,
+            Types::DATETIME_IMMUTABLE,
+            Types::DATETIME_IMMUTABLE,
+        ]);
+
+        foreach ($candidates as $candidate) {
+            if (!is_string($candidate) || $candidate === '') {
+                throw new RuntimeException('A runnable job identifier is invalid.');
+            }
+            $row = $this->database->fetchAssociative(sprintf(
+                'SELECT j.* FROM %s j WHERE j.id = ? AND ' . self::RUNNABLE_PREDICATE . ' FOR UPDATE SKIP LOCKED',
+                $this->tables->quoted('jobs'),
+            ), [$candidate, $now, $now], [Types::GUID, Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE]);
+            if ($row !== false && is_string($row['id'] ?? null)) {
+                return $row;
+            }
+        }
+
+        return null;
     }
 
     /**
