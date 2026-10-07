@@ -115,6 +115,13 @@ export const interfaceLandingSurfaces = [
     purpose: 'Schedule work and inspect background execution.',
   },
   {
+    id: 'administrator.diagnostics',
+    shell: 'administrator',
+    path: '/administrator/diagnostics',
+    heading: 'Diagnostics',
+    purpose: 'Inspect bounded operational observations and source availability.',
+  },
+  {
     id: 'administrator.settings',
     shell: 'administrator',
     path: '/administrator/settings',

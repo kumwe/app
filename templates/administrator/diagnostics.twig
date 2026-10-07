@@ -60,7 +60,7 @@
     {% else %}
       <p>{{ t('core.diagnostics.sampled') }}</p>
       {% for row in diagnostic.rows %}
-        <dl class="panel panel-body">
+        <dl class="panel panel-body kis-phase-five-card">
           {% for key, value in row %}
             <dt>{{ field_labels[key] }}</dt>
             <dd>{% if value is null %}{{ t('core.diagnostics.unknown') }}{% elseif value is same as(true) %}{{ t('core.administrator.business_fields.yes') }}{% elseif value is same as(false) %}{{ t('core.administrator.business_fields.no') }}{% elseif key == 'policy_cost' %}{{ t('core.diagnostics.policy_cost_included') }}{% else %}{{ value }}{% endif %}</dd>
