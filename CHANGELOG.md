@@ -43,6 +43,14 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
   what confirms this cause from the job log.
 - Print a failed backlog worker's retained error log on the drain's standard error, so the release job
   log names the cause without the diagnostics artifact.
+- Keep the verified CycloneDX attestation envelope out of the production lanes' job log. The lane that
+  pulls and verifies the signed candidate images, new since #154, printed each image's verified
+  envelope to standard output: 2.3 MB of base64 on one line for the application image and 0.56 MB for
+  the web image. In the same release run the runner's log pipeline spent 23 minutes on the application
+  envelope twice over and 55 seconds on the web envelope twice over; MariaDB's lane finished the step
+  after 49 minutes and then passed everything else, while the PostgreSQL and MySQL lanes were cancelled
+  by the 90-minute job timeout inside that step. The envelope now goes to a file under the runner's
+  temporary directory, and the step checks that one was verified.
 
 ### Release lane repair, dependency policy and development-tool updates
 

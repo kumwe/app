@@ -375,8 +375,14 @@ jobs:
             reference="$(jq -er --arg name "$image" '.images[$name] | .reference + "@" + .digest' dist/kumwe-release-manifest.json)"
             cosign verify --certificate-identity="$identity" \
               --certificate-oidc-issuer=https://token.actions.githubusercontent.com "$reference"
+            # The verified CycloneDX envelope is megabytes of base64 on a single line. The runner's log
+            # pipeline spent 23 minutes on the application image's envelope twice over, 55 seconds on the
+            # web image's, and ran two of the v2.0.0-beta.2 lanes past their timeout. Keep the envelope
+            # in a file, where the check that one was verified still reads it.
             cosign verify-attestation --type cyclonedx --certificate-identity="$identity" \
-              --certificate-oidc-issuer=https://token.actions.githubusercontent.com "$reference"
+              --certificate-oidc-issuer=https://token.actions.githubusercontent.com "$reference" \
+              > "$RUNNER_TEMP/$image-cyclonedx-attestation.jsonl"
+            test -s "$RUNNER_TEMP/$image-cyclonedx-attestation.jsonl"
             gh attestation verify "oci://$reference" --repo "$GITHUB_REPOSITORY" \
               --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
               --source-digest "$KUMWE_RELEASE_COMMIT"
