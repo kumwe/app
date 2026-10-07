@@ -306,6 +306,7 @@ final readonly class AdministratorRenderer
             'business-security' => 'core.business-security',
             'extensions' => 'core.extensions',
             'automation' => 'core.automation',
+            'diagnostics' => 'core.diagnostics',
             'settings' => 'core.settings',
             'media' => 'core.media',
             default => '',

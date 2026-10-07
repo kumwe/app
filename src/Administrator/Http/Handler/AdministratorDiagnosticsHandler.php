@@ -51,6 +51,7 @@ final readonly class AdministratorDiagnosticsHandler implements RequestHandlerIn
         }
 
         return new HtmlResponse($this->renderer->render('diagnostics', [
+            'csrf' => AdministratorRequest::session($request)->csrfToken,
             'capabilities' => AdministratorRequest::capabilityMap($request),
             'sections' => OperatorDiagnostics::SECTIONS,
             'diagnostic' => $this->diagnostics->read(AdministratorRequest::context($request), $section),
