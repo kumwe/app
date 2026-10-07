@@ -91,14 +91,16 @@ without the quarantined Studio `0.1.0-rc.1` snapshot that group carried, and exc
 before #156 merges fails the release lane the same way; after the merge, the release workflow can be
 dispatched from `master` against that existing tag.
 
-### Beta.2 release run: distribution qualified, resilience lane failed
+### Beta.2 release run: distribution qualified, resilience and production lanes failed
 
 [Release run 37542913404](https://github.com/kumwe/app/actions/runs/37542913404) for `v2.0.0-beta.2`
 (`master` at `945be7b7`, after #156) built, signed and attested the candidate, and the Composer and ZIP
 installation lane passed. All three "Artifact resilience" jobs failed in "Qualify migration, faults and
 backlog in the exact ZIP and Composer installs", the lane #154 introduced. It had never run on a tag:
 `v2.0.0-beta.1` stopped before any artifact existed, and pull-request acceptance runs skip it without a
-release artifact.
+release artifact. The three "Production" lanes, which since #154 pull and verify the signed candidate
+images instead of building them, spent 49 minutes (MariaDB, which then passed every remaining step) and
+more than 90 minutes (PostgreSQL and MySQL, cancelled by the job timeout) in that verification step.
 
 - PostgreSQL: the ZIP form passed completely, including the four-worker drain of 1,000 aged jobs in
   2.3 seconds. The Composer form's first `database:migrate` on a fresh database stopped with "Refusing
@@ -116,12 +118,17 @@ release artifact.
   timing, the engines and the code is the sorted `FOR UPDATE SKIP LOCKED` claim: InnoDB locks every row
   the sort examines, and the scan's next-key locks deadlock against a sibling's reservation; the queue
   fairness lane already locked by primary key for the same reason.
+- Production lanes: `cosign verify-attestation --type cyclonedx` prints each image's verified envelope
+  to standard output, 2.3 MB of base64 on one line for the application image and 0.56 MB for the web
+  image. The job log's timestamps show the runner spending 23 minutes on the application envelope twice
+  over and 55 seconds on the web envelope twice over; the verification itself is seconds. The envelope
+  belongs in a file, not in the log.
 
 The follow-up pull request [#158](https://github.com/kumwe/app/pull/158) excludes runtime state from the
-Composer archive and refuses a leaking
-archive at build time, locks claim candidates by primary key on every engine, and prints a failed
-worker's error log in the drain output. The next tag cut after it merges re-runs the lane; if MySQL or
-MariaDB still loses a worker, the job log now carries the worker's stderr.
+Composer archive and refuses a leaking archive at build time, locks claim candidates by primary key on
+every engine, prints a failed worker's error log in the drain output, and writes the verified
+attestation envelope to a file instead of the job log. The next tag cut after it merges re-runs every
+lane; if MySQL or MariaDB still loses a worker, the job log now carries the worker's stderr.
 
 ### Focus before an RC
 
