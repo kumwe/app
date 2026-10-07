@@ -14,6 +14,36 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ## [Unreleased]
 
+### Clean Composer distribution and engine-neutral queue claims
+
+- Keep the Composer distribution free of the build checkout's runtime state. `composer archive` packs
+  every file its exclusion list does not name, and the release build cuts the archive from a working
+  tree that has just run `database:migrate` and the complete test suite, so `kumwe-composer-<version>.zip`
+  carried that tree's materialized `storage/cache/extensions.json` with its signed `.verified` marker,
+  its logs, and its installed `vendor` and `node_modules` trees; only the ZIP package had its storage
+  files deleted afterwards. The Artifact resilience lane of the `v2.0.0-beta.2` release run
+  (37542913404) installed the Composer form into a fresh database under the testing signing key, which
+  verifies that marker, and its first `database:migrate` stopped with "Refusing to replace a newer local
+  runtime generation"; the installation lane had passed only because it signs under a random key, which
+  leaves the stale marker untrusted. `composer.json` now excludes the runtime directories, caches,
+  installed packages and `.env` files from the archive, the release build refuses an archive that still
+  carries any of them instead of cleaning the ZIP form quietly, and the release-tool tests pin the
+  exclusions.
+- Lock queue claim candidates by primary key. `DoctrineJobQueue::claim()` read the next runnable job
+  with one sorted `FOR UPDATE SKIP LOCKED` statement. MySQL and MariaDB lock every row such a statement
+  examines before the sort and limit apply, so one worker held the whole backlog while `SKIP LOCKED`
+  hid it from its siblings, and the next-key locks the scan leaves in the claim index deadlock against
+  the status change a sibling's reservation writes; PostgreSQL locks only the row it returns. The claim
+  now reads up to 64 candidates in claim order without locks and re-reads each by primary key with
+  `FOR UPDATE SKIP LOCKED` until one is still runnable, which is how the queue fairness lane already
+  took its turn. Reaping, permits, fairness lanes and the owning-site lock are unchanged. The same
+  release run lost one of the four backlog-drain workers within a second of starting on MySQL and on
+  MariaDB while the PostgreSQL drain completed; the workers' error logs sit in the retained diagnostics
+  artifacts and could not be read from the session that made this change, so the next tagged run is
+  what confirms this cause from the job log.
+- Print a failed backlog worker's retained error log on the drain's standard error, so the release job
+  log names the cause without the diagnostics artifact.
+
 ### Release lane repair, dependency policy and development-tool updates
 
 - Let the release workflow's complete test suite sign in to its MariaDB service as root: the service

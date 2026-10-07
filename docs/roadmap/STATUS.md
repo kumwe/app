@@ -91,6 +91,37 @@ without the quarantined Studio `0.1.0-rc.1` snapshot that group carried, and exc
 before #156 merges fails the release lane the same way; after the merge, the release workflow can be
 dispatched from `master` against that existing tag.
 
+### Beta.2 release run: distribution qualified, resilience lane failed
+
+[Release run 37542913404](https://github.com/kumwe/app/actions/runs/37542913404) for `v2.0.0-beta.2`
+(`master` at `945be7b7`, after #156) built, signed and attested the candidate, and the Composer and ZIP
+installation lane passed. All three "Artifact resilience" jobs failed in "Qualify migration, faults and
+backlog in the exact ZIP and Composer installs", the lane #154 introduced. It had never run on a tag:
+`v2.0.0-beta.1` stopped before any artifact existed, and pull-request acceptance runs skip it without a
+release artifact.
+
+- PostgreSQL: the ZIP form passed completely, including the four-worker drain of 1,000 aged jobs in
+  2.3 seconds. The Composer form's first `database:migrate` on a fresh database stopped with "Refusing
+  to replace a newer local runtime generation". Cause confirmed by reproducing the archive step locally:
+  `composer archive` packs every file its exclusion list does not name, and the build cuts the archive
+  after `database:migrate` and the complete test suite have run in the checkout, so the Composer
+  distribution carried that checkout's materialized `storage/cache/extensions.json` and signed marker,
+  logs, `vendor` and `node_modules`. The build deleted storage files only from the ZIP package, and the
+  installation lane masked the leak because it signs runtime markers under a random key while the
+  resilience lane uses the testing default that verifies the build's marker.
+- MySQL and MariaDB: the ZIP form's drills passed and the four-worker drain lost a worker within a
+  second of starting ("A backlog worker failed"), before the Composer form ran. The workers' error logs
+  are in the retained diagnostics artifacts (`release-resilience-37542913404-1-mysql` and `-mariadb`),
+  which the session that diagnosed the run could not download. The mechanism consistent with the
+  timing, the engines and the code is the sorted `FOR UPDATE SKIP LOCKED` claim: InnoDB locks every row
+  the sort examines, and the scan's next-key locks deadlock against a sibling's reservation; the queue
+  fairness lane already locked by primary key for the same reason.
+
+The follow-up pull request excludes runtime state from the Composer archive and refuses a leaking
+archive at build time, locks claim candidates by primary key on every engine, and prints a failed
+worker's error log in the drain output. The next tag cut after it merges re-runs the lane; if MySQL or
+MariaDB still loses a worker, the job log now carries the worker's stderr.
+
 ### Focus before an RC
 
 1. Complete the remaining repair checks, merge the fix, then build, qualify and publish the signed beta
