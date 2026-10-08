@@ -308,7 +308,8 @@ final readonly class HostedContentStudioAuthoringConfigurationProvider implement
                 'intent' => $session->target->intent->value,
                 'resourceContext' => $resourceContext,
                 'start' => self::start($session->target),
-                'initialPresentation' => 'inline',
+                // The Content editor opens Studio maximized so the composition has room (App ADR 0024).
+                'initialPresentation' => 'maximized',
             ],
             'session' => $this->sessionDocument($context, $session, $resourceContext),
         ];
