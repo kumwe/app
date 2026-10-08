@@ -5,8 +5,15 @@
 **Findings** Completes `V2-STU-004`; later host ports remain under `V2-STU-005` through `V2-STU-007`
 **Gate** B foundation
 **Verified against** `509da426d65d9b5ded66a88c0500495931be31ed`
+**Amended by** [ADR 0024](0024-default-composition-from-the-content-model.md) (decisions 2 and 3), for migration
+`20261007120000_studio_field_block_revision` only
 
 ---
+
+> **Later amendment.** Decisions 2 and 3 stand. [ADR 0024](0024-default-composition-from-the-content-model.md)
+> records one explicit exception: migration `20261007120000_studio_field_block_revision` rewrites the stored bytes
+> of Blueprint revisions and heads that lock a Content-field block at `core-block-r1`, moving those locks to
+> `core-block-r2`, while every revision identity stays unchanged. No other path rewrites stored revision bytes.
 
 ## Context
 

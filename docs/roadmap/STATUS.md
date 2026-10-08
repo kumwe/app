@@ -26,7 +26,7 @@ required. Capacity evidence comes from bounded concurrent samples with their lim
 | Generated delivery | Administrator, portal, REST/OpenAPI, CLI and MCP adapters use shared application services; [generated surfaces](../architecture/generated-business-surfaces.md). |
 | Integration and SDK | Durable events, inbox/outbox, jobs, schedules, processes, reports, exports, scaffolding and neutral proof extensions; [integration guide](../business-integrations.md). Current Extension SDK is `0.3.6`. |
 | Production qualification | Recovery, security, diagnostics and sampled capacity are implemented. The repair evidence below establishes specific source checks; qualified and published beta bytes remain pending. |
-| Contextual Studio | Content create/edit, save/reopen, reusable types, values, layout, localization, keyboard authoring, accepted-revision preview and public PHP rendering use Studio beta.9 with Producer `0.6.0`. [The host guide](../studio-composition-authoring.md) records the remaining product boundaries. |
+| Contextual Studio | Content create/edit, save/reopen, reusable types, values, layout, localization, keyboard authoring, accepted-revision preview and public PHP rendering use Studio beta.9 with Producer `0.6.0`. The Content editor opens Studio maximized; an item of a type without a layout opens with a default composition from its model, and its title and text, integer and yes-or-no values are editable in the inspector; the browser journey proves an inspector title edit through Save item, while integer and yes-or-no inspector edits are derived from the pinned shell and untested ([ADR 0024](decisions/0024-default-composition-from-the-content-model.md), proposed); on beta.9 the page canvas still shows host field blocks as unsupported placeholders until the next re-pin. [The host guide](../studio-composition-authoring.md) records the remaining product boundaries. |
 
 ### Latest merged-master evidence
 
@@ -276,7 +276,7 @@ further numbered decisions.
 | D13 | The seven enterprise-primitive boundary questions are decided | README section 2; [ADR 0003](decisions/0003-immutable-correction-by-reversal.md) for D13.2 |
 | D14 | Point of sale is deferred but not foreclosed | README section 2 |
 | D15 | Role-specific dashboards compose the unified contribution runtime | [ADR 0006](decisions/0006-unified-dashboard-composition.md) |
-| D16 | Studio is contextual Content authoring, integrated at Gate B | [ADR 0007](decisions/0007-studio-visual-composition-integration.md); product-surface correction in [ADR 0020](decisions/0020-studio-contextual-content-authoring.md) |
+| D16 | Studio is contextual Content authoring, integrated at Gate B | [ADR 0007](decisions/0007-studio-visual-composition-integration.md); product-surface correction in [ADR 0020](decisions/0020-studio-contextual-content-authoring.md); default composition for a type without a layout proposed in [ADR 0024](decisions/0024-default-composition-from-the-content-model.md), awaiting the maintainer |
 | D17 | The native client platform is a Version 3 programme; its sign-in is the authentication link | [ADR 0009](decisions/0009-native-client-platform-and-the-authentication-link.md) |
 | D18 | Gate A is accepted on its thirteen executable criteria | [ADR 0010](decisions/0010-gate-a-assessment.md) |
 | — | Acceptance is automated workflow evidence plus the maintainer's merge; capacity is sampled | [ADR 0021](decisions/0021-automated-acceptance-and-sampled-capacity.md) |

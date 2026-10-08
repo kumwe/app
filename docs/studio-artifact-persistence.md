@@ -39,7 +39,9 @@ Every artifact mutation compares the caller's `expectedRevision` with the curren
 conditionally advances the head and appends the same admitted value to immutable revision history. A stale
 or raced write returns category `conflict`, diagnostic `studio.artifact/revision-conflict`, and the safe
 current revision only when the requested artifact is already bound to the trusted session. There is no
-last-write-wins path.
+last-write-wins path. One explicit, recorded migration rewrites stored revision bytes without changing any
+revision identity: `20261007120000_studio_field_block_revision` moves Content-field block locks from
+`core-block-r1` to `core-block-r2` ([ADR 0024](roadmap/decisions/0024-default-composition-from-the-content-model.md), proposed).
 
 The currently implemented generic save is intentionally update-only and draft-only. It cannot create an absent
 version, change artifact identity,
