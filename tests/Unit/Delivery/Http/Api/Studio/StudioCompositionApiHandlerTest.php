@@ -66,7 +66,23 @@ final class StudioCompositionApiHandlerTest extends TestCase
         self::assertSame('blueprint', $document['blueprint']['kind']);
         self::assertSame('draft', $document['blueprint']['status']);
         self::assertSame('1.0.0', $document['blueprint']['version']);
-        self::assertSame([], $document['blueprint']['document']['roots']);
+        // The provisioned draft composes the default derived from the model: the title, then the body.
+        $roots = $document['blueprint']['document']['roots'];
+        self::assertIsArray($roots);
+        self::assertCount(1, $roots);
+        self::assertSame('default/section', $roots[0]['id']);
+        self::assertSame('studio.core/section', $roots[0]['type']);
+        self::assertSame(
+            ['default/field/title', 'default/field/data:body'],
+            array_column($roots[0]['slots']['content'], 'id'),
+        );
+        self::assertSame(
+            [['title'], ['data_body']],
+            array_map(
+                static fn (array $node): mixed => $node['bindings']['value']['source']['fieldPath'],
+                $roots[0]['slots']['content'],
+            ),
+        );
         self::assertSame((string) $provisioned->getBody(), (string) $read->getBody());
         self::assertSame((string) $provisioned->getBody(), (string) $again->getBody());
         self::assertSame(['studio.composition.provision'], $audit->actions());

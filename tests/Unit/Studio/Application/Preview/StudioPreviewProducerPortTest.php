@@ -155,11 +155,143 @@ final class StudioPreviewProducerPortTest extends TestCase
     }
 
     /**
+     * A render naming the digest of a presented default renders it, and a mismatch nothing presents is refused.
+     *
+     * The stored draft has no roots, while the request names the digest of the document the session was handed
+     * (App ADR 0024). The port asks the binding source to present the stored draft only when the digests differ,
+     * renders the presented document under the requested digest, and refuses the same request with the draft
+     * identity mismatch when the binding source presents nothing.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testARenderOfAPresentedDefaultMatchesItsDigestAndAnUnpresentedMismatchIsRefused(): void
+    {
+        $vector = self::vector();
+        self::assertInstanceOf(stdClass::class, $vector->draft);
+        self::assertInstanceOf(stdClass::class, $vector->render);
+        self::assertInstanceOf(stdClass::class, $vector->expect);
+        $handed = new StudioPreviewDraft('default', $vector->draft);
+        $storedDocument = $handed->document();
+        $storedDocument->roots = [];
+        $stored = new StudioPreviewDraft('default', $storedDocument);
+        self::assertSame($vector->render->draftDigest, $handed->digest());
+        self::assertNotSame($handed->digest(), $stored->digest());
+        self::assertSame($handed->artifactId(), $stored->artifactId());
+        self::assertSame($handed->revision(), $stored->revision());
+        $presenting = new class ($handed) implements StudioPreviewBindingSource {
+            /**
+             * Number of times the port asked this source to present a stored draft.
+             *
+             * @var    int
+             * @since  2.0.0
+             */
+            public int $presentations = 0;
+
+            /**
+             * Retain the document the session was handed.
+             *
+             * @param   StudioPreviewDraft  $handed  Draft carrying the presented roots.
+             *
+             * @since   2.0.0
+             */
+            public function __construct(private readonly StudioPreviewDraft $handed)
+            {
+            }
+
+            /**
+             * {@inheritDoc}
+             *
+             * @param   ExecutionContext           $context   Caller execution context.
+             * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session snapshot.
+             * @param   StudioPreviewDraft         $draft     Draft the bindings would feed.
+             *
+             * @return  StudioPreviewBindingValues  Empty binding values regardless of input.
+             *
+             * @since   2.0.0
+             */
+            public function resolve(
+                ExecutionContext $context,
+                StudioHostSessionSnapshot $snapshot,
+                StudioPreviewDraft $draft,
+            ): StudioPreviewBindingValues {
+                unset($context, $snapshot, $draft);
+                return new StudioPreviewBindingValues(new stdClass(), new stdClass());
+            }
+
+            /**
+             * {@inheritDoc}
+             *
+             * @param   ExecutionContext           $context   Caller execution context.
+             * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session snapshot.
+             * @param   StudioPreviewDraft         $draft     Stored draft the request names.
+             *
+             * @return  StudioPreviewDraft  The handed draft for the same artifact revision, `$draft` otherwise.
+             *
+             * @since   2.0.0
+             */
+            public function present(
+                ExecutionContext $context,
+                StudioHostSessionSnapshot $snapshot,
+                StudioPreviewDraft $draft,
+            ): StudioPreviewDraft {
+                unset($context, $snapshot);
+                ++$this->presentations;
+
+                return $draft->artifactId() === $this->handed->artifactId()
+                    && $draft->revision() === $this->handed->revision()
+                        ? $this->handed
+                        : $draft;
+            }
+        };
+
+        // A stored draft whose digest the request already names is rendered without presentation.
+        [$matchedPort, $matchedGuard] = self::runtime($handed, null, null, $presenting);
+        $matched = self::request(
+            $matchedGuard,
+            'studio.operation/preview.render',
+            (object) ['payload' => $vector->render],
+            0,
+        );
+        $matchedPort->forRequest($matched->authority)->render($matched->arguments(), $matched->context());
+        self::assertSame(0, $presenting->presentations);
+
+        // A stored empty draft is presented as the handed document and rendered under the requested digest.
+        [$port, $guard] = self::runtime($stored, null, null, $presenting);
+        $render = self::request(
+            $guard,
+            'studio.operation/preview.render',
+            (object) ['payload' => $vector->render],
+            0,
+        );
+        $result = $port->forRequest($render->authority)->render($render->arguments(), $render->context());
+
+        self::assertSame(1, $presenting->presentations);
+        self::assertInstanceOf(stdClass::class, $result->value);
+        self::assertSame($vector->render->draftDigest, $result->value->draftDigest);
+        self::assertEquals($vector->expect->markers, $result->value->markers);
+
+        // Without presentation the same request names bytes the stored draft does not have, and is refused.
+        [$refusingPort, $refusingGuard] = self::runtime($stored);
+        $refused = self::request(
+            $refusingGuard,
+            'studio.operation/preview.render',
+            (object) ['payload' => $vector->render],
+            0,
+        );
+        self::assertRefused('studio.preview/draft-identity-mismatch', static fn () => $refusingPort
+            ->forRequest($refused->authority)
+            ->render($refused->arguments(), $refused->context()), 'conflict');
+    }
+
+    /**
      * Assemble the production preview port around real grant persistence and deterministic edges.
      *
      * @param   StudioPreviewDraft             $draft     Immutable preview draft.
      * @param   StudioPreviewRenderer|null     $renderer  Optional renderer refusal behavior.
      * @param   StudioPreviewGrantRepository|null $grants Optional durable grant behavior.
+     * @param   StudioPreviewBindingSource|null $bindings Optional binding and presentation behavior.
      *
      * @return  array{StudioPreviewHostPort, StudioPreviewTransportGuard, Connection}
      *
@@ -169,6 +301,7 @@ final class StudioPreviewProducerPortTest extends TestCase
         StudioPreviewDraft $draft,
         ?StudioPreviewRenderer $renderer = null,
         ?StudioPreviewGrantRepository $grants = null,
+        ?StudioPreviewBindingSource $bindings = null,
     ): array {
         $database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $tables = new TableNames($database, 'kumwe_');
@@ -209,7 +342,7 @@ final class StudioPreviewProducerPortTest extends TestCase
                 return hash_equals($request->artifactId, $this->draft->artifactId()) ? $this->draft : null;
             }
         };
-        $bindings = new class implements StudioPreviewBindingSource {
+        $bindings ??= new class implements StudioPreviewBindingSource {
             /**
              * {@inheritDoc}
              *
@@ -228,6 +361,26 @@ final class StudioPreviewProducerPortTest extends TestCase
             ): StudioPreviewBindingValues {
                 unset($context, $snapshot, $draft);
                 return new StudioPreviewBindingValues(new stdClass(), new stdClass());
+            }
+
+            /**
+             * {@inheritDoc}
+             *
+             * @param   ExecutionContext           $context   Caller execution context.
+             * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session snapshot.
+             * @param   StudioPreviewDraft         $draft     Stored draft the request names.
+             *
+             * @return  StudioPreviewDraft  The stored draft itself; this double presents nothing.
+             *
+             * @since   2.0.0
+             */
+            public function present(
+                ExecutionContext $context,
+                StudioHostSessionSnapshot $snapshot,
+                StudioPreviewDraft $draft,
+            ): StudioPreviewDraft {
+                unset($context, $snapshot);
+                return $draft;
             }
         };
         $renderer ??= new class implements StudioPreviewRenderer {

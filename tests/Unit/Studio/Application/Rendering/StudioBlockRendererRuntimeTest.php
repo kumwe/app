@@ -88,7 +88,7 @@ final class StudioBlockRendererRuntimeTest extends TestCase
         self::assertTrue($registry->supports(new BlockCoordinate(
             'core/field-text',
             '1.0.0',
-            'core-block-r1',
+            'core-block-r2',
         )));
 
         $document = (object) [
@@ -101,7 +101,7 @@ final class StudioBlockRendererRuntimeTest extends TestCase
                 (object) [
                     'type' => 'core/field-text',
                     'version' => '1.0.0',
-                    'revision' => 'core-block-r1',
+                    'revision' => 'core-block-r2',
                 ],
             ]],
             'roots' => [(object) [
@@ -153,7 +153,7 @@ final class StudioBlockRendererRuntimeTest extends TestCase
             new SdkFieldConfigurationAdmission(),
         );
         $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
-        $coordinate = new BlockCoordinate('core/field-text', '1.0.0', 'core-block-r1');
+        $coordinate = new BlockCoordinate('core/field-text', '1.0.0', 'core-block-r2');
 
         self::assertTrue($runtime->registry()->supports($coordinate));
         $registries->canonicalCompositionDocuments()->remove(ContributionOwner::core());
@@ -284,7 +284,7 @@ final class StudioBlockRendererRuntimeTest extends TestCase
             'dependencyLock' => (object) ['blocks' => [(object) [
                 'type' => 'core/field-text',
                 'version' => '1.0.0',
-                'revision' => 'core-block-r1',
+                'revision' => 'core-block-r2',
             ]]],
             'roots' => [(object) [
                 'id' => 'hidden-field',
@@ -467,7 +467,7 @@ final class StudioBlockRendererRuntimeTest extends TestCase
         $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
         $registry = $runtime->registry();
 
-        self::assertTrue($registry->supports(new BlockCoordinate('core/field-text', '1.0.0', 'core-block-r1')));
+        self::assertTrue($registry->supports(new BlockCoordinate('core/field-text', '1.0.0', 'core-block-r2')));
         self::assertTrue($registry->supports(new BlockCoordinate(
             'studio.core/section',
             '1.0.0',
@@ -475,7 +475,7 @@ final class StudioBlockRendererRuntimeTest extends TestCase
         )));
         self::assertNotInstanceOf(
             FragmentStudioPreviewBlockRenderer::class,
-            $registry->rendererFor(new BlockCoordinate('core/field-text', '1.0.0', 'core-block-r1')),
+            $registry->rendererFor(new BlockCoordinate('core/field-text', '1.0.0', 'core-block-r2')),
         );
     }
 

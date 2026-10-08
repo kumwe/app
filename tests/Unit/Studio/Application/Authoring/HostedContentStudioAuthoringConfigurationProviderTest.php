@@ -109,6 +109,8 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
         self::assertSame(StudioContractResources::releaseRecord()->release(), $document->release->version);
         self::assertSame('create', $document->launch->intent);
         self::assertSame('blank', $document->launch->start->kind);
+        // A create mount opens Studio maximized (App ADR 0024); the integration journey pins the edit intent.
+        self::assertSame('maximized', $document->launch->initialPresentation);
         self::assertEquals($document->launch->resourceContext, $document->session->resourceContext);
 
         $session = $document->session;

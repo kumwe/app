@@ -3,8 +3,8 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "9e75a11ce71ff2ef85b379e8b832c388c5ba7334",
-    "recorded_at": "2026-09-30",
+    "commit": "383e4cd07f805dbcab891385a029cbb0642f3952",
+    "recorded_at": "2026-10-07",
     "recorded_from": [],
     "toolchain": {
         "php": "^8.5",
@@ -23,7 +23,7 @@
             "ext-zip"
         ],
         "composer_lock_sha256": "c5356d75713069b2e94418ff712200cdf9c82c0ad7b3ab97ae99b0f09b95658e",
-        "package_lock_sha256": "197499c26eb752ff0d00140285177b6e39682428f5f5b566e053f283b4b8290e"
+        "package_lock_sha256": "72763e7d63c70a7cfd91f3bd0515cf6112a6679d345ebe986844fccf6a48a67c"
     },
     "tests": {
         "architecture": {
@@ -36,11 +36,11 @@
         },
         "integration": {
             "files": 174,
-            "test_methods": 628
+            "test_methods": 629
         },
         "unit": {
-            "files": 500,
-            "test_methods": 2511
+            "files": 502,
+            "test_methods": 2524
         }
     },
     "coverage": {
@@ -647,7 +647,8 @@
             "20260929010000_operator_diagnostics_capability",
             "20260929120000_audit_retention_evidence",
             "20260930110000_audit_retention_authority",
-            "20260930120000_core_listing_sort_indexes"
+            "20260930120000_core_listing_sort_indexes",
+            "20261007120000_studio_field_block_revision"
         ]
     },
     "quarantine": {

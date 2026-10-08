@@ -31,6 +31,7 @@ use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Runtime\TrustEnforcingStudioPreviewBlockRenderer;
 use Kumwe\App\Presentation\Application\SitePresentation;
 use Kumwe\App\Site\Application\SiteSettings;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringCatalog;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextAuthority;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextRepository;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
@@ -40,6 +41,7 @@ use Kumwe\App\Studio\Application\Composition\StudioBuiltInThemeRelease;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionLockMismatch;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionModelMismatch;
 use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
+use Kumwe\App\Studio\Application\Composition\StudioContentDefaultComposition;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionCatalog;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
@@ -55,6 +57,7 @@ use Kumwe\App\Studio\Application\Projection\StudioProjectionRejected;
 use Kumwe\App\Studio\Application\Preview\ContentStudioPreviewBindingSource;
 use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
 use Kumwe\App\Studio\Application\Rendering\StudioContentFieldBlockRenderer;
+use Kumwe\App\Studio\Application\Release\StudioCoreCatalog;
 use Kumwe\App\Studio\Application\Release\StudioReleaseRecord;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBindingResult;
@@ -97,6 +100,7 @@ use Laminas\Diactoros\ServerRequestFactory;
 use Twig\Loader\ArrayLoader;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
 use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 
 /**
  * Proves the Studio Content read boundary delegates only through authorized, version-pinned services.
@@ -107,9 +111,11 @@ use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 #[CoversClass(ContentStudioPreviewBindingSource::class)]
 #[CoversClass(StudioModelHostPort::class)]
 #[CoversClass(StudioContentCompositionService::class)]
+#[UsesClass(StudioContentDefaultComposition::class)]
 #[CoversClass(StudioCompositionModelMismatch::class)]
 #[CoversClass(AdministratorStudioCompositionHandler::class)]
 #[UsesClass(ContentModelService::class)]
+#[UsesClass(ContentStudioAuthoringCatalog::class)]
 #[UsesClass(ContentService::class)]
 #[UsesClass(ContentStudioProjector::class)]
 #[UsesClass(RecordAuthorizedStudioContentFieldDisclosure::class)]
@@ -384,7 +390,19 @@ final class StudioContentProjectionServiceTest extends TestCase
         self::assertSame(1, $first->binding->revision);
         self::assertNull($first->binding->blueprintRevision);
         self::assertSame('draft', $first->blueprint->status);
-        self::assertSame([], $first->blueprint->document()->roots);
+        // The draft composes the default derived from the model: one section holding the title and the body.
+        $roots = $first->blueprint->document()->roots;
+        self::assertCount(1, $roots);
+        self::assertSame(StudioContentDefaultComposition::SECTION_ID, $roots[0]->id);
+        self::assertSame('studio.core/section', $roots[0]->type);
+        $children = $roots[0]->slots->content;
+        self::assertSame(
+            ['default/field/title', 'default/field/data:body'],
+            array_map(static fn (\stdClass $node): string => $node->id, $children),
+        );
+        self::assertSame(['core/field-text', 'core/field-text'], array_column($children, 'type'));
+        self::assertSame(['title'], $children[0]->bindings->value->source->fieldPath);
+        self::assertSame(['data_body'], $children[1]->bindings->value->source->fieldPath);
         self::assertCount(14, $first->blueprint->document()->dependencyLock->blocks);
         $lockedTypes = array_map(
             static fn (\stdClass $lock): string => $lock->type,
@@ -720,6 +738,8 @@ final class StudioContentProjectionServiceTest extends TestCase
         $authored = static function (?array $blocks) use ($document): \stdClass {
             $copy = json_decode($document, false, 64, JSON_THROW_ON_ERROR);
             self::assertInstanceOf(\stdClass::class, $copy);
+            // The provisioned draft carries the derived default; every adoption below authors an empty layout.
+            $copy->roots = [];
             if ($blocks === null) {
                 unset($copy->dependencyLock);
             } else {
@@ -1022,7 +1042,11 @@ final class StudioContentProjectionServiceTest extends TestCase
             'session-content-preview',
         );
 
-        $values = (new ContentStudioPreviewBindingSource($service, $this->contexts()))->resolve(
+        $values = (new ContentStudioPreviewBindingSource(
+            $service,
+            $this->contexts(),
+            self::authoringCatalog(),
+        ))->resolve(
             $context,
             new StudioHostSessionSnapshot(
                 $session,
@@ -1038,6 +1062,32 @@ final class StudioContentProjectionServiceTest extends TestCase
         self::assertSame('Exact body.', $values->entry()->data_body);
         self::assertFalse(property_exists($values->entry(), 'compositionOverrides'));
         self::assertSame([], get_object_vars($values->context()));
+    }
+
+    /**
+     * Build the real authoring catalog of the core blocks this deployment renders.
+     *
+     * @return  ContentStudioAuthoringCatalog  Catalog over the built-in contribution registries.
+     *
+     * @since   2.0.0
+     */
+    private static function authoringCatalog(): ContentStudioAuthoringCatalog
+    {
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
+        $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
+
+        return new ContentStudioAuthoringCatalog(
+            new StudioCompositionContributionCatalog($registries, $runtime),
+            StudioCoreCatalog::fromFile(
+                dirname(__DIR__, 5) . '/resources/studio-contract/core-catalog.json',
+                StudioContractResources::releaseRecord()->release(),
+            ),
+            $runtime,
+            InterfaceTranslation::translator(),
+        );
     }
 
     /**
