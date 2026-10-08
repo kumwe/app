@@ -124,7 +124,10 @@ final readonly class StudioContentCompositionService
     }
 
     /**
-     * Provision an empty schema-valid draft and binding atomically, returning a concurrent winner.
+     * Provision the derived default draft and binding atomically, returning a concurrent winner.
+     *
+     * The draft composes the default layout derived from the type version's Content model (App ADR 0024),
+     * or no roots when nothing in the model can be composed from the deployment's locked blocks.
      *
      * @param   ExecutionContext  $context             Authorized actor and site context.
      * @param   string            $contentTypeId       Exact Content type UUID.
@@ -157,9 +160,10 @@ final readonly class StudioContentCompositionService
         );
         $blockLocks = $this->contributions->project([], $renderers)->blockLocks;
         $theme = $this->theme->reference($context->site());
+        $roots = StudioContentDefaultComposition::roots($model, $blockLocks);
         $artifact = $this->admission->admit(
             $context->site()->identifier(),
-            self::initialBlueprint($model, $binding, $blockLocks, $theme),
+            self::initialBlueprint($model, $binding, $blockLocks, $theme, $roots),
         );
 
         try {
@@ -251,11 +255,13 @@ final readonly class StudioContentCompositionService
             null,
             1,
         );
+        $blockLocks = $this->contributions->project([], $renderers)->blockLocks;
         $initial = self::initialBlueprint(
             $model,
             $binding,
-            $this->contributions->project([], $renderers)->blockLocks,
+            $blockLocks,
             $this->theme->reference($context->site()),
+            StudioContentDefaultComposition::roots($model, $blockLocks),
         );
 
         return (object) ['id' => $initial->id, 'version' => $initial->version, 'revision' => $initial->revision];
@@ -316,7 +322,7 @@ final readonly class StudioContentCompositionService
             $fieldIds,
         );
         $theme = $this->theme->reference($context->site());
-        $initial = self::initialBlueprint($model, $binding, $admittedLocks, $theme);
+        $initial = self::initialBlueprint($model, $binding, $admittedLocks, $theme, []);
         $admitted = self::lockMap($initial);
         $document = json_decode(json_encode($blueprint, JSON_THROW_ON_ERROR), false, 64, JSON_THROW_ON_ERROR);
         if (!$document instanceof stdClass) {
@@ -494,12 +500,16 @@ final readonly class StudioContentCompositionService
     }
 
     /**
-     * Build the empty schema-valid Blueprint with immutable model, block, and public-theme locks.
+     * Build the initial schema-valid draft Blueprint with immutable model, block, and public-theme locks.
+     *
+     * Initial roots are part of the revision, so a revision names its content; an initial Blueprint with no
+     * roots keeps the revision it had before default compositions existed.
      *
      * @param   stdClass                       $model       Exact AP-2 Content model projection.
      * @param   ContentBlueprintBinding        $binding     Initial host-owned binding.
      * @param   list<stdClass>                 $blockLocks  Deployment-renderable exact block locks.
      * @param   StudioPublishedThemeReference  $theme       Exact active public-theme reference.
+     * @param   list<stdClass>                 $roots       Initial composition roots, empty for an adopted layout.
      *
      * @return  stdClass  Canonical initial Blueprint document.
      *
@@ -512,6 +522,7 @@ final readonly class StudioContentCompositionService
         ContentBlueprintBinding $binding,
         array $blockLocks,
         StudioPublishedThemeReference $theme,
+        array $roots,
     ): stdClass {
         $modelId = $model->id ?? null;
         $modelVersion = $model->version ?? null;
@@ -531,14 +542,19 @@ final readonly class StudioContentCompositionService
             'version' => $modelVersion,
             'revision' => $modelRevision,
         ];
-        $revision = 'initial-' . hash('sha256', implode("\n", [
+        $identity = [
             $binding->site->identifier(),
             $binding->blueprintId,
             $binding->blueprintVersion,
             $modelRevision,
             (string) json_encode($blockLocks, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
             $theme->revision,
-        ]));
+        ];
+        if ($roots !== []) {
+            $identity[] = StudioContentDefaultComposition::VERSION . ':'
+                . json_encode($roots, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+        }
+        $revision = 'initial-' . hash('sha256', implode("\n", $identity));
 
         return (object) [
             'contractVersion' => '0.1-draft',
@@ -557,7 +573,7 @@ final readonly class StudioContentCompositionService
                 'theme' => $theme->document(),
                 'blocks' => $blockLocks,
             ],
-            'roots' => [],
+            'roots' => $roots,
         ];
     }
 }

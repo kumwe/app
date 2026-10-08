@@ -33,4 +33,25 @@ interface StudioPreviewBindingSource
         StudioHostSessionSnapshot $snapshot,
         StudioPreviewDraft $draft,
     ): StudioPreviewBindingValues;
+
+    /**
+     * Return the draft the bound session was handed for one stored Blueprint revision.
+     *
+     * A contextual Content authoring session is handed the derived default composition in place of a stored
+     * empty draft (App ADR 0024); a preview of that session must render the same document. Implementations
+     * return any other draft unchanged.
+     *
+     * @param   ExecutionContext           $context   Authenticated App request authority.
+     * @param   StudioHostSessionSnapshot  $snapshot  Live resource and permission binding.
+     * @param   StudioPreviewDraft         $draft     Stored Blueprint revision the request names.
+     *
+     * @return  StudioPreviewDraft  The draft the session was handed, or `$draft` itself.
+     *
+     * @since   2.0.0
+     */
+    public function present(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        StudioPreviewDraft $draft,
+    ): StudioPreviewDraft;
 }

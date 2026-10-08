@@ -168,6 +168,10 @@ final readonly class StudioPreviewHostPort implements PreviewPortInterface, Stud
         if ($draft === null) {
             throw new StudioPreviewRefused('not-found', 'studio.preview/draft-not-found');
         }
+        // A contextual session may have been handed a derived default for a stored empty draft (App ADR 0024).
+        if (!hash_equals($request->draftDigest, $draft->digest())) {
+            $draft = $this->bindings->present($context, $snapshot, $draft);
+        }
         if (
             !hash_equals($request->artifactId, $draft->artifactId())
             || !hash_equals($request->draftRevision, $draft->revision())

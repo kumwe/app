@@ -112,6 +112,9 @@ final class CoreStudioCompositionContributions
     /**
      * Build one core Content-field block definition.
      *
+     * Text, integer and yes-or-no value ports name the inspector control Studio edits a bound entry value
+     * with; revision r2 added them (App ADR 0024).
+     *
      * @param   string  $type   Exact canonical block type.
      * @param   string  $local  Local field block name.
      *
@@ -132,12 +135,29 @@ final class CoreStudioCompositionContributions
             'field-rich-text' => 'Rich text',
             default => 'Text',
         };
+        $port = (object) [
+            'id' => 'value',
+            'label' => self::message('value', 'Value'),
+            'valueType' => str_replace('field-', '', $local),
+            'required' => false,
+            'multiple' => false,
+        ];
+        $control = match ($local) {
+            'field-text' => 'studio.control/multi-line-text',
+            'field-integer' => 'studio.control/integer',
+            'field-boolean' => 'studio.control/switch',
+            default => null,
+        };
+        if ($control !== null) {
+            $port->authoring = (object) ['control' => $control];
+        }
+
         return (object) [
             'contractVersion' => '0.1-draft',
             'kind' => 'block-definition',
             'type' => $type,
             'version' => '1.0.0',
-            'revision' => 'core-block-r1',
+            'revision' => 'core-block-r2',
             'owner' => (object) ['id' => 'studio.core/blocks', 'version' => '1.0.0'],
             'label' => self::message($local, $label),
             'category' => 'core.category/content-field',
@@ -148,13 +168,7 @@ final class CoreStudioCompositionContributions
                 'properties' => new stdClass(),
             ],
             'slots' => [],
-            'ports' => [(object) [
-                'id' => 'value',
-                'label' => self::message('value', 'Value'),
-                'valueType' => str_replace('field-', '', $local),
-                'required' => false,
-                'multiple' => false,
-            ]],
+            'ports' => [$port],
             'editingModes' => ['blueprint', 'content'],
             'themeControls' => [],
             'rendererRequirements' => [

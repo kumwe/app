@@ -473,7 +473,7 @@ final class StudioPreviewBindingRendererTest extends TestCase
             'dependencyLock' => (object) ['blocks' => [(object) [
                 'type' => $type,
                 'version' => '1.0.0',
-                'revision' => 'core-block-r1',
+                'revision' => 'core-block-r2',
             ]]],
             'roots' => [(object) [
                 'id' => 'field-node',

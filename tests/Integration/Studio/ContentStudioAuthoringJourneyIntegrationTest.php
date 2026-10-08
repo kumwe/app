@@ -33,6 +33,7 @@ use Kumwe\App\Studio\Application\Authoring\HostedContentStudioAuthoringConfigura
 use Kumwe\App\Studio\Application\Authoring\StudioContextualAuthoringConfigurationProvider;
 use Kumwe\App\Studio\Application\Authoring\StudioHostedDeploymentConfiguration;
 use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
+use Kumwe\App\Studio\Application\Composition\StudioContentDefaultComposition;
 use Kumwe\App\Studio\Application\Host\StudioAuthoringHostPort;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionAuthority;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionRepository;
@@ -93,6 +94,7 @@ use stdClass;
 #[CoversClass(StudioProducerError::class)]
 #[CoversClass(StudioProducerRequestAuthority::class)]
 #[CoversClass(ContentStudioPreviewBindingSource::class)]
+#[CoversClass(StudioContentDefaultComposition::class)]
 #[CoversClass(StudioPreviewHostPort::class)]
 #[CoversClass(StudioPreviewTransportGuard::class)]
 #[CoversClass(ContentService::class)]
@@ -885,6 +887,8 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         self::assertTrue($registry->validate('studio-deployment', $deployment)->valid());
         self::assertSame('edit', $deployment->launch->intent);
         self::assertSame('existing', $deployment->launch->start->kind);
+        // An existing item opens Studio maximized (App ADR 0024, A3).
+        self::assertSame('maximized', $deployment->launch->initialPresentation);
         $resourceContext = $deployment->session->resourceContext;
         $generation = $deployment->session->sessionGeneration;
         $dispatch = self::dispatcher($hosts, $context, $resourceContext->key, $generation);
@@ -1496,6 +1500,206 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
             'requestedPresentation' => 'inline',
         ], false);
         self::assertSame(['existing'], $reopened->availableStarts);
+    }
+
+    /**
+     * A type whose stored layout is an empty draft opens with the default derived from its model, previews that
+     * default, stores an empty draft on every type save that leaves it untouched, and publishes a changed layout.
+     *
+     * App ADR 0024: the default is handed in place of the stored empty draft at the stored coordinates and is
+     * derived again from the current model on every load; the public site keeps the structured template until an
+     * author changes the layout.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnEmptyLayoutOpensWithTheDerivedDefaultStaysADraftAndPreviews(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = self::administratorContext($container);
+        $registry = self::service($container, StudioDocumentSchemaRegistry::class);
+        $provider = self::service($container, StudioContextualAuthoringConfigurationProvider::class);
+        $targets = self::service($container, ContentStudioAuthoringTargetResolver::class);
+        $hosts = self::service($container, StudioProducerHostFactory::class);
+        $models = self::service($container, ContentModelService::class);
+        $compositions = self::service($container, StudioContentCompositionService::class);
+        $sessions = self::service($container, StudioHostSessionRepository::class);
+        $authority = self::service($container, StudioHostSessionAuthority::class);
+        $claimer = self::service($container, StudioPreviewHostPort::class);
+
+        // 1. A blank canvas is saved as a new type with one text field and an empty layout.
+        [$blank, $blankDispatch] = self::started($container, $context, $targets->create($context), 'blank');
+        $model = self::clone($blank->state->model);
+        $summary = self::dataField('summary', 'Summary');
+        $summary->id = 'summary';
+        unset($summary->extensions);
+        $model->fields[] = $summary;
+        $emptyLayout = self::clone($blank->state->blueprint);
+        $emptyLayout->roots = [];
+        $created = self::saved($blankDispatch, $blank->sessionId, $blank->state->coordinates, (object) [
+            'outcome' => 'save-as-new-type',
+            'label' => (object) [
+                'key' => 'kumwe.app/journey-type',
+                'defaultMessage' => 'Default composition type ' . bin2hex(random_bytes(3)),
+            ],
+            'authoringPolicy' => (object) ['modes' => ['model', 'blueprint', 'content'], 'itemComposition' => 'denied'],
+            'model' => $model,
+            'blueprint' => $emptyLayout,
+        ]);
+        $definitionId = ContentStudioAuthoringDocuments::contentTypeId($created->session->type->id);
+        self::assertIsString($definitionId);
+        $stored = $compositions->find($context, $definitionId, 1);
+        self::assertNotNull($stored);
+        self::assertSame('draft', $stored->blueprint->status);
+        self::assertSame([], $stored->blueprint->document()->roots);
+
+        // 2. Opening the type hands the derived default at the stored coordinates, without writing it.
+        $definition = $models->contentType($context, $definitionId, 1);
+        $configuration = $provider->forMount($context, $targets->create($context, $definition), 'integration-csrf');
+        self::assertInstanceOf(StudioHostedDeploymentConfiguration::class, $configuration);
+        $deployment = json_decode($configuration->configurationJson, false, 32, JSON_THROW_ON_ERROR);
+        self::assertInstanceOf(stdClass::class, $deployment);
+        self::assertSame('maximized', $deployment->launch->initialPresentation);
+        $key = $deployment->session->resourceContext->key;
+        $generation = $deployment->session->sessionGeneration;
+        $resourceContext = $deployment->session->resourceContext;
+        $dispatch = self::dispatcher($hosts, $context, $key, $generation);
+        $dispatch('authoring/resolve-target', 'request', (object) [
+            'targetId' => $deployment->launch->targetId,
+            'intent' => 'create',
+            'resourceContext' => $resourceContext,
+            'requestedPresentation' => 'maximized',
+        ], false);
+        $snapshot = $dispatch('authoring/start', 'request', (object) [
+            'targetId' => $deployment->launch->targetId,
+            'resourceContext' => $resourceContext,
+            'source' => $deployment->launch->start,
+            'presentation' => 'maximized',
+        ], true);
+        self::assertTrue($registry->validateDefinition('authoring-session', 'snapshot', $snapshot)->valid());
+        $handed = $snapshot->state->blueprint;
+        self::assertSame('draft', $handed->status);
+        self::assertSame($stored->blueprint->id, $handed->id);
+        self::assertSame($stored->blueprint->revision, $handed->revision);
+        self::assertSame($stored->blueprint->revision, $snapshot->state->coordinates->blueprint->revision);
+        self::assertSame(['studio.core/section'], self::rootTypes($handed));
+        self::assertSame(StudioContentDefaultComposition::SECTION_ID, $handed->roots[0]->id);
+        self::assertSame(
+            ['default/field/title', 'default/field/summary'],
+            array_column($handed->roots[0]->slots->content, 'id'),
+        );
+        self::assertSame(
+            [['title'], ['summary']],
+            array_map(
+                static fn (stdClass $node): array => $node->bindings->value->source->fieldPath,
+                $handed->roots[0]->slots->content,
+            ),
+        );
+        $unwritten = $compositions->find($context, $definitionId, 1);
+        self::assertNotNull($unwritten);
+        self::assertSame($stored->blueprint->canonicalDocument, $unwritten->blueprint->canonicalDocument);
+
+        // 3. The session previews the default it was handed, under the digest of that document.
+        $host = $sessions->find($key);
+        self::assertNotNull($host);
+        $preview = $deployment->session->extensions->{'kumwe.app/preview'};
+        $payload = (object) [
+            'artifactId' => $handed->id,
+            'draftDigest' => hash('sha256', CanonicalJson::stringify($handed)),
+            'draftRevision' => $handed->revision,
+            'requestId' => 'requests/preview-' . bin2hex(random_bytes(8)),
+            'viewport' => 'expanded',
+        ];
+        self::assertNotSame(
+            hash('sha256', $stored->blueprint->canonicalDocument),
+            $payload->draftDigest,
+            'The handed default is not the stored empty draft.',
+        );
+        $evidence = new StudioPreviewTransport($preview->origin, $preview->channelId, $preview->sourceId, 0);
+        $rendered = self::respond(
+            $hosts,
+            $context,
+            $key,
+            $generation,
+            'preview/render',
+            'payload',
+            $payload,
+            false,
+            $evidence,
+        );
+        self::assertNull($rendered->refusalCategory, $rendered->body);
+        $value = json_decode($rendered->body, false, 64, JSON_THROW_ON_ERROR);
+        self::assertInstanceOf(stdClass::class, $value);
+        self::assertSame($payload->draftDigest, $value->value->draftDigest);
+        self::assertCount(3, $value->value->markers, 'One marker per node: the section and its two fields.');
+        self::assertNotNull($claimer->claimDocument(
+            $context,
+            $authority->resolve($context, $key),
+            $payload->requestId,
+            new StudioPreviewTransport($preview->origin, $preview->channelId, $preview->sourceId, 0),
+        ));
+
+        // 4. A type save that leaves the handed default untouched stores an empty draft, not the default's roots,
+        //    so the successor session is handed the default derived again from the saved model.
+        $successorModel = self::clone($snapshot->state->model);
+        $successorModel->fields[] = self::dataField('teaser', 'Teaser');
+        $untouched = self::saved($dispatch, $snapshot->sessionId, $snapshot->state->coordinates, (object) [
+            'outcome' => 'save-new-type-version',
+            'model' => $successorModel,
+            'blueprint' => self::clone($handed),
+        ]);
+        self::assertSame('save-new-type-version', $untouched->outcome);
+        $second = $compositions->find($context, $definitionId, 2);
+        self::assertNotNull($second);
+        self::assertSame('draft', $second->blueprint->status);
+        self::assertSame([], $second->blueprint->document()->roots);
+        $rehanded = $untouched->session->state->blueprint;
+        self::assertSame('draft', $rehanded->status);
+        self::assertSame($second->blueprint->revision, $rehanded->revision);
+        $teaser = self::sourcedFieldId($untouched->session->state->model, 'teaser');
+        self::assertSame(
+            [['title'], ['summary'], [$teaser]],
+            array_map(
+                static fn (stdClass $node): array => $node->bindings->value->source->fieldPath,
+                $rehanded->roots[0]->slots->content,
+            ),
+        );
+
+        // 5. A second model-only save of the re-handed default also stays an empty draft.
+        $closingModel = self::clone($untouched->session->state->model);
+        $closingModel->fields[] = self::dataField('closing', 'Closing');
+        $again = self::saved($dispatch, $snapshot->sessionId, $untouched->session->state->coordinates, (object) [
+            'outcome' => 'save-new-type-version',
+            'model' => $closingModel,
+            'blueprint' => self::clone($rehanded),
+        ]);
+        self::assertSame('save-new-type-version', $again->outcome);
+        $third = $compositions->find($context, $definitionId, 3);
+        self::assertNotNull($third);
+        self::assertSame('draft', $third->blueprint->status);
+        self::assertSame([], $third->blueprint->document()->roots);
+        self::assertCount(4, $again->session->state->blueprint->roots[0]->slots->content);
+
+        // 6. A changed layout publishes, as any authored layout did before.
+        $changed = self::clone($again->session->state->blueprint);
+        array_pop($changed->roots[0]->slots->content);
+        $fourthModel = self::clone($again->session->state->model);
+        $fourthModel->fields[] = self::dataField('footnote', 'Footnote');
+        $published = self::saved($dispatch, $snapshot->sessionId, $again->session->state->coordinates, (object) [
+            'outcome' => 'save-new-type-version',
+            'model' => $fourthModel,
+            'blueprint' => $changed,
+        ]);
+        self::assertSame('save-new-type-version', $published->outcome);
+        $fourth = $compositions->find($context, $definitionId, 4);
+        self::assertNotNull($fourth);
+        self::assertSame('published', $fourth->blueprint->status);
+        self::assertCount(3, $changed->roots[0]->slots->content);
+        self::assertSame(
+            array_column($changed->roots[0]->slots->content, 'id'),
+            array_column($fourth->blueprint->document()->roots[0]->slots->content, 'id'),
+        );
     }
 
     /**
@@ -2234,6 +2438,34 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
                 'kumwe.app/source-field' => (object) ['storage' => 'data', 'key' => $key],
             ],
         ];
+    }
+
+    /**
+     * Find the projected identity of the field a Content model sources from one top-level data key.
+     *
+     * @param   stdClass  $model  Content-model projection.
+     * @param   string    $key    Top-level Content data key.
+     *
+     * @return  string  Projected field identifier.
+     *
+     * @since   2.0.0
+     */
+    private static function sourcedFieldId(stdClass $model, string $key): string
+    {
+        self::assertIsArray($model->fields);
+        foreach ($model->fields as $field) {
+            self::assertInstanceOf(stdClass::class, $field);
+            $source = $field->extensions->{'kumwe.app/source-field'} ?? null;
+            $sourced = $source instanceof stdClass
+                && ($source->storage ?? null) === 'data'
+                && ($source->key ?? null) === $key;
+            if ($sourced) {
+                self::assertIsString($field->id);
+
+                return $field->id;
+            }
+        }
+        self::fail('The model sources no field from data key ' . $key . '.');
     }
 
     /**

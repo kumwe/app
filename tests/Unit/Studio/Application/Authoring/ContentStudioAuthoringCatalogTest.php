@@ -152,6 +152,18 @@ final class ContentStudioAuthoringCatalogTest extends TestCase
         self::assertSame('ערך', $translated['core/field-boolean']->ports[0]->label->defaultMessage);
         self::assertSame('core.composition/field-boolean', $translated['core/field-boolean']->label->key);
         self::assertSame('מקטע ריק', $translated['core/pattern-empty-section']->label->defaultMessage);
+        // Localization keeps the inspector control a value port names, and adds none where it names none.
+        foreach ([$english, $translated] as $payloads) {
+            self::assertSame('core-block-r2', $payloads['core/field-text']->revision);
+            self::assertSame(
+                'studio.control/multi-line-text',
+                $payloads['core/field-text']->ports[0]->authoring->control,
+            );
+            self::assertSame('studio.control/integer', $payloads['core/field-integer']->ports[0]->authoring->control);
+            self::assertSame('studio.control/switch', $payloads['core/field-boolean']->ports[0]->authoring->control);
+            self::assertObjectNotHasProperty('authoring', $payloads['core/field-decimal']->ports[0]);
+            self::assertObjectNotHasProperty('authoring', $payloads['core/field-rich-text']->ports[0]);
+        }
         foreach ($english as $identity => $payload) {
             if (!str_starts_with($identity, 'core/')) {
                 self::assertEquals($payload, $translated[$identity], $identity . ' keeps its owner\'s labels.');

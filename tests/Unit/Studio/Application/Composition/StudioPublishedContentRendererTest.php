@@ -1041,7 +1041,7 @@ final class StudioPublishedContentRendererTest extends TestCase
                 'blocks' => [(object) [
                     'type' => 'core/field-text',
                     'version' => '1.0.0',
-                    'revision' => 'core-block-r1',
+                    'revision' => 'core-block-r2',
                 ]],
             ],
             'roots' => [(object) [

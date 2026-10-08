@@ -18,6 +18,7 @@ use Kumwe\Content\Domain\VersionConflict;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionLockMismatch;
 use Kumwe\App\Studio\Application\Composition\StudioContentComposition;
 use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
+use Kumwe\App\Studio\Application\Composition\StudioContentDefaultComposition;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
 use Kumwe\App\Studio\Application\Host\StudioProducerError;
@@ -626,7 +627,14 @@ final readonly class ContentStudioAuthoringService
         }
         $reference = $state->coordinates->blueprint ?? null;
         $predecessor = $reference instanceof stdClass ? ($reference->id ?? null) : null;
-        $this->adoptBlueprint($context, $successor, $blueprint, $model, is_string($predecessor) ? $predecessor : null);
+        $this->adoptBlueprint(
+            $context,
+            $successor,
+            $blueprint,
+            $model,
+            $state,
+            is_string($predecessor) ? $predecessor : null,
+        );
         $advanced = $this->adoptType($context, $session, $state, $successor);
 
         return $this->saveResult(
@@ -704,7 +712,7 @@ final readonly class ContentStudioAuthoringService
         } catch (ContentModelNotFound) {
             StudioProducerError::refuse('not-found', 'studio.authoring/workflow-not-found');
         }
-        $this->adoptBlueprint($context, $created, $blueprint, $model);
+        $this->adoptBlueprint($context, $created, $blueprint, $model, $state);
         $advanced = $this->adoptType($context, $session, $state, $created);
 
         return $this->saveResult(
@@ -885,6 +893,10 @@ final readonly class ContentStudioAuthoringService
     /**
      * Project one type-bound state, provisioning the type's composition when it has none yet.
      *
+     * A stored composition that is still a draft with no roots is handed to the session as the default
+     * composition derived from the projected model (App ADR 0024); its coordinates are the stored ones and
+     * nothing is written until a type save.
+     *
      * @param   ExecutionContext               $context     Authenticated request.
      * @param   ContentStudioAuthoringSession  $session     Trusted session.
      * @param   ContentTypeDefinition          $definition  Exact type version.
@@ -933,7 +945,11 @@ final readonly class ContentStudioAuthoringService
             $coordinates,
             ContentStudioAuthoringDocuments::typeDefinition($definition, $blueprintReference),
             $model,
-            $composition->blueprint->document(),
+            StudioContentDefaultComposition::presented(
+                $composition->blueprint->document(),
+                $model,
+                $this->catalog->renderableBlockLocks(),
+            ),
             $entry,
             $definition,
             $record,
@@ -1485,12 +1501,15 @@ final readonly class ContentStudioAuthoringService
     /**
      * Persist an authored Blueprint as the composition of one new type version.
      *
-     * @param   ExecutionContext       $context      Authenticated administrator request.
-     * @param   ContentTypeDefinition  $definition   Newly published type version.
-     * @param   stdClass               $blueprint    Authored Blueprint document.
-     * @param   ?string                $predecessor  Blueprint identity of the version this one succeeds, or null
+     * @param   ExecutionContext             $context      Authenticated administrator request.
+     * @param   ContentTypeDefinition        $definition   Newly published type version.
+     * @param   stdClass                     $blueprint    Authored Blueprint document.
+     * @param   stdClass                     $model        Authored model whose field identities are persisted
+     *          with the binding.
+     * @param   ContentStudioAuthoringState  $handed       Live state the save was planned against; an untouched
+     *          derived default layout it handed is stored as an empty draft.
+     * @param   ?string                      $predecessor  Blueprint identity of the version this one succeeds, or null
      *          for a new reusable type.
-     * @param stdClass $model Authored model whose field identities are persisted with the binding.
      *
      * @return  void
      *
@@ -1501,10 +1520,12 @@ final readonly class ContentStudioAuthoringService
         ContentTypeDefinition $definition,
         stdClass $blueprint,
         stdClass $model,
+        ContentStudioAuthoringState $handed,
         ?string $predecessor = null,
     ): void {
-        // A published Blueprint must compose at least one root; an empty layout is stored as the type's
-        // draft composition so public rendering keeps the structured template until a layout exists.
+        // A published Blueprint must compose at least one root; an empty layout stays the type's draft
+        // composition so public rendering keeps the structured template until an author composes a layout. An
+        // authored draft layout publishes as before.
         $roots = $blueprint->roots ?? null;
         $status = is_array($roots) && $roots !== [] ? 'published' : 'draft';
         // The session locks every block it can author; the stored reusable Blueprint locks exactly the
@@ -1513,6 +1534,16 @@ final readonly class ContentStudioAuthoringService
         $stored = json_decode(json_encode($blueprint, JSON_THROW_ON_ERROR), false, 64, JSON_THROW_ON_ERROR);
         if (!$stored instanceof stdClass || !$stored->dependencyLock instanceof stdClass) {
             StudioProducerError::refuse('validation-failed', 'studio.authoring/invalid-draft');
+        }
+        // The derived default layout saved without change (App ADR 0024) is stored as an empty draft, not as
+        // its roots: the default is then derived again from the current model on every load, so a later
+        // model-only save never publishes a layout no author touched, and a removed field is never persisted
+        // as a binding.
+        $handedDefault = $handed->blueprint;
+        if (is_array($roots) && StudioContentDefaultComposition::untouched($handedDefault, $handed->model, $roots)) {
+            $roots = [];
+            $stored->roots = [];
+            $status = 'draft';
         }
         // The browser's draft may carry the narrower lock of the Blueprint it started from, so the stored
         // lock is rebuilt from the session catalog the author composed against. A composed block the catalog

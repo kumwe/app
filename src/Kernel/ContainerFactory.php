@@ -769,6 +769,7 @@ use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringContext
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringContextRetentionMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringStartMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioAuthoringIdentityMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioFieldBlockRevisionMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioArtifactRecoveryMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioHostSessionMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioPreviewGrantMigration;
@@ -2405,6 +2406,7 @@ final class ContainerFactory
         ): StudioPreviewBindingSource => new ContentStudioPreviewBindingSource(
             self::service($container, StudioContentProjectionService::class),
             self::service($container, ContentStudioAuthoringContextAuthority::class),
+            self::service($container, ContentStudioAuthoringCatalog::class),
         ), true);
         $container->share(StudioPreviewBindingResolver::class, new StudioPreviewBindingResolver(), true);
         $container->share(StudioContentFieldBlockRenderer::class, new StudioContentFieldBlockRenderer(), true);
@@ -2822,6 +2824,7 @@ final class ContainerFactory
                     new OperatorDiagnosticsCapabilityMigration(self::service($container, TableNames::class)),
                     new AuditRetentionAuthorityMigration(self::service($container, TableNames::class)),
                     new CoreListingSortIndexMigration(self::service($container, TableNames::class)),
+                    new StudioFieldBlockRevisionMigration(self::service($container, TableNames::class)),
                 ],
                 self::acceptedHistoricalChecksums(),
             ), true);

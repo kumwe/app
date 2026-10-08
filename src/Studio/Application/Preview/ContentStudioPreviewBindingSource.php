@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Studio\Application\Preview;
 
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringCatalog;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextAuthority;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextRefused;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextStale;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTarget;
+use Kumwe\App\Studio\Application\Composition\StudioContentDefaultComposition;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
 use Kumwe\App\Studio\Application\Projection\StudioContentProjectionService;
 use Kumwe\App\Studio\Application\Projection\StudioProjectionRejected;
@@ -25,7 +27,8 @@ use stdClass;
  * contextual Content authoring session names an opaque authoring context instead of a resource; the
  * context authority re-resolves and re-authorizes the exact create or edit target behind it on every
  * render, so a preview shows the stored item's own values (or no values for an item that is not created
- * yet) and never a substituted entry.
+ * yet) and never a substituted entry. Such a session is handed the derived default composition in place of
+ * a stored empty draft (App ADR 0024), so its preview is presented that same document.
  *
  * @since  2.0.0
  */
@@ -37,12 +40,15 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
      * @param  StudioContentProjectionService          $content   Existing App-owned model and entry read boundary.
      * @param  ContentStudioAuthoringContextAuthority  $contexts  Opaque exact-target authority of contextual
      *         Content authoring sessions.
+     * @param  ContentStudioAuthoringCatalog           $catalog   Renderable block locks the authoring session
+     *         derives a default composition against (App ADR 0024).
      *
      * @since  2.0.0
      */
     public function __construct(
         private StudioContentProjectionService $content,
         private ContentStudioAuthoringContextAuthority $contexts,
+        private ContentStudioAuthoringCatalog $catalog,
     ) {
     }
 
@@ -94,6 +100,49 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
     }
 
     /**
+     * Return the draft a contextual Content authoring session was handed for one stored Blueprint revision.
+     *
+     * Only a contextual Content authoring session is handed a derived default, and only for a stored empty
+     * draft whose model lock is the session target's projected model. Every other session, a refused or
+     * unprojectable target, and a model mismatch return `$draft` unchanged, so the caller's identity check
+     * refuses exactly as it would without presentation.
+     *
+     * @param   ExecutionContext           $context   Authenticated App request authority.
+     * @param   StudioHostSessionSnapshot  $snapshot  Live resource and permission binding.
+     * @param   StudioPreviewDraft         $draft     Stored Blueprint revision the request names.
+     *
+     * @return  StudioPreviewDraft  A draft carrying the derived default composition, or `$draft` itself.
+     *
+     * @since   2.0.0
+     */
+    public function present(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        StudioPreviewDraft $draft,
+    ): StudioPreviewDraft {
+        if ($snapshot->session->resourceKind !== StudioResourceKind::ContentAuthoring) {
+            return $draft;
+        }
+        try {
+            [$model] = $this->authoring($context, $snapshot->session->resourceId);
+        } catch (StudioProjectionRejected | StudioPreviewRefused) {
+            return $draft;
+        }
+        $document = $draft->document();
+        $draftModel = $document->model ?? null;
+        if (!$draftModel instanceof stdClass || !self::sameCoordinate($draftModel, $model)) {
+            return $draft;
+        }
+        $presented = StudioContentDefaultComposition::presented(
+            $document,
+            $model,
+            $this->catalog->renderableBlockLocks(),
+        );
+
+        return $presented === $document ? $draft : new StudioPreviewDraft($draft->siteIdentifier, $presented);
+    }
+
+    /**
      * Resolve the exact target behind one contextual Content authoring session.
      *
      * A stale binding (the actor's approval generation moved since the mount) is followed rather than
@@ -107,6 +156,7 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
      * @return  array{0: stdClass, 1: stdClass}  Projected model and the stored entry values, or no values.
      *
      * @throws  StudioPreviewRefused  When the context is refused or names no persisted type.
+     * @throws  StudioProjectionRejected  When Content refuses or cannot project the target.
      *
      * @since   2.0.0
      */
