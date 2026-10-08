@@ -71,4 +71,30 @@ interface ContentStudioAuthoringContextRepository
      * @since   2.0.0
      */
     public function start(string $contextKey): ?array;
+
+    /**
+     * Record the digest of the reusable content type most recently handed to a session.
+     *
+     * Every hand replaces the previous digest, so a later save is fenced against the type its author
+     * actually saw. Recording the same digest again is not an error.
+     *
+     * @param   string  $contextKey  Opaque key of an existing binding.
+     * @param   string  $digest      Lowercase hexadecimal SHA-256 of the handed type's canonical JSON.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function recordHandedType(string $contextKey, string $digest): void;
+
+    /**
+     * Read the digest of the reusable content type most recently handed to a session.
+     *
+     * @param   string  $contextKey  Opaque key of an existing binding.
+     *
+     * @return  ?string  Recorded digest, or null when none was recorded or the binding does not exist.
+     *
+     * @since   2.0.0
+     */
+    public function handedType(string $contextKey): ?string;
 }

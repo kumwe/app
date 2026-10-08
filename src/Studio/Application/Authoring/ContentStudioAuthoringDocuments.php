@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Studio\Application\Authoring;
 
 use Kumwe\Content\Domain\ContentTypeDefinition;
+use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
 use stdClass;
@@ -301,15 +302,19 @@ final readonly class ContentStudioAuthoringDocuments
     /**
      * The reusable-content-type definition of one Content type bound to one exact Blueprint revision.
      *
-     * @param   ContentTypeDefinition  $definition  Exact published definition version.
-     * @param   stdClass               $blueprint   Locked Blueprint reference.
+     * @param   ContentTypeDefinition  $definition       Exact published definition version.
+     * @param   stdClass               $blueprint        Locked Blueprint reference.
+     * @param   string                 $itemComposition  Item-composition policy the type declares.
      *
      * @return  stdClass  Schema-valid `reusable-content-type` document.
      *
      * @since   2.0.0
      */
-    public static function typeDefinition(ContentTypeDefinition $definition, stdClass $blueprint): stdClass
-    {
+    public static function typeDefinition(
+        ContentTypeDefinition $definition,
+        stdClass $blueprint,
+        string $itemComposition = StudioContentCompositionService::ITEM_COMPOSITION,
+    ): stdClass {
         return (object) [
             'contractVersion' => self::CONTRACT_VERSION,
             'kind' => 'reusable-content-type',
@@ -323,22 +328,26 @@ final readonly class ContentStudioAuthoringDocuments
             'status' => 'published',
             'model' => self::modelReference($definition),
             'blueprint' => $blueprint,
-            'authoringPolicy' => self::authoringPolicy(),
+            'authoringPolicy' => self::authoringPolicy($itemComposition),
         ];
     }
 
     /**
-     * The one authoring policy every Kumwe content type declares: every mode, no item-local Blueprint.
+     * The one authoring policy every Kumwe content type declares: every mode, and the App-wide item-composition
+     * policy, which by default lets Save item keep an item's own layout (App ADR 0025).
+     *
+     * @param   string  $itemComposition  Item-composition policy, `overrides` by default or `denied`.
      *
      * @return  stdClass  Schema-valid `authoringPolicy`.
      *
      * @since   2.0.0
      */
-    public static function authoringPolicy(): stdClass
-    {
+    public static function authoringPolicy(
+        string $itemComposition = StudioContentCompositionService::ITEM_COMPOSITION,
+    ): stdClass {
         return (object) [
             'modes' => ['model', 'blueprint', 'content'],
-            'itemComposition' => 'denied',
+            'itemComposition' => $itemComposition,
         ];
     }
 

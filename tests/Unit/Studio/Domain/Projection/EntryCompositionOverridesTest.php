@@ -56,7 +56,9 @@ final class EntryCompositionOverridesTest extends TestCase
     }
 
     /**
-     * Invalid entry identity, revision, key count, key grammar and byte budget are rejected independently.
+     * Invalid entry identity, revision, key count, key grammar and byte budget are rejected independently, and
+     * the optional item layout pointer accepts only a content-addressed revision, which names the entry's one
+     * item Blueprint; without a pointer the entry follows its type's layout.
      *
      * @return  void
      *
@@ -91,6 +93,31 @@ final class EntryCompositionOverridesTest extends TestCase
             'byte budget' => ['018f22e2-7c8b-7ab0-8f3a-88e8026be200', $tooLarge, 1],
         ];
 
+        $digest = hash('sha256', 'item layout');
+        foreach (
+            [
+                'empty pointer' => '',
+                'bare prefix' => 'item-',
+                'uppercase digest' => 'item-' . strtoupper($digest),
+                'short digest' => 'item-' . substr($digest, 1),
+                'foreign prefix' => 'authored-' . $digest,
+                'trailing newline' => 'item-' . $digest . "\n",
+            ] as $label => $pointer
+        ) {
+            try {
+                new EntryCompositionOverrides(
+                    SiteContext::default(),
+                    '018f22e2-7c8b-7ab0-8f3a-88e8026be200',
+                    (object) [],
+                    1,
+                    $pointer,
+                );
+                self::fail(sprintf('The invalid item layout pointer %s was accepted.', $label));
+            } catch (InvalidArgumentException $failure) {
+                self::assertNotSame('', $failure->getMessage(), $label);
+            }
+        }
+
         foreach ($cases as $label => [$entryId, $values, $revision]) {
             try {
                 new EntryCompositionOverrides(SiteContext::default(), $entryId, $values, $revision);
@@ -99,6 +126,28 @@ final class EntryCompositionOverridesTest extends TestCase
                 self::assertNotSame('', $failure->getMessage(), $label);
             }
         }
+
+        $following = new EntryCompositionOverrides(
+            SiteContext::default(),
+            '018F22E2-7C8B-7AB0-8F3A-88E8026BE200',
+            (object) [],
+            1,
+        );
+        self::assertNull($following->itemBlueprintRevision);
+        self::assertNull($following->itemBlueprintId());
+        $pinned = new EntryCompositionOverrides(
+            SiteContext::default(),
+            '018F22E2-7C8B-7AB0-8F3A-88E8026BE200',
+            (object) [],
+            2,
+            'item-' . $digest,
+        );
+        self::assertSame('item-' . $digest, $pinned->itemBlueprintRevision);
+        self::assertSame(
+            'content-item-blueprint:018f22e2-7c8b-7ab0-8f3a-88e8026be200',
+            $pinned->itemBlueprintId(),
+        );
+        self::assertSame('{}', $pinned->canonical());
     }
 
     /**

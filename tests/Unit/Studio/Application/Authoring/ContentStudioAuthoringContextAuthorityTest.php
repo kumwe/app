@@ -169,6 +169,63 @@ final class ContentStudioAuthoringContextAuthorityTest extends TestCase
     }
 
     /**
+     * The digest of the type a session was last handed (App ADR 0025) round-trips only through its own live
+     * binding; every hand replaces it, and a foreign actor, an unknown key and an expired binding are refused.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheHandedTypeDigestRoundTripsOnlyThroughTheHoldingBinding(): void
+    {
+        $now = new DateTimeImmutable('2026-08-27T00:00:00+00:00');
+        $clock = $this->createStub(ClockInterface::class);
+        $clock->method('now')->willReturnCallback(static function () use (&$now): DateTimeImmutable {
+            return $now;
+        });
+        [$authority] = $this->authority(
+            $this->createStub(ContentModelRepository::class),
+            $this->createStub(ContentRepository::class),
+            clock: $clock,
+        );
+        $context = self::context(['content.create']);
+        $key = $authority->open(
+            $context,
+            (new ContentStudioAuthoringTargetResolver(AuthorizationContext::gateway()))->create($context),
+        );
+        $first = hash('sha256', 'type handed at start');
+        $second = hash('sha256', 'type handed by a save result');
+
+        self::assertNull($authority->handedTypeOf($context, $key), 'A session handed nothing has no digest.');
+        $authority->rememberHandedType($context, $key, $first);
+        self::assertSame($first, $authority->handedTypeOf($context, $key));
+        $authority->rememberHandedType($context, $key, $second);
+        self::assertSame($second, $authority->handedTypeOf($context, $key), 'The latest hand replaces the digest.');
+
+        $stranger = self::context(['content.create'], subject: '018f22e2-7c8b-7ab0-8f3a-88e8026bb398');
+        $unknown = 'contexts/' . str_repeat('0', 64);
+        $refusals = [
+            'a foreign reader' => static fn () => $authority->handedTypeOf($stranger, $key),
+            'a foreign writer' => static fn () => $authority->rememberHandedType($stranger, $key, $first),
+            'an unknown key' => static fn () => $authority->rememberHandedType($context, $unknown, $first),
+            'a malformed key' => static fn () => $authority->handedTypeOf($context, 'contexts/not-a-key'),
+        ];
+        foreach ($refusals as $case => $refused) {
+            try {
+                $refused();
+                self::fail(sprintf('The handed type digest must be refused for %s.', $case));
+            } catch (ContentStudioAuthoringContextRefused) {
+                self::addToAssertionCount(1);
+            }
+        }
+        self::assertSame($second, $authority->handedTypeOf($context, $key), 'A refused write changes nothing.');
+
+        $now = new DateTimeImmutable('2026-08-27T08:00:00+00:00');
+        $this->expectException(ContentStudioAuthoringContextRefused::class);
+        $authority->handedTypeOf($context, $key);
+    }
+
+    /**
      * Exact reusable-type bindings reload the immutable version and reject malformed or vanished revisions.
      *
      * @return  void
@@ -798,6 +855,45 @@ final class ContentStudioAuthoringContextAuthorityTest extends TestCase
             public function start(string $contextKey): ?array
             {
                 return $this->starts[$contextKey] ?? null;
+            }
+
+            /**
+             * Recorded handed-type digests by key.
+             *
+             * @var    array<string, string>
+             * @since  2.0.0
+             */
+            private array $handed = [];
+
+            /**
+             * Replace the handed-type digest of one existing binding.
+             *
+             * @param   string  $contextKey  Opaque key.
+             * @param   string  $digest      Handed type digest.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function recordHandedType(string $contextKey, string $digest): void
+            {
+                if (isset($this->bindings[$contextKey])) {
+                    $this->handed[$contextKey] = $digest;
+                }
+            }
+
+            /**
+             * Read the handed-type digest of one binding.
+             *
+             * @param   string  $contextKey  Opaque key.
+             *
+             * @return  ?string  Recorded digest, or null.
+             *
+             * @since   2.0.0
+             */
+            public function handedType(string $contextKey): ?string
+            {
+                return $this->handed[$contextKey] ?? null;
             }
         };
         $keys = new class implements StudioResourceContextKeyFactory {

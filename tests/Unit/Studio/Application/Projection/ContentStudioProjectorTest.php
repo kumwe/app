@@ -311,6 +311,31 @@ final class ContentStudioProjectorTest extends TestCase
         self::assertSame('<strong>Also text.</strong>', $entry->values->data_sections[0]->body);
         self::assertSame('quiet', $entry->compositionOverrides->{'hero/main'}->tone);
         self::assertSame('legal_review', $entry->extensions->{'kumwe.app/content-entry'}->workflowState);
+        // Without an item layout pointer the override extension carries only its revision.
+        self::assertEquals((object) ['revision' => 2], $entry->extensions->{'kumwe.app/composition-override'});
+
+        // A pinned item layout (App ADR 0025) is named beside the override revision, values unchanged.
+        $pinned = 'item-' . hash('sha256', 'item layout');
+        $layoutEntry = $this->projector()->entry(
+            $this->context(),
+            $record,
+            $definition,
+            $this->workflow(),
+            new EntryCompositionOverrides(SiteContext::default(), self::ENTRY_ID, $overrides->values(), 3, $pinned),
+        );
+        self::assertTrue(
+            StudioDocumentSchemaRegistry::fromVendoredCorpus()->validate('entry', $layoutEntry)->valid(),
+        );
+        self::assertEquals((object) [
+            'revision' => 3,
+            'blueprint' => (object) [
+                'id' => 'content-item-blueprint:' . strtolower(self::ENTRY_ID),
+                'version' => '1.0.0',
+                'revision' => $pinned,
+            ],
+        ], $layoutEntry->extensions->{'kumwe.app/composition-override'});
+        self::assertEquals($entry->compositionOverrides, $layoutEntry->compositionOverrides);
+        self::assertEquals($entry->values, $layoutEntry->values);
     }
 
     /**

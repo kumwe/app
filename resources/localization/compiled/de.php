@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2645 messages.
+ * Compiled interface message catalogue for de, carrying 2650 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1300,6 +1300,11 @@ return [
     'core.administrator.content_form.studio_dependent_entries_remain' => 'Andere Elemente dieses Typs behalten die aktuelle Version, bis sie migriert werden.',
     'core.administrator.content_form.studio_item_adopts_successor' => 'Dieses Element übernimmt die neue Typversion; seine Werte bleiben erhalten.',
     'core.administrator.content_form.studio_item_created' => 'Ein neues Inhaltselement wird in seinem anfänglichen Workflow-Status erstellt.',
+    'core.administrator.content_form.studio_item_layout_detached' => 'Das eigene Layout dieses Elements wurde für eine andere Version seines Inhaltstyps oder für ein anderes Website-Theme erstellt und wird daher nicht verwendet. Es bleibt erhalten.',
+    'core.administrator.content_form.studio_item_layout_inherited' => 'Dieses Element verwendet wieder das Layout seines Inhaltstyps.',
+    'core.administrator.content_form.studio_item_layout_kept' => 'Dieses Layout wird nur für dieses Element gespeichert, als Element-Blueprint neben seinem Eintrag. Der Inhaltstyp und seine anderen Elemente behalten ihr Layout.',
+    'core.administrator.content_form.studio_item_layout_live' => 'Dieses Element ist veröffentlicht, daher erscheint sein neues Layout beim Speichern auf der öffentlichen Website.',
+    'core.administrator.content_form.studio_item_layout_promoted' => 'Das eigene Layout dieses Elements wird zum Layout des Typs, den Sie speichern, und das Element folgt ihm danach.',
     'core.administrator.content_form.studio_item_revision_advances' => 'Das Element erhält eine neue Revision; sein Workflow-Status ändert sich nicht.',
     'core.administrator.content_form.studio_new_type_for_item' => 'Aus diesem Entwurf wird ein neuer wiederverwendbarer Inhaltstyp erstellt, den dieses Element übernimmt.',
     'core.administrator.content_form.studio_new_type_for_new_item' => 'Aus diesem Entwurf wird ein neuer wiederverwendbarer Inhaltstyp erstellt, den dieses Element verwendet.',

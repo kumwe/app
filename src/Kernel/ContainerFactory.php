@@ -387,8 +387,10 @@ use Kumwe\App\Studio\Application\Projection\RecordAuthorizedStudioContentFieldDi
 use Kumwe\App\Studio\Application\Projection\StudioContentFieldDisclosure;
 use Kumwe\App\Studio\Application\Projection\StudioContentProjectionService;
 use Kumwe\App\Studio\Application\Composition\ContentBlueprintBindingStore;
+use Kumwe\App\Studio\Application\Composition\EntryCompositionOverrideStore;
 use Kumwe\App\Studio\Application\Composition\CanonicalStudioPublishedContentRenderer;
 use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
+use Kumwe\App\Studio\Application\Composition\StudioItemCompositionPolicy;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionCatalog;
 use Kumwe\App\Studio\Application\Composition\StudioBuiltInThemeRelease;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedCompositionGuard;
@@ -770,6 +772,7 @@ use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringContext
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringStartMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioAuthoringIdentityMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioFieldBlockRevisionMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioItemCompositionMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioArtifactRecoveryMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioHostSessionMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioPreviewGrantMigration;
@@ -2145,6 +2148,7 @@ final class ContainerFactory
             true,
         );
         $container->alias(ContentBlueprintBindingStore::class, ContentProjectionBindingRepository::class);
+        $container->alias(EntryCompositionOverrideStore::class, ContentProjectionBindingRepository::class);
         $container->share(
             StudioContentFieldDisclosure::class,
             new RecordAuthorizedStudioContentFieldDisclosure(),
@@ -2183,6 +2187,8 @@ final class ContainerFactory
             self::service($container, ClockInterface::class),
             self::service($container, StudioCompositionContributionCatalog::class),
             self::service($container, StudioPublishedTheme::class),
+            self::service($container, EntryCompositionOverrideStore::class),
+            self::service($container, StudioPublishedCompositionGuard::class),
         ), true);
         $container->share(StudioPublishedTheme::class, static fn (
             Container $container,
@@ -2290,6 +2296,7 @@ final class ContainerFactory
             self::service($container, StudioDocumentSchemaRegistry::class),
             self::service($container, ContentStudioAuthoringCatalog::class),
             self::service($container, Translator::class),
+            self::service($container, StudioItemCompositionPolicy::class),
         ), true);
         $container->share(StudioAuthoringHostPort::class, static fn (
             Container $container,
@@ -2407,7 +2414,11 @@ final class ContainerFactory
             self::service($container, StudioContentProjectionService::class),
             self::service($container, ContentStudioAuthoringContextAuthority::class),
             self::service($container, ContentStudioAuthoringCatalog::class),
+            self::service($container, StudioItemCompositionPolicy::class),
         ), true);
+        // The one App-wide item-composition policy (App ADR 0025); every reader of item layouts shares it.
+        $container->share(StudioItemCompositionPolicy::class, static fn (): StudioItemCompositionPolicy =>
+            new StudioItemCompositionPolicy(), true);
         $container->share(StudioPreviewBindingResolver::class, new StudioPreviewBindingResolver(), true);
         $container->share(StudioContentFieldBlockRenderer::class, new StudioContentFieldBlockRenderer(), true);
         $container->share(StudioBlockRendererRuntime::class, static fn (
@@ -2437,6 +2448,7 @@ final class ContainerFactory
             self::service($container, ContentStudioProjector::class),
             self::service($container, StudioBlockRendererRuntime::class),
             self::service($container, StudioPreviewBindingResolver::class),
+            self::service($container, StudioItemCompositionPolicy::class),
         ), true);
         $container->alias(StudioPublishedContentRenderer::class, CanonicalStudioPublishedContentRenderer::class);
         $container->share(StudioPreviewActivityRecorder::class, static fn (
@@ -2825,6 +2837,7 @@ final class ContainerFactory
                     new AuditRetentionAuthorityMigration(self::service($container, TableNames::class)),
                     new CoreListingSortIndexMigration(self::service($container, TableNames::class)),
                     new StudioFieldBlockRevisionMigration(self::service($container, TableNames::class)),
+                    new StudioItemCompositionMigration(self::service($container, TableNames::class)),
                 ],
                 self::acceptedHistoricalChecksums(),
             ), true);

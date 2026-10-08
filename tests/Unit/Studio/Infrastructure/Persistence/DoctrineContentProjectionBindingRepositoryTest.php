@@ -90,7 +90,8 @@ final class DoctrineContentProjectionBindingRepositoryTest extends TestCase
     }
 
     /**
-     * Drivers returning JSON text or a decoded object both produce the same canonical immutable overrides.
+     * Drivers returning JSON text or a decoded object both produce the same canonical immutable overrides, and
+     * the item layout pointer is read beside them: absent, it leaves the entry following its type's layout.
      *
      * @return  void
      *
@@ -98,11 +99,14 @@ final class DoctrineContentProjectionBindingRepositoryTest extends TestCase
      */
     public function testOverrideReadAcceptsBothPortableDriverJsonShapes(): void
     {
+        $pinned = 'item-' . hash('sha256', 'item layout');
         foreach (
             [
-                '{"hero/main":{"tone":"quiet"}}',
-                (object) ['hero/main' => (object) ['tone' => 'quiet']],
-            ] as $stored
+                ['{"hero/main":{"tone":"quiet"}}', null],
+                [(object) ['hero/main' => (object) ['tone' => 'quiet']], null],
+                ['{"hero/main":{"tone":"quiet"}}', $pinned],
+                [(object) ['hero/main' => (object) ['tone' => 'quiet']], $pinned],
+            ] as [$stored, $pointer]
         ) {
             $site = SiteContext::fromString('publisher-namibia');
             $database = $this->createMock(Connection::class);
@@ -110,12 +114,16 @@ final class DoctrineContentProjectionBindingRepositoryTest extends TestCase
                 ->with('kumwe_studio_entry_composition_overrides')
                 ->willReturn('`kumwe_studio_entry_composition_overrides`');
             $database->expects(self::once())->method('fetchAssociative')->with(
-                'SELECT override_values, override_revision '
+                'SELECT override_values, override_revision, item_blueprint_revision '
                     . 'FROM `kumwe_studio_entry_composition_overrides` '
                     . 'WHERE site_identifier = ? AND content_entry_id = ?',
                 ['publisher-namibia', self::entryId()],
                 [ParameterType::STRING, Types::GUID],
-            )->willReturn(['override_values' => $stored, 'override_revision' => 3]);
+            )->willReturn([
+                'override_values' => $stored,
+                'override_revision' => 3,
+                'item_blueprint_revision' => $pointer,
+            ]);
 
             $overrides = $this->repository($database)->overrides($site, self::entryId());
 
@@ -124,6 +132,43 @@ final class DoctrineContentProjectionBindingRepositoryTest extends TestCase
             self::assertSame(self::entryId(), $overrides->entryId);
             self::assertSame(3, $overrides->revision);
             self::assertSame('{"hero/main":{"tone":"quiet"}}', $overrides->canonical());
+            self::assertSame($pointer, $overrides->itemBlueprintRevision);
+            self::assertSame(
+                $pointer === null ? null : EntryCompositionOverrides::ITEM_BLUEPRINT_PREFIX . self::entryId(),
+                $overrides->itemBlueprintId(),
+            );
+        }
+    }
+
+    /**
+     * Pinning an item layout outside a transaction is refused before any statement reaches the database, and a
+     * pointer move that would not advance the override revision is refused the same way.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOverridePinRequiresATransaction(): void
+    {
+        $site = SiteContext::fromString('publisher-namibia');
+        $next = new EntryCompositionOverrides(
+            $site,
+            self::entryId(),
+            new \stdClass(),
+            2,
+            'item-' . hash('sha256', 'item layout'),
+        );
+        foreach ([[false, null], [false, 1], [true, 2], [true, 0]] as [$active, $expected]) {
+            $database = $this->createMock(Connection::class);
+            $database->method('isTransactionActive')->willReturn($active);
+            $database->expects(self::never())->method('insert');
+            $database->expects(self::never())->method('executeStatement');
+            try {
+                $this->repository($database)->pin($next, $expected);
+                self::fail('An item layout pointer write was accepted without an advancing transaction.');
+            } catch (\LogicException $refused) {
+                self::assertStringStartsWith('A Studio entry override', $refused->getMessage());
+            }
         }
     }
 
@@ -170,6 +215,18 @@ final class DoctrineContentProjectionBindingRepositoryTest extends TestCase
             } catch (RuntimeException $failure) {
                 self::assertStringContainsString('Stored Studio', $failure->getMessage(), $label);
             }
+        }
+
+        $database = $this->databaseReturning('studio_entry_composition_overrides', [
+            'override_values' => '{}',
+            'override_revision' => 1,
+            'item_blueprint_revision' => 'item-not-a-digest',
+        ]);
+        try {
+            $this->repository($database)->overrides(SiteContext::default(), self::entryId());
+            self::fail('A malformed item layout pointer was accepted.');
+        } catch (RuntimeException $failure) {
+            self::assertSame('Stored Studio entry override metadata is invalid.', $failure->getMessage());
         }
 
         foreach (['{not-json', '[]', 42] as $stored) {

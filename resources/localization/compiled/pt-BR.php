@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2645 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2650 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1300,6 +1300,11 @@ return [
     'core.administrator.content_form.studio_dependent_entries_remain' => 'Os outros itens deste tipo mantêm a versão atual até serem migrados.',
     'core.administrator.content_form.studio_item_adopts_successor' => 'Este item adota a nova versão do tipo; seus valores são mantidos.',
     'core.administrator.content_form.studio_item_created' => 'Um novo item de conteúdo é criado no estado inicial do fluxo de trabalho.',
+    'core.administrator.content_form.studio_item_layout_detached' => 'O layout próprio deste item foi criado para outra versão do seu tipo de conteúdo ou para outro tema do site, por isso não é usado. Ele é mantido.',
+    'core.administrator.content_form.studio_item_layout_inherited' => 'Este item volta a usar o layout do seu tipo de conteúdo.',
+    'core.administrator.content_form.studio_item_layout_kept' => 'Este layout é salvo somente para este item, como um Blueprint do item ao lado da sua entrada. O tipo de conteúdo e os demais itens dele mantêm o próprio layout.',
+    'core.administrator.content_form.studio_item_layout_live' => 'Este item está publicado, então seu novo layout aparece no site público quando você salvar.',
+    'core.administrator.content_form.studio_item_layout_promoted' => 'O layout próprio deste item passa a ser o layout do tipo que você está salvando, e o item passa a segui-lo.',
     'core.administrator.content_form.studio_item_revision_advances' => 'O item recebe uma nova revisão; o estado do fluxo de trabalho não muda.',
     'core.administrator.content_form.studio_new_type_for_item' => 'Um novo tipo de conteúdo reutilizável é criado a partir deste design e este item o adota.',
     'core.administrator.content_form.studio_new_type_for_new_item' => 'Um novo tipo de conteúdo reutilizável é criado a partir deste design e este item o utiliza.',

@@ -13013,6 +13013,51 @@
         <target>Um novo tipo de conteúdo reutilizável é criado a partir deste design e este item o adota.</target>
       </segment>
     </unit>
+    <unit id="core.administrator.content_form.studio_item_layout_kept">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before an item is saved with a layout of its own, which differs from its content type's layout. It names the item's entry and its item Blueprint as the saved artifacts.</note>
+      </notes>
+      <segment>
+        <source>This layout is saved for this item only, as an item Blueprint beside its entry. The content type and its other items keep their layout.</source>
+        <target>Este layout é salvo somente para este item, como um Blueprint do item ao lado da sua entrada. O tipo de conteúdo e os demais itens dele mantêm o próprio layout.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_item_layout_live">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before a published item is saved with a changed layout of its own, or with its content type's layout again after it had one of its own.</note>
+      </notes>
+      <segment>
+        <source>This item is published, so its new layout appears on the public site when you save.</source>
+        <target>Este item está publicado, então seu novo layout aparece no site público quando você salvar.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_item_layout_inherited">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before an item that had a layout of its own is saved with its content type's layout again.</note>
+      </notes>
+      <segment>
+        <source>This item uses its content type's layout again.</source>
+        <target>Este item volta a usar o layout do seu tipo de conteúdo.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_item_layout_promoted">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before a new content type, or a new version of the item's content type, is saved from an item that has a layout of its own.</note>
+      </notes>
+      <segment>
+        <source>This item's own layout becomes the layout of the type you are saving, and the item then follows it.</source>
+        <target>O layout próprio deste item passa a ser o layout do tipo que você está salvando, e o item passa a segui-lo.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_item_layout_detached">
+      <notes>
+        <note category="context">Diagnostic the contextual Studio shows when an item's own layout was made for another version of its content type, or is locked to a site theme that is no longer published, so the editor shows the type's layout instead.</note>
+      </notes>
+      <segment>
+        <source>This item's own layout was made for another version of its content type or for another site theme, so it is not used. It is kept.</source>
+        <target>O layout próprio deste item foi criado para outra versão do seu tipo de conteúdo ou para outro tema do site, por isso não é usado. Ele é mantido.</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.content_form.studio_block_text">
       <notes>
         <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>

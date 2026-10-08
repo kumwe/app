@@ -345,6 +345,45 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
             {
                 return $this->starts[$contextKey] ?? null;
             }
+
+            /**
+             * Recorded handed-type digests by key.
+             *
+             * @var    array<string, string>
+             * @since  2.0.0
+             */
+            private array $handed = [];
+
+            /**
+             * Replace the handed-type digest of one existing binding.
+             *
+             * @param   string  $contextKey  Opaque key.
+             * @param   string  $digest      Handed type digest.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function recordHandedType(string $contextKey, string $digest): void
+            {
+                if (isset($this->bindings[$contextKey])) {
+                    $this->handed[$contextKey] = $digest;
+                }
+            }
+
+            /**
+             * Read the handed-type digest of one binding.
+             *
+             * @param   string  $contextKey  Opaque key.
+             *
+             * @return  ?string  Recorded digest, or null.
+             *
+             * @since   2.0.0
+             */
+            public function handedType(string $contextKey): ?string
+            {
+                return $this->handed[$contextKey] ?? null;
+            }
         };
         $sessions = new class implements StudioHostSessionRepository {
             /**

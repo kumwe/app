@@ -16,20 +16,28 @@ use Kumwe\Content\Domain\ContentTypeDefinition;
 use Kumwe\Content\Domain\InvalidContentData;
 use Kumwe\Content\Domain\VersionConflict;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionLockMismatch;
+use Kumwe\App\Studio\Application\Composition\StudioCompositionThemeMismatch;
 use Kumwe\App\Studio\Application\Composition\StudioContentComposition;
 use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
 use Kumwe\App\Studio\Application\Composition\StudioContentDefaultComposition;
+use Kumwe\App\Studio\Application\Composition\StudioItemCompositionPolicy;
+use Kumwe\App\Studio\Application\Composition\StudioPublishedBlueprintMismatch;
+use Kumwe\App\Studio\Application\Composition\StudioPublishedModelMismatch;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
+use Kumwe\App\Studio\Application\Host\StudioPersistenceRace;
 use Kumwe\App\Studio\Application\Host\StudioProducerError;
+use Kumwe\App\Studio\Application\Preview\StudioPublishedBlockRendererUnavailable;
 use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Application\Projection\StudioProjectionRejected;
+use Kumwe\App\Studio\Domain\Artifact\StoredStudioArtifact;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\Content\Workflow\Domain\WorkflowDefinition;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Localization\Application\Translator;
+use Kumwe\Producer\Canonical\CanonicalEncodingException;
 use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use stdClass;
@@ -112,6 +120,55 @@ final readonly class ContentStudioAuthoringService
     public const string ITEM_ADOPTS = 'kumwe.app/item-adopts-successor';
 
     /**
+     * Consequence noting that the layout is kept for this item only, beside its entry (App ADR 0025).
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string ITEM_LAYOUT_KEPT = 'kumwe.app/item-layout-kept';
+
+    /**
+     * Consequence warning that a published item's new layout, its own or its type's again, appears on the public
+     * site when it is saved.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string ITEM_LAYOUT_LIVE = 'kumwe.app/item-layout-live';
+
+    /**
+     * Consequence noting that the item follows its content type's layout again.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string ITEM_LAYOUT_INHERITED = 'kumwe.app/item-layout-inherited';
+
+    /**
+     * Consequence noting that the item's own layout becomes the layout of the type it saves.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string ITEM_LAYOUT_PROMOTED = 'kumwe.app/item-layout-promoted';
+
+    /**
+     * Diagnostic noting that the item's own layout was made for another type version, so it is kept but unused.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string ITEM_LAYOUT_DETACHED = 'kumwe.app/item-layout-detached';
+
+    /**
+     * Studio permission an item session must hold for Save item to keep the item's own layout.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string EDIT_BLUEPRINT = 'studio.permission/edit-blueprint';
+
+    /**
      * Presentation states every contextual session may occupy.
      *
      * @var    list<string>
@@ -122,17 +179,19 @@ final readonly class ContentStudioAuthoringService
     /**
      * Compose the authoritative Content, projection, composition and contract services.
      *
-     * @param  ContentStudioAuthoringContextAuthority  $contexts      Opaque exact-target context authority.
-     * @param  ContentService                          $content       Authorized Content entry service.
-     * @param  ContentModelService                     $models        Authorized Content type service.
-     * @param  ContentStudioProjector                  $projector     Canonical Content-to-Studio projection.
-     * @param  StudioContentCompositionService         $compositions  Type-version Blueprint composition service.
-     * @param  ContentProjectionBindingRepository      $bindings      Read-only binding and override projection.
-     * @param  StudioPublishedTheme                    $theme         Exact published public-theme authority.
-     * @param  StudioDocumentSchemaRegistry            $schemas       Producer's pinned schema interpreter.
+     * @param  ContentStudioAuthoringContextAuthority  $contexts         Opaque exact-target context authority.
+     * @param  ContentService                          $content          Authorized Content entry service.
+     * @param  ContentModelService                     $models           Authorized Content type service.
+     * @param  ContentStudioProjector                  $projector        Canonical Content-to-Studio projection.
+     * @param  StudioContentCompositionService         $compositions     Type-version Blueprint composition service.
+     * @param  ContentProjectionBindingRepository      $bindings         Read-only binding and override projection.
+     * @param  StudioPublishedTheme                    $theme            Exact published public-theme authority.
+     * @param  StudioDocumentSchemaRegistry            $schemas          Producer's pinned schema interpreter.
      * @param ContentStudioAuthoringCatalog $catalog The one block catalog sessions lock and saves admit.
-     * @param  Translator                              $translator    Interface-locale text the host hands Studio
+     * @param  Translator                              $translator       Interface-locale text the host hands Studio
      *         for its own labels and save consequences.
+     * @param  StudioItemCompositionPolicy             $itemComposition  The App-wide item-composition policy the
+     *         reusable type declares and every item layout read, plan and save obeys (App ADR 0025).
      *
      * @since  2.0.0
      */
@@ -147,6 +206,7 @@ final readonly class ContentStudioAuthoringService
         private StudioDocumentSchemaRegistry $schemas,
         private ContentStudioAuthoringCatalog $catalog,
         private Translator $translator,
+        private StudioItemCompositionPolicy $itemComposition = new StudioItemCompositionPolicy(),
     ) {
     }
 
@@ -381,6 +441,7 @@ final readonly class ContentStudioAuthoringService
         if ($held !== ['source' => CanonicalJson::stringify($source), 'presentation' => $presentation]) {
             StudioProducerError::refuse('conflict', 'studio.authoring/start-already-chosen');
         }
+        $this->handed($context, $session, $state);
 
         return $this->snapshot($session, $state, $source, $presentation, $session->returnContext($this->returnLabel()));
     }
@@ -490,7 +551,8 @@ final readonly class ContentStudioAuthoringService
             $session,
             (object) ['type' => $this->typeReferenceOf($entry->model ?? null)],
         );
-        $plan = $this->acceptedPlan($context, $session, $state, $draft, $request);
+        // The accepted plan re-decides and re-admits any item layout against live state before any effect.
+        [$plan, $layout] = $this->acceptedPlan($context, $session, $state, $draft, $request);
         $definition = $state->definition;
         if ($definition === null) {
             StudioProducerError::refuse('validation-failed', 'studio.authoring/type-required');
@@ -537,6 +599,20 @@ final readonly class ContentStudioAuthoringService
             StudioProducerError::refuse('forbidden', 'studio.authoring/save-refused');
         } catch (ContentModelNotFound) {
             StudioProducerError::refuse('not-found', 'studio.authoring/type-not-found');
+        }
+        $reason = match (true) {
+            $layout === null => null,
+            $layout['kind'] === 'kept' => 'kept',
+            $layout['kind'] === 'inherit' && $state->itemLayoutActive() => 'inherited',
+            default => null,
+        };
+        // A create pins the type version that is latest when it runs; a layout admitted against the session's
+        // version would be detached from its first moment, so the whole save is refused and rolled back.
+        if ($reason === 'kept' && $record->contentTypeVersion !== $definition->version) {
+            StudioProducerError::refuse('conflict', 'studio.authoring/type-changed');
+        }
+        if ($reason !== null) {
+            $this->keepItemLayout($context, $state, $record, $layout['layout'] ?? null, $reason);
         }
         $successor = $this->editTarget($record, $definition);
         $this->contexts->advance($context, $session->host->resourceId, $successor);
@@ -598,7 +674,7 @@ final readonly class ContentStudioAuthoringService
             StudioProducerError::refuse('validation-failed', 'studio.authoring/invalid-draft');
         }
         $state = $this->liveState($context, $session, (object) ['type' => $this->typeReferenceOfModel($model)]);
-        $plan = $this->acceptedPlan($context, $session, $state, $draft, $request);
+        [$plan] = $this->acceptedPlan($context, $session, $state, $draft, $request);
         $definition = $state->definition;
         if ($definition === null) {
             StudioProducerError::refuse('validation-failed', 'studio.authoring/type-required');
@@ -625,7 +701,9 @@ final readonly class ContentStudioAuthoringService
         } catch (ContentModelNotFound) {
             StudioProducerError::refuse('not-found', 'studio.authoring/type-not-found');
         }
-        $reference = $state->coordinates->blueprint ?? null;
+        // The successor keeps the reusable type's Blueprint lineage, never an item layout's identity: while the
+        // item keeps its own layout, the coordinated Blueprint is the item's and only the type names the type's.
+        $reference = $state->type->blueprint ?? null;
         $predecessor = $reference instanceof stdClass ? ($reference->id ?? null) : null;
         $this->adoptBlueprint(
             $context,
@@ -694,7 +772,7 @@ final readonly class ContentStudioAuthoringService
             StudioProducerError::refuse('validation-failed', 'studio.authoring/invalid-draft');
         }
         $state = $this->liveState($context, $session, (object) ['type' => $this->typeReferenceOfModel($model)]);
-        $plan = $this->acceptedPlan($context, $session, $state, $draft, $request);
+        [$plan] = $this->acceptedPlan($context, $session, $state, $draft, $request);
         $name = $this->modelName($label, $this->modelName($model, 'New content type'));
         $workflow = $state->definition === null ? ContentService::CORE_WORKFLOW_ID : $state->definition->workflowId;
         try {
@@ -895,7 +973,12 @@ final readonly class ContentStudioAuthoringService
      *
      * A stored composition that is still a draft with no roots is handed to the session as the default
      * composition derived from the projected model (App ADR 0024); its coordinates are the stored ones and
-     * nothing is written until a type save.
+     * nothing is written until a type save. A persisted item that keeps its own layout is handed that layout
+     * exactly as stored, never a derived default, and the coordinated Blueprint is the item's while the
+     * reusable type still names the type's (App ADR 0025). A layout made for another type version, or locked to
+     * a theme that is no longer published, is kept but not used: the type's layout is handed with the
+     * `kumwe.app/item-layout-detached` diagnostic. Under the `denied` item-composition policy stored layouts are
+     * ignored without a diagnostic.
      *
      * @param   ExecutionContext               $context     Authenticated request.
      * @param   ContentStudioAuthoringSession  $session     Trusted session.
@@ -914,10 +997,13 @@ final readonly class ContentStudioAuthoringService
         ?ContentRecord $record,
         ?WorkflowDefinition $workflow,
     ): ContentStudioAuthoringState {
+        $overrides = null;
+        $itemLayout = null;
         try {
             $composition = $this->compositions->find($context, $definition->id, $definition->version)
                 ?? $this->compositions->provision($context, $definition->id, $definition->version, self::RENDERERS);
             $model = $this->projector->contentModel($context, $definition, $composition->binding);
+            $overrides = $record === null ? null : $this->bindings->overrides($context->site(), $record->entry->id());
             $entry = $record === null
                 ? $this->draftEntry($session, ContentStudioAuthoringDocuments::modelReference($definition))
                 : $this->projector->entry(
@@ -925,15 +1011,48 @@ final readonly class ContentStudioAuthoringService
                     $record,
                     $definition,
                     $workflow,
-                    $this->bindings->overrides($context->site(), $record->entry->id()),
+                    $overrides,
                     $composition->binding,
                 );
+            if ($overrides !== null && $this->itemComposition->allowsItemLayouts()) {
+                $itemLayout = $this->compositions->itemLayout(
+                    $context,
+                    $definition->id,
+                    $definition->version,
+                    $overrides,
+                );
+            }
         } catch (StudioProjectionRejected) {
             StudioProducerError::refuse('validation-failed', 'studio.authoring/projection-rejected');
         } catch (AuthorizationDenied) {
             StudioProducerError::refuse('forbidden', 'studio.authoring/item-refused');
         }
-        $blueprintReference = self::compositionReference($composition);
+        $typeReference = self::compositionReference($composition);
+        $typeBlueprint = StudioContentDefaultComposition::presented(
+            $composition->blueprint->document(),
+            $model,
+            $this->catalog->renderableBlockLocks(),
+        );
+        $blueprint = $typeBlueprint;
+        $blueprintReference = $typeReference;
+        $diagnostics = [];
+        if ($itemLayout !== null) {
+            $blueprint = $itemLayout->document();
+            $blueprintReference = (object) [
+                'id' => $itemLayout->id,
+                'version' => $itemLayout->version,
+                'revision' => $itemLayout->revision,
+            ];
+        } elseif (
+            $overrides?->itemBlueprintRevision !== null
+            && $this->itemComposition->allowsItemLayouts()
+        ) {
+            $diagnostics[] = ContentStudioAuthoringDocuments::diagnostic(
+                self::ITEM_LAYOUT_DETACHED,
+                'warning',
+                $this->translator->translate('core.administrator.content_form.studio_item_layout_detached'),
+            );
+        }
         $coordinates = (object) [
             'type' => ContentStudioAuthoringDocuments::typeReference($definition),
             'model' => ContentStudioAuthoringDocuments::modelReference($definition),
@@ -943,16 +1062,19 @@ final readonly class ContentStudioAuthoringService
 
         return new ContentStudioAuthoringState(
             $coordinates,
-            ContentStudioAuthoringDocuments::typeDefinition($definition, $blueprintReference),
-            $model,
-            StudioContentDefaultComposition::presented(
-                $composition->blueprint->document(),
-                $model,
-                $this->catalog->renderableBlockLocks(),
+            ContentStudioAuthoringDocuments::typeDefinition(
+                $definition,
+                $typeReference,
+                $this->itemComposition->policy,
             ),
+            $model,
+            $blueprint,
             $entry,
             $definition,
             $record,
+            $typeBlueprint,
+            $overrides,
+            $diagnostics,
         );
     }
 
@@ -1091,6 +1213,37 @@ final readonly class ContentStudioAuthoringService
         ContentStudioAuthoringState $state,
         stdClass $draft,
     ): stdClass {
+        return $this->planned($context, $session, $state, $draft)[0];
+    }
+
+    /**
+     * Build the host-reviewed plan for one draft against live state, with its item layout decision.
+     *
+     * A save-item draft carrying an item layout is refused unless the item-composition policy allows item
+     * layouts and the session may edit Blueprints; every save-item is fenced against the reusable type the
+     * session was last handed; and the layout is decided and admitted here, so the same checks run when the
+     * plan is offered and again, against live state, before a save has any effect (App ADR 0025). A save that
+     * changes the layout a published item's public page shows, whether it keeps a new layout or goes back to
+     * the type's, discloses it and is confirmed.
+     *
+     * @param   ExecutionContext               $context  Authenticated administrator request.
+     * @param   ContentStudioAuthoringSession  $session  Trusted session.
+     * @param   ContentStudioAuthoringState    $state    Live projection.
+     * @param   stdClass                       $draft    Save draft.
+     *
+     * @return  array{0: stdClass, 1: ?array{kind: 'inherit'|'unchanged'|'kept', layout: ?StoredStudioArtifact}}
+     *          Schema-valid `authoring-save` plan, and the item layout decision of a save-item draft that
+     *          carries a layout, or null.
+     *
+     * @since   2.0.0
+     */
+    private function planned(
+        ExecutionContext $context,
+        ContentStudioAuthoringSession $session,
+        ContentStudioAuthoringState $state,
+        stdClass $draft,
+    ): array {
+        $layout = null;
         $outcome = $draft->outcome ?? null;
         if (!is_string($outcome) || !in_array($outcome, $this->admittedOutcomes($state), true)) {
             StudioProducerError::refuse('validation-failed', 'studio.authoring/outcome-unavailable');
@@ -1099,9 +1252,14 @@ final readonly class ContentStudioAuthoringService
         $confirmation = false;
         switch ($outcome) {
             case 'save-item':
-                if (property_exists($draft, 'itemBlueprint')) {
+                $itemLayout = property_exists($draft, 'itemBlueprint');
+                if ($itemLayout && !$this->itemComposition->allowsItemLayouts()) {
                     StudioProducerError::refuse('validation-failed', 'studio.authoring/item-composition-denied');
                 }
+                if ($itemLayout && !in_array(self::EDIT_BLUEPRINT, $session->permissions, true)) {
+                    StudioProducerError::refuse('forbidden', 'studio.authoring/item-layout-refused');
+                }
+                $this->assertHandedType($context, $session, $state);
                 $affected = ['entry'];
                 $consequences[] = ContentStudioAuthoringDocuments::diagnostic(
                     $state->record === null ? 'kumwe.app/item-created' : 'kumwe.app/item-revision-advances',
@@ -1110,6 +1268,37 @@ final readonly class ContentStudioAuthoringService
                         ? $this->translator->translate('core.administrator.content_form.studio_item_created')
                         : $this->translator->translate('core.administrator.content_form.studio_item_revision_advances'),
                 );
+                if (!$itemLayout) {
+                    break;
+                }
+                $affected = ['entry', 'blueprint'];
+                $layout = $this->itemLayoutDecision($context, $session, $state, $draft->itemBlueprint);
+                $live = ($state->entry->status ?? null) === 'published';
+                if ($layout['kind'] === 'kept') {
+                    $consequences[] = ContentStudioAuthoringDocuments::diagnostic(
+                        self::ITEM_LAYOUT_KEPT,
+                        'information',
+                        $this->translator->translate('core.administrator.content_form.studio_item_layout_kept'),
+                    );
+                    if ($live) {
+                        $consequences[] = $this->liveLayoutConsequence();
+                    }
+                    // The first divergence from the type's layout, and every layout change a public page shows
+                    // at once, are confirmed.
+                    $confirmation = $live || !$state->itemLayoutActive();
+                } elseif ($layout['kind'] === 'inherit' && $state->itemLayoutActive()) {
+                    $consequences[] = ContentStudioAuthoringDocuments::diagnostic(
+                        self::ITEM_LAYOUT_INHERITED,
+                        'information',
+                        $this->translator->translate('core.administrator.content_form.studio_item_layout_inherited'),
+                    );
+                    // Going back to the type's layout changes a published page at once too, so it is disclosed
+                    // and confirmed exactly as a kept layout is.
+                    if ($live) {
+                        $consequences[] = $this->liveLayoutConsequence();
+                    }
+                    $confirmation = $live;
+                }
                 break;
             case 'save-new-type-version':
                 $definition = $state->definition;
@@ -1136,6 +1325,9 @@ final readonly class ContentStudioAuthoringService
                         $this->translator->translate('core.administrator.content_form.studio_breaking_schema_change'),
                     );
                 }
+                if ($state->itemLayoutActive()) {
+                    $consequences[] = $this->promotedConsequence();
+                }
                 break;
             default:
                 $affected = ['model', 'blueprint', 'reusable-content-type'];
@@ -1147,11 +1339,14 @@ final readonly class ContentStudioAuthoringService
                         ? $this->translator->translate('core.administrator.content_form.studio_new_type_for_new_item')
                         : $this->translator->translate('core.administrator.content_form.studio_new_type_for_item'),
                 );
+                if ($state->itemLayoutActive()) {
+                    $consequences[] = $this->promotedConsequence();
+                }
                 break;
         }
         $id = self::planId($session, $state, $outcome, $draft);
 
-        return $this->validated('authoring-save', 'savePlan', (object) [
+        return [$this->validated('authoring-save', 'savePlan', (object) [
             'contractVersion' => ContentStudioAuthoringDocuments::CONTRACT_VERSION,
             'kind' => 'authoring-save-plan',
             'id' => $id,
@@ -1167,7 +1362,39 @@ final readonly class ContentStudioAuthoringService
             'affectedArtifacts' => $affected,
             'consequences' => $consequences,
             'confirmationRequired' => $confirmation,
-        ]);
+        ]), $layout];
+    }
+
+    /**
+     * The consequence a save item discloses when it changes the layout a published item's public page shows.
+     *
+     * @return  stdClass  Schema-valid common `diagnostic`.
+     *
+     * @since   2.0.0
+     */
+    private function liveLayoutConsequence(): stdClass
+    {
+        return ContentStudioAuthoringDocuments::diagnostic(
+            self::ITEM_LAYOUT_LIVE,
+            'warning',
+            $this->translator->translate('core.administrator.content_form.studio_item_layout_live'),
+        );
+    }
+
+    /**
+     * The consequence a type save from an item that keeps its own layout discloses.
+     *
+     * @return  stdClass  Schema-valid common `diagnostic`.
+     *
+     * @since   2.0.0
+     */
+    private function promotedConsequence(): stdClass
+    {
+        return ContentStudioAuthoringDocuments::diagnostic(
+            self::ITEM_LAYOUT_PROMOTED,
+            'information',
+            $this->translator->translate('core.administrator.content_form.studio_item_layout_promoted'),
+        );
     }
 
     /**
@@ -1179,7 +1406,8 @@ final readonly class ContentStudioAuthoringService
      * @param   stdClass                       $draft    Save draft.
      * @param   stdClass                       $request  Save request carrying the plan reference.
      *
-     * @return  stdClass  The recomputed plan.
+     * @return  array{0: stdClass, 1: ?array{kind: 'inherit'|'unchanged'|'kept', layout: ?StoredStudioArtifact}}
+     *          The recomputed plan, and the item layout decision it re-made against live state, or null.
      *
      * @since   2.0.0
      */
@@ -1189,9 +1417,9 @@ final readonly class ContentStudioAuthoringService
         ContentStudioAuthoringState $state,
         stdClass $draft,
         stdClass $request,
-    ): stdClass {
+    ): array {
         $this->recordedStart($context, $session);
-        $plan = $this->plan($context, $session, $state, $draft);
+        [$plan, $layout] = $this->planned($context, $session, $state, $draft);
         $reference = $request->plan ?? null;
         if (
             !$reference instanceof stdClass
@@ -1218,7 +1446,7 @@ final readonly class ContentStudioAuthoringService
             StudioProducerError::refuse('validation-failed', 'studio.authoring/consequences-unaccepted');
         }
 
-        return $plan;
+        return [$plan, $layout];
     }
 
     /**
@@ -1276,6 +1504,7 @@ final readonly class ContentStudioAuthoringService
         if (!is_string($presentation) || !in_array($presentation, self::PRESENTATIONS, true)) {
             StudioProducerError::refuse('conflict', 'studio.authoring/start-required');
         }
+        $this->handed($context, $session, $state);
         $snapshot = $this->snapshot($session, $state, $start, $presentation, $successorContext);
 
         return $this->validated('authoring-save', 'saveResult', (object) [
@@ -1329,7 +1558,7 @@ final readonly class ContentStudioAuthoringService
             'blueprint' => $state->blueprint,
             'entry' => $state->entry,
             'dirty' => [],
-            'diagnostics' => [],
+            'diagnostics' => $state->diagnostics,
         ];
         $document->capabilities = (object) [
             'modes' => ['model', 'blueprint', 'content'],
@@ -1381,6 +1610,9 @@ final readonly class ContentStudioAuthoringService
     /**
      * Advance the session's context to a successor type and, for a persisted item, adopt it.
      *
+     * An item that keeps its own layout saved that layout as the successor's, so its pointer is cleared in the
+     * same transaction and the item follows the successor (App ADR 0025).
+     *
      * @param   ExecutionContext               $context    Authenticated administrator request.
      * @param   ContentStudioAuthoringSession  $session    Trusted session.
      * @param   ContentStudioAuthoringState    $state      Projection before the effect.
@@ -1429,6 +1661,10 @@ final readonly class ContentStudioAuthoringService
                 StudioProducerError::refuse('forbidden', 'studio.authoring/save-refused');
             } catch (ContentNotFound | ContentModelNotFound) {
                 StudioProducerError::refuse('not-found', 'studio.authoring/item-not-found');
+            }
+            // The type just saved composes the item's own layout, so the item now follows that type instead.
+            if ($state->itemLayoutActive()) {
+                $this->keepItemLayout($context, $state, $record, null, 'promoted');
             }
             $target = $this->editTarget($record, $successor);
         }
@@ -1507,7 +1743,8 @@ final readonly class ContentStudioAuthoringService
      * @param   stdClass                     $model        Authored model whose field identities are persisted
      *          with the binding.
      * @param   ContentStudioAuthoringState  $handed       Live state the save was planned against; an untouched
-     *          derived default layout it handed is stored as an empty draft.
+     *          derived default of the type's layout it handed is stored as an empty draft, and an item's own
+     *          layout it handed is stored as the type's layout without the item's marks.
      * @param   ?string                      $predecessor  Blueprint identity of the version this one succeeds, or null
      *          for a new reusable type.
      *
@@ -1539,24 +1776,32 @@ final readonly class ContentStudioAuthoringService
         // its roots: the default is then derived again from the current model on every load, so a later
         // model-only save never publishes a layout no author touched, and a removed field is never persisted
         // as a binding.
-        $handedDefault = $handed->blueprint;
+        // An item that keeps its own layout was handed that layout, so the type's own handed layout decides.
+        $handedDefault = $handed->typeBlueprint ?? $handed->blueprint;
         if (is_array($roots) && StudioContentDefaultComposition::untouched($handedDefault, $handed->model, $roots)) {
             $roots = [];
             $stored->roots = [];
             $status = 'draft';
         }
-        // The browser's draft may carry the narrower lock of the Blueprint it started from, so the stored
-        // lock is rebuilt from the session catalog the author composed against. A composed block the catalog
-        // no longer offers (its extension was disabled or removed) cannot be locked, so the type save is
-        // refused rather than storing a layout whose lock does not cover it.
-        $used = self::usedBlockTypes(is_array($roots) ? $roots : []);
-        $stored->dependencyLock->blocks = array_values(array_filter(
-            $this->catalog->blockLocks(),
-            static fn (stdClass $lock): bool => is_string($lock->type ?? null) && isset($used[$lock->type]),
-        ));
-        if (count($stored->dependencyLock->blocks) !== count($used)) {
-            StudioProducerError::refuse('validation-failed', 'studio.authoring/unlocked-block');
+        // A type saved from an item's own layout (App ADR 0025) never carries the item's pin or label.
+        $extensions = $stored->extensions ?? null;
+        $itemExtension = StudioContentCompositionService::ITEM_EXTENSION;
+        if ($extensions instanceof stdClass && property_exists($extensions, $itemExtension)) {
+            unset($extensions->{$itemExtension});
+            if (get_object_vars($extensions) === []) {
+                unset($stored->extensions);
+            }
         }
+        $label = $stored->label ?? null;
+        if ($label instanceof stdClass && ($label->key ?? null) === 'kumwe.app/content-item-blueprint') {
+            $stored->label = ContentStudioAuthoringDocuments::message(
+                'kumwe.app/content-blueprint',
+                'Content composition',
+            );
+        }
+        // The browser's draft may carry the narrower lock of the Blueprint it started from, so the stored
+        // lock is rebuilt from the session catalog the author composed against.
+        $stored->dependencyLock->blocks = $this->lockedBlocks(is_array($roots) ? $roots : []);
         try {
             $this->compositions->adopt(
                 $context,
@@ -1571,6 +1816,230 @@ final readonly class ContentStudioAuthoringService
         } catch (StudioCompositionLockMismatch) {
             StudioProducerError::refuse('validation-failed', 'studio.authoring/unlocked-block');
         }
+    }
+
+    /**
+     * The session catalogue's locks of exactly the block types one node tree composes.
+     *
+     * A composed block the catalogue no longer offers (its extension was disabled or removed) cannot be
+     * locked, so the save is refused rather than storing a layout whose lock does not cover it.
+     *
+     * @param   array<mixed>  $roots  Authored root nodes.
+     *
+     * @return  list<stdClass>  One catalogue lock per composed block type, in catalogue order.
+     *
+     * @since   2.0.0
+     */
+    private function lockedBlocks(array $roots): array
+    {
+        $used = self::usedBlockTypes($roots);
+        $locks = array_values(array_filter(
+            $this->catalog->blockLocks(),
+            static fn (stdClass $lock): bool => is_string($lock->type ?? null) && isset($used[$lock->type]),
+        ));
+        if (count($locks) !== count($used)) {
+            StudioProducerError::refuse('validation-failed', 'studio.authoring/unlocked-block');
+        }
+
+        return $locks;
+    }
+
+    /**
+     * Decide what Save item does with the item layout a draft carries, validating it before any effect.
+     *
+     * The layout must be made from the Blueprint the session was handed and lock the item's model. Roots equal
+     * to the type's handed layout inherit it, so nothing is stored and an active item layout is cleared; empty
+     * roots under a non-empty type layout are refused; any other layout is minted and admitted as the item's
+     * own, and is unchanged when it is the revision the item already uses.
+     *
+     * @param   ExecutionContext               $context        Authenticated administrator request.
+     * @param   ContentStudioAuthoringSession  $session        Trusted item session.
+     * @param   ContentStudioAuthoringState    $state          Live projection.
+     * @param   mixed                          $itemBlueprint  The draft's `itemBlueprint` document.
+     *
+     * @return  array{kind: 'inherit'|'unchanged'|'kept', layout: ?StoredStudioArtifact}  The decision, with the
+     *          admitted layout unless the item inherits its type's layout.
+     *
+     * @since   2.0.0
+     */
+    private function itemLayoutDecision(
+        ExecutionContext $context,
+        ContentStudioAuthoringSession $session,
+        ContentStudioAuthoringState $state,
+        mixed $itemBlueprint,
+    ): array {
+        $definition = $state->definition;
+        $base = $state->type->blueprint ?? null;
+        $roots = $itemBlueprint instanceof stdClass ? ($itemBlueprint->roots ?? null) : null;
+        if (
+            !$itemBlueprint instanceof stdClass
+            || $definition === null
+            || !$base instanceof stdClass
+            || !is_array($roots)
+            || !array_is_list($roots)
+        ) {
+            StudioProducerError::refuse('validation-failed', 'studio.authoring/invalid-draft');
+        }
+        try {
+            $sameBase = CanonicalJson::stringify((object) [
+                'id' => $itemBlueprint->id ?? null,
+                'version' => $itemBlueprint->version ?? null,
+                'revision' => $itemBlueprint->revision ?? null,
+            ]) === CanonicalJson::stringify($state->coordinates->blueprint ?? null);
+            $sameModel = CanonicalJson::stringify($itemBlueprint->model ?? null)
+                === CanonicalJson::stringify($state->coordinates->model ?? null);
+            $typeRoots = ($state->typeBlueprint ?? $state->blueprint)->roots ?? [];
+            $inherits = CanonicalJson::stringify($roots) === CanonicalJson::stringify($typeRoots);
+        } catch (CanonicalEncodingException) {
+            StudioProducerError::refuse('validation-failed', 'studio.authoring/invalid-draft');
+        }
+        if (!$sameBase) {
+            StudioProducerError::refuse('conflict', 'studio.authoring/item-layout-conflict', $state->entryRevision());
+        }
+        if (!$sameModel) {
+            StudioProducerError::refuse('validation-failed', 'studio.authoring/item-layout-model-mismatch');
+        }
+        if ($inherits) {
+            return ['kind' => 'inherit', 'layout' => null];
+        }
+        if ($roots === []) {
+            StudioProducerError::refuse('validation-failed', 'studio.authoring/item-layout-empty');
+        }
+        $entryId = $state->record?->entry->id()
+            ?? ContentStudioProjector::contentEntryId(ContentStudioAuthoringDocuments::draftEntryId($session->key()));
+        if ($entryId === null) {
+            StudioProducerError::refuse('internal', 'studio.authoring/invalid-identity');
+        }
+        $locks = $this->lockedBlocks($roots);
+        try {
+            $layout = $this->compositions->admitItemLayout(
+                $context,
+                $entryId,
+                $definition->id,
+                $definition->version,
+                $roots,
+                $locks,
+                $this->catalog->renderableBlockLocks(),
+                $base,
+            );
+        } catch (StudioCompositionLockMismatch) {
+            StudioProducerError::refuse('validation-failed', 'studio.authoring/unlocked-block');
+        } catch (CanonicalEncodingException) {
+            StudioProducerError::refuse('validation-failed', 'studio.authoring/invalid-draft');
+        } catch (StudioProjectionRejected) {
+            StudioProducerError::refuse('validation-failed', 'studio.authoring/projection-rejected');
+        } catch (
+            StudioPublishedBlueprintMismatch
+            | StudioPublishedModelMismatch
+            | StudioCompositionThemeMismatch
+            | StudioPublishedBlockRendererUnavailable
+        ) {
+            StudioProducerError::refuse('validation-failed', 'studio.authoring/item-layout-incompatible');
+        }
+        $unchanged = $state->itemLayoutActive() && $state->overrides?->itemBlueprintRevision === $layout->revision;
+
+        return ['kind' => $unchanged ? 'unchanged' : 'kept', 'layout' => $layout];
+    }
+
+    /**
+     * Pin, re-pin or clear the item layout of one saved entry inside the save's transaction.
+     *
+     * @param   ExecutionContext             $context  Authenticated administrator request.
+     * @param   ContentStudioAuthoringState  $state    Live projection the save was planned against.
+     * @param   ContentRecord                $record   Record the save wrote.
+     * @param   ?StoredStudioArtifact        $layout   Admitted item layout to keep, or null to clear the pointer.
+     * @param   string                       $reason   `kept`, `inherited` or `promoted`.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function keepItemLayout(
+        ExecutionContext $context,
+        ContentStudioAuthoringState $state,
+        ContentRecord $record,
+        ?StoredStudioArtifact $layout,
+        string $reason,
+    ): void {
+        try {
+            $this->compositions->keepItemLayout(
+                $context,
+                $record->entry->id(),
+                $record->entry->version(),
+                $record->contentTypeVersion,
+                $layout,
+                $state->overrides,
+                $reason,
+            );
+        } catch (StudioPersistenceRace) {
+            StudioProducerError::refuse('conflict', 'studio.authoring/item-layout-conflict', $state->entryRevision());
+        }
+    }
+
+    /**
+     * Record the digest of the reusable type a session is being handed, so its next item save is fenced.
+     *
+     * @param   ExecutionContext               $context  Authenticated administrator request.
+     * @param   ContentStudioAuthoringSession  $session  Trusted session.
+     * @param   ContentStudioAuthoringState    $state    Projection the session is handed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function handed(
+        ExecutionContext $context,
+        ContentStudioAuthoringSession $session,
+        ContentStudioAuthoringState $state,
+    ): void {
+        if ($state->type === null) {
+            return;
+        }
+        $digest = self::typeDigest($state->type);
+        $this->held(fn () => $this->contexts->rememberHandedType($context, $session->host->resourceId, $digest));
+    }
+
+    /**
+     * Refuse an item save when the live reusable type differs from the one the session was last handed.
+     *
+     * While an item keeps its own layout, the type's Blueprint is no longer among the coordinates a plan
+     * compares, so a type layout saved elsewhere would otherwise surface only after the save committed. A
+     * session that recorded no digest (opened before the fence existed) is not fenced.
+     *
+     * @param   ExecutionContext               $context  Authenticated administrator request.
+     * @param   ContentStudioAuthoringSession  $session  Trusted session.
+     * @param   ContentStudioAuthoringState    $state    Live projection.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function assertHandedType(
+        ExecutionContext $context,
+        ContentStudioAuthoringSession $session,
+        ContentStudioAuthoringState $state,
+    ): void {
+        if ($state->type === null) {
+            return;
+        }
+        $recorded = $this->held(fn (): ?string => $this->contexts->handedTypeOf($context, $session->host->resourceId));
+        if ($recorded !== null && !hash_equals($recorded, self::typeDigest($state->type))) {
+            StudioProducerError::refuse('conflict', 'studio.authoring/type-changed', $state->entryRevision());
+        }
+    }
+
+    /**
+     * The digest of one reusable-content-type document as a session is handed it.
+     *
+     * @param   stdClass  $type  Schema-valid `reusable-content-type` document.
+     *
+     * @return  string  Lowercase hexadecimal SHA-256 of its canonical JSON.
+     *
+     * @since   2.0.0
+     */
+    private static function typeDigest(stdClass $type): string
+    {
+        return hash('sha256', CanonicalJson::stringify($type));
     }
 
     /**

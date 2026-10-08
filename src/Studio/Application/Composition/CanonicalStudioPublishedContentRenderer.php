@@ -13,6 +13,7 @@ use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Application\Projection\StudioProjectionRejected;
 use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
 use Kumwe\App\Studio\Application\Rendering\StudioRenderResultAdmission;
+use Kumwe\App\Studio\Domain\Projection\ContentBlueprintBinding;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Producer\Render\CompositionRenderer;
 use Kumwe\Producer\Render\RenderContext;
@@ -26,7 +27,10 @@ use stdClass;
  *
  * The absence of a binding, or an intentionally unpublished or retired Blueprint, preserves the legacy
  * Content layout. Once a binding selects an active artifact, every identity, model, theme, schema, and
- * executable renderer dependency becomes mandatory and any drift fails closed.
+ * executable renderer dependency becomes mandatory and any drift fails closed. While the item-composition
+ * policy allows item layouts, an entry that pins its own layout (App ADR 0025) renders that exact published
+ * revision first, even while its type's layout is a draft; a layout made for another type version, or locked
+ * to a theme that is no longer published, is kept but not used, and the type's layout renders instead.
  *
  * @since  2.0.0
  */
@@ -35,12 +39,13 @@ final readonly class CanonicalStudioPublishedContentRenderer implements StudioPu
     /**
      * Bind public rendering to immutable host stores and the same safe projector used by preview.
      *
-     * @param  ContentProjectionBindingRepository  $bindings   Exact Content-version binding projection.
-     * @param  StudioArtifactRepository            $artifacts  Current and immutable artifact store.
-     * @param  StudioPublishedCompositionGuard     $guard      Shared publication dependency guard.
-     * @param  ContentStudioProjector              $projector  Lossless public Content value projector.
-     * @param  StudioBlockRendererRuntime          $blocks     Fresh live Producer registry authority.
-     * @param  StudioPreviewBindingResolver        $resolver   Host-owned Content binding evaluator.
+     * @param  ContentProjectionBindingRepository  $bindings         Exact Content-version binding projection.
+     * @param  StudioArtifactRepository            $artifacts        Current and immutable artifact store.
+     * @param  StudioPublishedCompositionGuard     $guard            Shared publication dependency guard.
+     * @param  ContentStudioProjector              $projector        Lossless public Content value projector.
+     * @param  StudioBlockRendererRuntime          $blocks           Fresh live Producer registry authority.
+     * @param  StudioPreviewBindingResolver        $resolver         Host-owned Content binding evaluator.
+     * @param  StudioItemCompositionPolicy         $itemComposition  The App-wide item-composition policy.
      *
      * @since  2.0.0
      */
@@ -51,6 +56,7 @@ final readonly class CanonicalStudioPublishedContentRenderer implements StudioPu
         private ContentStudioProjector $projector,
         private StudioBlockRendererRuntime $blocks,
         private StudioPreviewBindingResolver $resolver,
+        private StudioItemCompositionPolicy $itemComposition = new StudioItemCompositionPolicy(),
     ) {
     }
 
@@ -108,6 +114,10 @@ final readonly class CanonicalStudioPublishedContentRenderer implements StudioPu
         ) {
             throw new StudioPublishedBlueprintMismatch();
         }
+        $itemLayout = $this->itemLayout($site, $record);
+        if ($itemLayout !== null) {
+            return $this->renderComposition($site, $record, $binding, $itemLayout);
+        }
         $artifact = $binding->blueprintRevision === null
             ? $this->artifacts->current($site->identifier(), $binding->blueprintId, $binding->blueprintVersion)
             : $this->artifacts->revision(
@@ -140,6 +150,85 @@ final readonly class CanonicalStudioPublishedContentRenderer implements StudioPu
         if (!self::boundIdentity($document, $binding->blueprintId, $binding->blueprintVersion)) {
             throw new StudioPublishedBlueprintMismatch();
         }
+
+        return $this->renderComposition($site, $record, $binding, $document);
+    }
+
+    /**
+     * Load the published item layout one entry pins, when the policy allows it and it fits the entry's model.
+     *
+     * @param   SiteContext    $site    Trusted owning site.
+     * @param   ContentRecord  $record  Published record selected by the public Content boundary.
+     *
+     * @return  ?stdClass  The pinned item layout document, or null when none is pinned, item layouts are not
+     *          allowed, or the layout was made for another type version or another theme.
+     *
+     * @throws  StudioPublishedBlueprintUnavailable  When the pinned revision cannot be loaded.
+     * @throws  StudioPublishedBlueprintMismatch  When the pinned artifact is not the entry's published item layout.
+     *
+     * @since   2.0.0
+     */
+    private function itemLayout(SiteContext $site, ContentRecord $record): ?stdClass
+    {
+        if (!$this->itemComposition->allowsItemLayouts()) {
+            return null;
+        }
+        $overrides = $this->bindings->overrides($site, $record->entry->id());
+        $id = $overrides?->itemBlueprintId();
+        $revision = $overrides?->itemBlueprintRevision;
+        if ($id === null || $revision === null) {
+            return null;
+        }
+        $version = StudioContentCompositionService::ITEM_BLUEPRINT_VERSION;
+        $artifact = $this->artifacts->revision($site->identifier(), $id, $version, $revision);
+        if ($artifact === null) {
+            throw new StudioPublishedBlueprintUnavailable();
+        }
+        if (
+            $artifact->siteIdentifier !== $site->identifier()
+            || $artifact->kind !== 'blueprint'
+            || !hash_equals($id, $artifact->id)
+            || !hash_equals($version, $artifact->version)
+            || !hash_equals($revision, $artifact->revision)
+            || $artifact->status !== 'published'
+        ) {
+            throw new StudioPublishedBlueprintMismatch();
+        }
+        $document = $artifact->document();
+        if (!self::boundIdentity($document, $id, $version)) {
+            throw new StudioPublishedBlueprintMismatch();
+        }
+
+        return self::modelMatches($document, $record) && $this->guard->locksLiveTheme($site, $document)
+            ? $document
+            : null;
+    }
+
+    /**
+     * Render one bound composition document through the publication guard and the canonical renderer.
+     *
+     * @param   SiteContext              $site      Trusted owning site.
+     * @param   ContentRecord            $record    Published record selected by the public Content boundary.
+     * @param   ContentBlueprintBinding  $binding   The type version's binding, whose field identities project the
+     *          record's values.
+     * @param   stdClass                 $document  Readmitted published Blueprint document to render.
+     *
+     * @return  RenderResult  Canonical Producer output.
+     *
+     * @throws  StudioPublishedBlueprintMismatch  When schema or ownership drifts.
+     * @throws  StudioPublishedModelMismatch  When the pinned Content model cannot be reproduced exactly.
+     * @throws  StudioCompositionThemeMismatch  When the live published theme differs from the lock.
+     * @throws  \Kumwe\App\Studio\Application\Preview\StudioPublishedBlockRendererUnavailable
+     *          When an exact locked renderer is not live.
+     *
+     * @since   2.0.0
+     */
+    private function renderComposition(
+        SiteContext $site,
+        ContentRecord $record,
+        ContentBlueprintBinding $binding,
+        stdClass $document,
+    ): RenderResult {
         $definition = $this->guard->assertCompatible($site, $document);
         if (
             $definition->id !== $record->contentTypeId

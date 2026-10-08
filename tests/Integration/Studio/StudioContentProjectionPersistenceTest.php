@@ -11,6 +11,7 @@ use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioAuthoringIdentityMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringContextMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentProjectionMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioItemCompositionMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Studio\Application\Host\StudioPersistenceRace;
 use Kumwe\App\Studio\Domain\Projection\ContentBlueprintBinding;
@@ -29,6 +30,7 @@ use PHPUnit\Framework\TestCase;
  */
 #[CoversClass(StudioContentProjectionMigration::class)]
 #[CoversClass(DoctrineContentProjectionBindingRepository::class)]
+#[CoversClass(StudioItemCompositionMigration::class)]
 #[UsesClass(ContentBlueprintBinding::class)]
 #[UsesClass(EntryCompositionOverrides::class)]
 final class StudioContentProjectionPersistenceTest extends TestCase
@@ -137,6 +139,7 @@ final class StudioContentProjectionPersistenceTest extends TestCase
         $migration->up($database);
         (new StudioContentAuthoringContextMigration($tables))->up($database);
         (new StudioAuthoringIdentityMigration($tables))->up($database);
+        (new StudioItemCompositionMigration($tables))->up($database);
         $this->insertContentParents($database, $tables);
         try {
             $this->insertBinding($database, $tables, 'publisher-botswana');
@@ -167,6 +170,7 @@ final class StudioContentProjectionPersistenceTest extends TestCase
         self::assertNotNull($overrides);
         self::assertSame('{"hero/main":{"tone":"quiet"}}', $overrides->canonical());
         self::assertSame(6, $overrides->revision);
+        self::assertNull($overrides->itemBlueprintRevision, 'An entry follows its type until it keeps a layout.');
         self::assertNull($repository->blueprint($other, self::typeId(), 4));
         self::assertNull($repository->overrides($other, self::entryId()));
 
@@ -187,6 +191,86 @@ final class StudioContentProjectionPersistenceTest extends TestCase
             'SELECT COUNT(*) FROM %s',
             $tables->quoted('studio_entry_composition_overrides'),
         )));
+    }
+
+    /**
+     * The item layout pointer (App ADR 0025) is inserted with empty values, moved only by compare-and-set on the
+     * override revision without rewriting stored values, refused on a stale revision or a duplicate insert, read
+     * only inside its site, and removed with its entry.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheItemLayoutPointerMovesOnlyByCompareAndSet(): void
+    {
+        $database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $database->executeStatement('PRAGMA foreign_keys = ON');
+        $tables = new TableNames($database, 'kumwe_');
+        $this->createContentParents($database, $tables);
+        (new StudioContentProjectionMigration($tables))->up($database);
+        (new StudioContentAuthoringContextMigration($tables))->up($database);
+        (new StudioAuthoringIdentityMigration($tables))->up($database);
+        (new StudioItemCompositionMigration($tables))->up($database);
+        $this->insertContentParents($database, $tables);
+        $second = '018f22e2-7c8b-7ab0-8f3a-88e8026be401';
+        $database->insert(
+            $tables->raw('content_entries'),
+            ['site_identifier' => 'publisher-namibia', 'id' => $second],
+            ['site_identifier' => Types::STRING, 'id' => Types::GUID],
+        );
+        $this->insertOverrides($database, $tables, 'publisher-namibia');
+        $repository = new DoctrineContentProjectionBindingRepository($database, $tables);
+        $site = SiteContext::fromString('publisher-namibia');
+        $x = 'item-' . hash('sha256', 'layout x');
+        $y = 'item-' . hash('sha256', 'layout y');
+
+        // Moving an existing record keeps its stored values, whatever values the next record carries.
+        $database->transactional(static fn () => $repository->pin(
+            new EntryCompositionOverrides($site, self::entryId(), new \stdClass(), 7, $x),
+            6,
+        ));
+        $moved = $repository->overrides($site, self::entryId());
+        self::assertNotNull($moved);
+        self::assertSame($x, $moved->itemBlueprintRevision);
+        self::assertSame(7, $moved->revision);
+        self::assertSame('{"hero/main":{"tone":"quiet"}}', $moved->canonical());
+
+        try {
+            $database->transactional(static fn () => $repository->pin(
+                new EntryCompositionOverrides($site, self::entryId(), new \stdClass(), 8, $y),
+                6,
+            ));
+            self::fail('A stale override revision moved the pointer.');
+        } catch (StudioPersistenceRace) {
+            self::assertSame($x, $repository->overrides($site, self::entryId())?->itemBlueprintRevision);
+        }
+        $database->transactional(static fn () => $repository->pin(
+            new EntryCompositionOverrides($site, self::entryId(), new \stdClass(), 8, null),
+            7,
+        ));
+        self::assertNull($repository->overrides($site, self::entryId())?->itemBlueprintRevision);
+        self::assertSame(8, $repository->overrides($site, self::entryId())?->revision);
+
+        // A record created for a layout alone carries empty values; a second insert is a race.
+        $first = new EntryCompositionOverrides($site, $second, new \stdClass(), 1, $y);
+        $database->transactional(static fn () => $repository->pin($first, null));
+        $inserted = $repository->overrides($site, $second);
+        self::assertNotNull($inserted);
+        self::assertSame('{}', $inserted->canonical());
+        self::assertSame($y, $inserted->itemBlueprintRevision);
+        self::assertSame(1, $inserted->revision);
+        try {
+            $database->transactional(static fn () => $repository->pin($first, null));
+            self::fail('A duplicate override insert was accepted.');
+        } catch (StudioPersistenceRace) {
+            self::assertSame(1, $repository->overrides($site, $second)?->revision);
+        }
+        self::assertNull($repository->overrides(SiteContext::fromString('publisher-botswana'), $second));
+
+        $database->delete($tables->raw('content_entries'), ['id' => $second], ['id' => Types::GUID]);
+        self::assertNull($repository->overrides($site, $second), 'The pointer is removed with its entry.');
+        self::assertNotNull($repository->overrides($site, self::entryId()));
     }
 
     /**

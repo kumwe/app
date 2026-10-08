@@ -12,6 +12,7 @@ use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
 use Kumwe\App\Studio\Application\Composition\ContentBlueprintBindingStore;
+use Kumwe\App\Studio\Application\Composition\EntryCompositionOverrideStore;
 use Kumwe\App\Studio\Application\Host\StudioPersistenceRace;
 use Kumwe\App\Studio\Domain\Projection\ContentBlueprintBinding;
 use Kumwe\App\Studio\Domain\Projection\EntryCompositionOverrides;
@@ -24,13 +25,15 @@ use stdClass;
  *
  * Both queries carry the server-resolved site in their predicate, so a UUID learned from another site
  * cannot cross the model-port boundary. Canonical override bytes are decoded as objects and handed to
- * the domain value, which revalidates the member and byte limits before anything reaches Studio.
+ * the domain value, which revalidates the member and byte limits before anything reaches Studio. The
+ * separate write ports insert initial type-version bindings and move an entry's item layout pointer.
  *
  * @since  2.0.0
  */
 final readonly class DoctrineContentProjectionBindingRepository implements
     ContentProjectionBindingRepository,
-    ContentBlueprintBindingStore
+    ContentBlueprintBindingStore,
+    EntryCompositionOverrideStore
 {
     /**
      * Bind reads to the configured connection and prefix-aware table compiler.
@@ -126,6 +129,74 @@ final readonly class DoctrineContentProjectionBindingRepository implements
     }
 
     /**
+     * Insert an entry's override record or move its item layout pointer inside the caller's transaction.
+     *
+     * The update is a compare-and-set on the override revision and never rewrites stored override
+     * values. The next revision must exceed the expected one, so a successful move always changes a
+     * row and every engine reports exactly one affected row.
+     *
+     * @param   EntryCompositionOverrides  $next              Record carrying the next pointer and revision.
+     * @param   ?int                       $expectedRevision  Stored override revision, or null to insert.
+     *
+     * @return  void
+     *
+     * @throws  StudioPersistenceRace  When the record was inserted or moved concurrently.
+     * @throws  \Doctrine\DBAL\Exception  When the database refuses the write for another reason.
+     *
+     * @since   2.0.0
+     */
+    public function pin(EntryCompositionOverrides $next, ?int $expectedRevision): void
+    {
+        if (!$this->connection->isTransactionActive()) {
+            throw new \LogicException('A Studio entry override write requires an active transaction.');
+        }
+        if ($expectedRevision === null) {
+            try {
+                $this->connection->insert($this->tables->raw('studio_entry_composition_overrides'), [
+                    'site_identifier' => $next->site->identifier(),
+                    'content_entry_id' => $next->entryId,
+                    'override_values' => $next->values(),
+                    'override_revision' => $next->revision,
+                    'item_blueprint_revision' => $next->itemBlueprintRevision,
+                ], [
+                    'site_identifier' => ParameterType::STRING,
+                    'content_entry_id' => Types::GUID,
+                    'override_values' => Types::JSON,
+                    'override_revision' => ParameterType::INTEGER,
+                    'item_blueprint_revision' => ParameterType::STRING,
+                ]);
+            } catch (\Doctrine\DBAL\Exception\UniqueConstraintViolationException $exception) {
+                throw new StudioPersistenceRace('A Studio entry override was concurrently inserted.', 0, $exception);
+            }
+
+            return;
+        }
+        if ($expectedRevision < 1 || $next->revision <= $expectedRevision) {
+            throw new \LogicException('A Studio entry override pointer move must advance its revision.');
+        }
+        $updated = $this->connection->executeStatement(sprintf(
+            'UPDATE %s SET item_blueprint_revision = ?, override_revision = ? '
+            . 'WHERE site_identifier = ? AND content_entry_id = ? AND override_revision = ?',
+            $this->tables->quoted('studio_entry_composition_overrides'),
+        ), [
+            $next->itemBlueprintRevision,
+            $next->revision,
+            $next->site->identifier(),
+            $next->entryId,
+            $expectedRevision,
+        ], [
+            ParameterType::STRING,
+            ParameterType::INTEGER,
+            ParameterType::STRING,
+            Types::GUID,
+            ParameterType::INTEGER,
+        ]);
+        if ($updated !== 1) {
+            throw new StudioPersistenceRace('A Studio entry override pointer was concurrently moved.');
+        }
+    }
+
+    /**
      * Read one Content entry's canonical composition override object.
      *
      * @param   SiteContext  $site     Server-resolved site.
@@ -141,7 +212,7 @@ final readonly class DoctrineContentProjectionBindingRepository implements
     public function overrides(SiteContext $site, string $entryId): ?EntryCompositionOverrides
     {
         $row = $this->connection->fetchAssociative(sprintf(
-            'SELECT override_values, override_revision FROM %s '
+            'SELECT override_values, override_revision, item_blueprint_revision FROM %s '
             . 'WHERE site_identifier = ? AND content_entry_id = ?',
             $this->tables->quoted('studio_entry_composition_overrides'),
         ), [$site->identifier(), $entryId], [ParameterType::STRING, Types::GUID]);
@@ -166,6 +237,7 @@ final readonly class DoctrineContentProjectionBindingRepository implements
                 $entryId,
                 $values,
                 self::integer($row, 'override_revision'),
+                self::nullableString($row, 'item_blueprint_revision'),
             );
         } catch (CanonicalEncodingException | InvalidArgumentException $exception) {
             throw new RuntimeException('Stored Studio entry override metadata is invalid.', 0, $exception);

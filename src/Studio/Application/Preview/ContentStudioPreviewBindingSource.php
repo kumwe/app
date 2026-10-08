@@ -10,6 +10,7 @@ use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextRefused;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextStale;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTarget;
 use Kumwe\App\Studio\Application\Composition\StudioContentDefaultComposition;
+use Kumwe\App\Studio\Application\Composition\StudioItemCompositionPolicy;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
 use Kumwe\App\Studio\Application\Projection\StudioContentProjectionService;
 use Kumwe\App\Studio\Application\Projection\StudioProjectionRejected;
@@ -28,7 +29,9 @@ use stdClass;
  * context authority re-resolves and re-authorizes the exact create or edit target behind it on every
  * render, so a preview shows the stored item's own values (or no values for an item that is not created
  * yet) and never a substituted entry. Such a session is handed the derived default composition in place of
- * a stored empty draft (App ADR 0024), so its preview is presented that same document.
+ * a stored empty draft (App ADR 0024), so its preview is presented that same document. An entry that keeps
+ * its own layout (App ADR 0025) previews that exact item layout, accepted only for that entry and only while
+ * the item-composition policy allows item layouts.
  *
  * @since  2.0.0
  */
@@ -37,11 +40,14 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
     /**
      * Bind preview resolution to the read-only authorized Content projection and the context authority.
      *
-     * @param  StudioContentProjectionService          $content   Existing App-owned model and entry read boundary.
-     * @param  ContentStudioAuthoringContextAuthority  $contexts  Opaque exact-target authority of contextual
+     * @param  StudioContentProjectionService          $content          Existing App-owned model and entry read
+     *         boundary.
+     * @param  ContentStudioAuthoringContextAuthority  $contexts         Opaque exact-target authority of contextual
      *         Content authoring sessions.
-     * @param  ContentStudioAuthoringCatalog           $catalog   Renderable block locks the authoring session
+     * @param  ContentStudioAuthoringCatalog           $catalog          Renderable block locks the authoring session
      *         derives a default composition against (App ADR 0024).
+     * @param  StudioItemCompositionPolicy             $itemComposition  The App-wide item-composition policy
+     *         an entry's own layout is previewed under (App ADR 0025).
      *
      * @since  2.0.0
      */
@@ -49,6 +55,7 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
         private StudioContentProjectionService $content,
         private ContentStudioAuthoringContextAuthority $contexts,
         private ContentStudioAuthoringCatalog $catalog,
+        private StudioItemCompositionPolicy $itemComposition = new StudioItemCompositionPolicy(),
     ) {
     }
 
@@ -79,7 +86,7 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
         }
 
         try {
-            [$model, $values] = match (true) {
+            [$model, $values, $itemLayout] = match (true) {
                 $snapshot->session->resourceKind === StudioResourceKind::ContentAuthoring
                     => $this->authoring($context, $snapshot->session->resourceId),
                 str_starts_with($snapshot->session->resourceId, 'content-entry:')
@@ -94,7 +101,11 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
         if (!$draftModel instanceof stdClass || !self::sameCoordinate($draftModel, $model)) {
             throw new StudioPreviewRefused('conflict', 'studio.preview/model-binding-mismatch');
         }
-        self::assertBlueprintBinding($model, $document);
+        self::assertBlueprintBinding(
+            $model,
+            $document,
+            $this->itemComposition->allowsItemLayouts() ? $itemLayout : null,
+        );
 
         return new StudioPreviewBindingValues($values, new stdClass());
     }
@@ -153,7 +164,8 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
      * @param   ExecutionContext  $context     Authenticated App request authority.
      * @param   string            $contextKey  Opaque authoring context key the host session is bound to.
      *
-     * @return  array{0: stdClass, 1: stdClass}  Projected model and the stored entry values, or no values.
+     * @return  array{0: stdClass, 1: stdClass, 2: ?stdClass}  Projected model, the stored entry values or no
+     *          values, and the entry's pinned item layout reference or null.
      *
      * @throws  StudioPreviewRefused  When the context is refused or names no persisted type.
      * @throws  StudioProjectionRejected  When Content refuses or cannot project the target.
@@ -173,7 +185,7 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
             return $this->entry($context, $target->entryId);
         }
 
-        return [$this->targetModel($context, $target), new stdClass()];
+        return [$this->targetModel($context, $target), new stdClass(), null];
     }
 
     /**
@@ -203,7 +215,8 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
      * @param   ExecutionContext  $context  Authenticated App request authority.
      * @param   string            $entryId  Reversible projected Content entry identifier.
      *
-     * @return  array{stdClass, stdClass}  Exact projected model coordinate and authorized values.
+     * @return  array{0: stdClass, 1: stdClass, 2: ?stdClass}  Exact projected model coordinate, authorized values,
+     *          and the `{id, version, revision}` of the entry's pinned item layout, or null when it follows its type.
      *
      * @throws  StudioProjectionRejected  When Content refuses or cannot project the entry.
      *
@@ -223,7 +236,17 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
             throw new StudioPreviewRefused('unavailable', 'studio.preview/content-projection-invalid');
         }
 
-        return [$this->content->model($context, $id, $version), $values];
+        $extensions = $entry->extensions ?? null;
+        $override = $extensions instanceof stdClass
+            ? ($extensions->{'kumwe.app/composition-override'} ?? null)
+            : null;
+        $itemLayout = $override instanceof stdClass ? ($override->blueprint ?? null) : null;
+
+        return [
+            $this->content->model($context, $id, $version),
+            $values,
+            $itemLayout instanceof stdClass ? $itemLayout : null,
+        ];
     }
 
     /**
@@ -233,7 +256,7 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
      * @param   string              $modelId  Reversible projected Content model identifier.
      * @param   StudioPreviewDraft  $draft    Blueprint whose exact model version is requested.
      *
-     * @return  array{stdClass, stdClass}  Projected model and empty entry values.
+     * @return  array{0: stdClass, 1: stdClass, 2: null}  Projected model, empty entry values and no item layout.
      *
      * @throws  StudioProjectionRejected  When Content refuses or cannot project the model.
      *
@@ -251,7 +274,7 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
             throw new StudioPreviewRefused('conflict', 'studio.preview/model-binding-mismatch');
         }
 
-        return [$this->content->model($context, $modelId, $version), new stdClass()];
+        return [$this->content->model($context, $modelId, $version), new stdClass(), null];
     }
 
     /**
@@ -278,10 +301,12 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
     }
 
     /**
-     * Prove the authoritative model selected this exact Blueprint coordinate.
+     * Prove the authoritative model, or the entry's own pinned item layout, selected this exact Blueprint.
      *
-     * @param   stdClass  $model      Authoritative projected Content model.
-     * @param   stdClass  $blueprint  Exact Blueprint document being rendered.
+     * @param   stdClass   $model       Authoritative projected Content model.
+     * @param   stdClass   $blueprint   Exact Blueprint document being rendered.
+     * @param   ?stdClass  $itemLayout  `{id, version, revision}` of the entry's pinned item layout, or null when it
+     *          has none or the item-composition policy does not allow item layouts.
      *
      * @return  void
      *
@@ -289,8 +314,21 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
      *
      * @since   2.0.0
      */
-    private static function assertBlueprintBinding(stdClass $model, stdClass $blueprint): void
+    private static function assertBlueprintBinding(stdClass $model, stdClass $blueprint, ?stdClass $itemLayout): void
     {
+        if ($itemLayout !== null) {
+            $pinned = true;
+            foreach (['id', 'version', 'revision'] as $member) {
+                $expected = $itemLayout->{$member} ?? null;
+                $actual = $blueprint->{$member} ?? null;
+                if (!is_string($expected) || !is_string($actual) || !hash_equals($expected, $actual)) {
+                    $pinned = false;
+                }
+            }
+            if ($pinned) {
+                return;
+            }
+        }
         $extensions = $model->extensions ?? null;
         $binding = $extensions instanceof stdClass ? $extensions->{'kumwe.app/blueprint-binding'} ?? null : null;
         if (!$binding instanceof stdClass) {

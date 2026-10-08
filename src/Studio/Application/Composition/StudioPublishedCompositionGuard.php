@@ -89,6 +89,24 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
     }
 
     /**
+     * Whether a Blueprint's dependency lock names the site's live published theme.
+     *
+     * @param   SiteContext  $site       Trusted owning site.
+     * @param   stdClass     $blueprint  Readmitted Blueprint document.
+     *
+     * @return  bool  True only when the locked theme is exactly the published one.
+     *
+     * @since   2.0.0
+     */
+    public function locksLiveTheme(SiteContext $site, stdClass $blueprint): bool
+    {
+        $dependencyLock = $blueprint->dependencyLock ?? null;
+        $lockedTheme = $dependencyLock instanceof stdClass ? $dependencyLock->theme ?? null : null;
+
+        return $this->theme->reference($site)->matches($lockedTheme);
+    }
+
+    /**
      * Prove that a Blueprint is publishable against the current exact host dependencies.
      *
      * @param   SiteContext  $site       Trusted owning site.
@@ -143,11 +161,10 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
             throw new StudioPublishedModelMismatch();
         }
 
-        $dependencyLock = $blueprint->dependencyLock ?? null;
-        $lockedTheme = $dependencyLock instanceof stdClass ? $dependencyLock->theme ?? null : null;
-        if (!$this->theme->reference($site)->matches($lockedTheme)) {
+        if (!$this->locksLiveTheme($site, $blueprint)) {
             throw new StudioCompositionThemeMismatch();
         }
+        $dependencyLock = $blueprint->dependencyLock ?? null;
         $definitions = $this->liveDefinitions();
         try {
             $runtime = $this->blocks->registry();

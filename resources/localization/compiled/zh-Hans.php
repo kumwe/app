@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2645 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2650 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1300,6 +1300,11 @@ return [
     'core.administrator.content_form.studio_dependent_entries_remain' => '此类型的其他项在迁移之前保留当前版本。',
     'core.administrator.content_form.studio_item_adopts_successor' => '此项将采用新的类型版本；其值将保留。',
     'core.administrator.content_form.studio_item_created' => '将以初始工作流状态创建一个新的内容项。',
+    'core.administrator.content_form.studio_item_layout_detached' => '此项自己的布局是为其内容类型的另一个版本或另一个站点主题创建的，因此不会使用。该布局会被保留。',
+    'core.administrator.content_form.studio_item_layout_inherited' => '此项将重新使用其内容类型的布局。',
+    'core.administrator.content_form.studio_item_layout_kept' => '此布局仅为此项保存，作为其条目旁的项 Blueprint。内容类型及其其他项保留各自的布局。',
+    'core.administrator.content_form.studio_item_layout_live' => '此项已发布，因此保存后其新布局将显示在公开站点上。',
+    'core.administrator.content_form.studio_item_layout_promoted' => '此项自己的布局将成为您正在保存的类型的布局，此后此项将沿用该布局。',
     'core.administrator.content_form.studio_item_revision_advances' => '该项将获得新的修订版本；其工作流状态不变。',
     'core.administrator.content_form.studio_new_type_for_item' => '将根据此设计创建一个新的可复用内容类型，此项将采用它。',
     'core.administrator.content_form.studio_new_type_for_new_item' => '将根据此设计创建一个新的可复用内容类型，此项将使用它。',

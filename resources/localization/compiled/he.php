@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2645 messages.
+ * Compiled interface message catalogue for he, carrying 2650 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1300,6 +1300,11 @@ return [
     'core.administrator.content_form.studio_dependent_entries_remain' => 'פריטים אחרים מסוג זה שומרים על הגרסה הנוכחית עד שיועברו.',
     'core.administrator.content_form.studio_item_adopts_successor' => 'פריט זה מאמץ את גרסת הסוג החדשה; הערכים שלו נשמרים.',
     'core.administrator.content_form.studio_item_created' => 'פריט תוכן חדש נוצר במצב תהליך העבודה ההתחלתי שלו.',
+    'core.administrator.content_form.studio_item_layout_detached' => 'הפריסה הייחודית של פריט זה נוצרה עבור גרסה אחרת של סוג התוכן שלו או עבור ערכת עיצוב אחרת של האתר, ולכן אינה בשימוש. היא נשמרת.',
+    'core.administrator.content_form.studio_item_layout_inherited' => 'פריט זה משתמש שוב בפריסה של סוג התוכן שלו.',
+    'core.administrator.content_form.studio_item_layout_kept' => 'פריסה זו נשמרת עבור פריט זה בלבד, כשרטוט של הפריט לצד הרשומה שלו. סוג התוכן ושאר הפריטים שלו שומרים על הפריסה שלהם.',
+    'core.administrator.content_form.studio_item_layout_live' => 'פריט זה מפורסם, ולכן הפריסה החדשה שלו מופיעה באתר הציבורי בעת השמירה.',
+    'core.administrator.content_form.studio_item_layout_promoted' => 'הפריסה הייחודית של פריט זה הופכת לפריסה של הסוג שאתה שומר, ולאחר מכן הפריט עוקב אחריה.',
     'core.administrator.content_form.studio_item_revision_advances' => 'הפריט מקבל גרסה חדשה; מצב תהליך העבודה שלו אינו משתנה.',
     'core.administrator.content_form.studio_new_type_for_item' => 'סוג תוכן חדש לשימוש חוזר נוצר מעיצוב זה, ופריט זה מאמץ אותו.',
     'core.administrator.content_form.studio_new_type_for_new_item' => 'סוג תוכן חדש לשימוש חוזר נוצר מעיצוב זה, ופריט זה משתמש בו.',

@@ -12,8 +12,11 @@ use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Content\Application\ContentModelRepository;
 use Kumwe\App\Content\Application\ContentModelService;
+use Kumwe\Content\Application\ContentRecord;
 use Kumwe\Content\Application\ContentRepository;
 use Kumwe\App\Content\Application\ContentService;
+use Kumwe\Content\Domain\ContentEntry;
+use Kumwe\Content\Domain\ContentStatus;
 use Kumwe\Content\Domain\ContentTypeDefinition;
 use Kumwe\Content\Domain\JsonSchemaValidator;
 use Kumwe\Content\Domain\SchemaCompatibilityChecker;
@@ -27,6 +30,7 @@ use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTarget;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionCatalog;
 use Kumwe\App\Studio\Application\Composition\StudioContentDefaultComposition;
+use Kumwe\App\Studio\Application\Composition\StudioItemCompositionPolicy;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
 use Kumwe\App\Studio\Application\Host\StudioResourceContextKeyFactory;
 use Kumwe\App\Studio\Application\Preview\ContentStudioPreviewBindingSource;
@@ -45,6 +49,8 @@ use Kumwe\App\Studio\Domain\Host\StudioHostSession;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewDraft;
+use Kumwe\App\Studio\Domain\Projection\ContentBlueprintBinding;
+use Kumwe\App\Studio\Domain\Projection\EntryCompositionOverrides;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 use Kumwe\App\Tests\Support\InterfaceTranslation;
@@ -66,6 +72,9 @@ use stdClass;
 #[UsesClass(StudioPreviewDraft::class)]
 #[UsesClass(StudioContentDefaultComposition::class)]
 #[UsesClass(ContentStudioAuthoringCatalog::class)]
+#[UsesClass(EntryCompositionOverrides::class)]
+#[UsesClass(ContentBlueprintBinding::class)]
+#[UsesClass(StudioItemCompositionPolicy::class)]
 final class ContentStudioPreviewBindingSourceTest extends TestCase
 {
     /**
@@ -75,6 +84,14 @@ final class ContentStudioPreviewBindingSourceTest extends TestCase
      * @since  2.0.0
      */
     private const string TYPE_ID = '018f22e2-7c8b-7ab0-8f3a-88e8026be720';
+
+    /**
+     * Entry whose own item layout the item-layout scenario previews.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string ENTRY_ID = '018f22e2-7c8b-7ab0-8f3a-88e8026be721';
 
     /**
      * Refuse Blueprint sessions that name any artifact other than the exact retained draft.
@@ -377,6 +394,150 @@ final class ContentStudioPreviewBindingSourceTest extends TestCase
     }
 
     /**
+     * An entry session previews the exact item layout its entry pins (App ADR 0025), keeps previewing its type's
+     * bound layout, and refuses another entry's item layout and a layout locked to another type version. Under
+     * the `denied` item-composition policy, the rollback, its own pinned layout is refused as well while its
+     * type's bound layout still previews.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testAnEntrySessionPreviewsOnlyItsOwnPinnedItemLayout(): void
+    {
+        $now = new DateTimeImmutable('2026-09-24T10:00:00+00:00');
+        $definition = new ContentTypeDefinition(
+            self::TYPE_ID,
+            SiteContext::default(),
+            'article',
+            'Article',
+            ContentService::CORE_WORKFLOW_ID,
+            1,
+            [
+                'type' => 'object',
+                'additionalProperties' => false,
+                'properties' => ['body' => ['type' => 'string']],
+                'required' => ['body'],
+            ],
+            4,
+            $now,
+            $now,
+        );
+        $models = $this->createStub(ContentModelRepository::class);
+        $models->method('contentType')->willReturn($definition);
+        $entries = $this->createStub(ContentRepository::class);
+        $entries->method('find')->willReturn(new ContentRecord(
+            ContentEntry::create(
+                self::ENTRY_ID,
+                'Item title',
+                'item-title',
+                ['body' => 'Item body.'],
+                ContentStatus::Draft,
+            ),
+            self::TYPE_ID,
+            ContentService::CORE_WORKFLOW_ID,
+            $now,
+            $now,
+            contentTypeVersion: 4,
+        ));
+        $typeBlueprint = 'content-blueprint:' . self::TYPE_ID . ':v4';
+        $pinned = 'item-' . hash('sha256', 'item layout');
+        $bindings = $this->createStub(ContentProjectionBindingRepository::class);
+        $bindings->method('blueprint')->willReturn(new ContentBlueprintBinding(
+            SiteContext::default(),
+            self::TYPE_ID,
+            4,
+            $typeBlueprint,
+            '1.0.0',
+            null,
+            1,
+        ));
+        $bindings->method('overrides')->willReturn(
+            new EntryCompositionOverrides(SiteContext::default(), self::ENTRY_ID, new stdClass(), 2, $pinned),
+        );
+        $source = new ContentStudioPreviewBindingSource(
+            $this->content($models, $entries, $bindings),
+            $this->contexts(),
+            self::catalog(),
+        );
+        $session = self::snapshot(StudioResourceKind::Content, 'content-entry:' . self::ENTRY_ID);
+        $model = (object) [
+            'id' => ContentStudioProjector::modelId(self::TYPE_ID),
+            'version' => ContentStudioProjector::modelVersion(4),
+            'revision' => ContentStudioProjector::modelRevision(4),
+        ];
+        $itemId = EntryCompositionOverrides::ITEM_BLUEPRINT_PREFIX . self::ENTRY_ID;
+
+        $own = $source->resolve(self::context(), $session, self::layout($itemId, $pinned, $model));
+        self::assertSame('Item title', $own->entry()->title);
+        self::assertSame('Item body.', $own->entry()->data_body);
+        $type = $source->resolve(self::context(), $session, self::layout($typeBlueprint, 'type-r1', $model));
+        self::assertSame('Item title', $type->entry()->title);
+
+        $earlier = (object) [
+            'id' => $model->id,
+            'version' => ContentStudioProjector::modelVersion(3),
+            'revision' => ContentStudioProjector::modelRevision(3),
+        ];
+        $refusals = [
+            'another entry layout' => self::layout(
+                EntryCompositionOverrides::ITEM_BLUEPRINT_PREFIX . '018f22e2-7c8b-7ab0-8f3a-88e8026be722',
+                $pinned,
+                $model,
+            ),
+            'another revision' => self::layout($itemId, 'item-' . hash('sha256', 'another layout'), $model),
+            'another type version' => self::layout($itemId, $pinned, $earlier),
+        ];
+        foreach ($refusals as $label => $draft) {
+            self::assertRefused(
+                'studio.preview/model-binding-mismatch',
+                fn () => $source->resolve(self::context(), $session, $draft),
+                $label,
+            );
+        }
+
+        $denied = new ContentStudioPreviewBindingSource(
+            $this->content($models, $entries, $bindings),
+            $this->contexts(),
+            self::catalog(),
+            new StudioItemCompositionPolicy('denied'),
+        );
+        self::assertSame(
+            'Item title',
+            $denied->resolve(self::context(), $session, self::layout($typeBlueprint, 'type-r1', $model))
+                ->entry()->title,
+        );
+        self::assertRefused(
+            'studio.preview/model-binding-mismatch',
+            fn () => $denied->resolve(self::context(), $session, self::layout($itemId, $pinned, $model)),
+            'own layout under the denied policy',
+        );
+    }
+
+    /**
+     * Build one stored preview draft at an exact Blueprint coordinate and model lock.
+     *
+     * @param   string    $id        Blueprint identity.
+     * @param   string    $revision  Blueprint revision.
+     * @param   stdClass  $model     Model lock.
+     *
+     * @return  StudioPreviewDraft  Immutable draft.
+     *
+     * @since  2.0.0
+     */
+    private static function layout(string $id, string $revision, stdClass $model): StudioPreviewDraft
+    {
+        return new StudioPreviewDraft('default', (object) [
+            'kind' => 'blueprint',
+            'id' => $id,
+            'version' => '1.0.0',
+            'revision' => $revision,
+            'model' => clone $model,
+            'roots' => [],
+        ]);
+    }
+
+    /**
      * Build the real authoring catalog of the core blocks this deployment renders.
      *
      * @return  ContentStudioAuthoringCatalog  Catalog over the built-in contribution registries.
@@ -405,14 +566,22 @@ final class ContentStudioPreviewBindingSourceTest extends TestCase
     /**
      * Build the real projection boundary over inert persistence collaborators.
      *
-     * @param   ContentModelRepository|null  $models  Optional Content type store; an inert one by default.
+     * @param   ContentModelRepository|null              $models    Optional Content type store; an inert one by
+     *          default.
+     * @param   ContentRepository|null                   $entries   Optional Content entry store; an inert one by
+     *          default.
+     * @param   ContentProjectionBindingRepository|null  $bindings  Optional projection metadata; an inert one by
+     *          default.
      *
      * @return  StudioContentProjectionService  Normally constructed projection boundary.
      *
      * @since  2.0.0
      */
-    private function content(?ContentModelRepository $models = null): StudioContentProjectionService
-    {
+    private function content(
+        ?ContentModelRepository $models = null,
+        ?ContentRepository $entries = null,
+        ?ContentProjectionBindingRepository $bindings = null,
+    ): StudioContentProjectionService {
         return new StudioContentProjectionService(
             new ContentModelService(
                 $models ?? $this->createStub(ContentModelRepository::class),
@@ -425,7 +594,7 @@ final class ContentStudioPreviewBindingSourceTest extends TestCase
                 $this->createStub(ClockInterface::class),
             ),
             new ContentService(
-                $this->createStub(ContentRepository::class),
+                $entries ?? $this->createStub(ContentRepository::class),
                 $this->createStub(AuditRecorder::class),
                 new ImmediateTransactionManager(),
                 $this->createStub(ClockInterface::class),
@@ -433,7 +602,7 @@ final class ContentStudioPreviewBindingSourceTest extends TestCase
                 AuthorizationContext::gateway(),
                 AuthorizationContext::ownershipWriter(),
             ),
-            $this->createStub(ContentProjectionBindingRepository::class),
+            $bindings ?? $this->createStub(ContentProjectionBindingRepository::class),
             new ContentStudioProjector(
                 StudioDocumentSchemaRegistry::fromVendoredCorpus(),
                 new RecordAuthorizedStudioContentFieldDisclosure(),

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-US, carrying 2645 messages.
+ * Compiled interface message catalogue for en-US, carrying 2650 messages.
  *
  * Generated from en-US.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1300,6 +1300,11 @@ return [
     'core.administrator.content_form.studio_dependent_entries_remain' => 'Other items of this type keep the current version until they are migrated.',
     'core.administrator.content_form.studio_item_adopts_successor' => 'This item adopts the new type version; its values are kept.',
     'core.administrator.content_form.studio_item_created' => 'A new content item is created in its initial workflow state.',
+    'core.administrator.content_form.studio_item_layout_detached' => 'This item\'s own layout was made for another version of its content type or for another site theme, so it is not used. It is kept.',
+    'core.administrator.content_form.studio_item_layout_inherited' => 'This item uses its content type\'s layout again.',
+    'core.administrator.content_form.studio_item_layout_kept' => 'This layout is saved for this item only, as an item Blueprint beside its entry. The content type and its other items keep their layout.',
+    'core.administrator.content_form.studio_item_layout_live' => 'This item is published, so its new layout appears on the public site when you save.',
+    'core.administrator.content_form.studio_item_layout_promoted' => 'This item\'s own layout becomes the layout of the type you are saving, and the item then follows it.',
     'core.administrator.content_form.studio_item_revision_advances' => 'The item receives a new revision; its workflow state does not change.',
     'core.administrator.content_form.studio_new_type_for_item' => 'A new reusable content type is created from this design and this item adopts it.',
     'core.administrator.content_form.studio_new_type_for_new_item' => 'A new reusable content type is created from this design and this item uses it.',
