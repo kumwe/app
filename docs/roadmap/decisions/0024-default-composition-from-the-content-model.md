@@ -10,6 +10,8 @@ metadata, presentation defaults and its own preview resolution. It adds no shell
 builder.
 **Amends:** [ADR 0015](0015-studio-artifact-and-recovery-persistence.md) (decisions 2-3), for migration
 `20261007120000_studio_field_block_revision` only.
+**Amended by:** [ADR 0025](0025-item-layout-overrides.md) (proposed), for its "Moving blocks" limit: an item can
+keep its own layout through **Save item**.
 
 ## Evidence
 
@@ -337,6 +339,8 @@ This note is written for the pull request description.
 > - The page canvas still shows host field blocks as "Unsupported Studio block" lines. That ends with the
 >   re-pin carrying Studio's host-block projection.
 > - A moved block is kept only by a type save until per-item layout lands in a later pull request (B2).
+>   *Superseded by [ADR 0025](0025-item-layout-overrides.md) (proposed), which lets Save item keep an item's own
+>   layout.*
 > - The guard that keeps an untouched default a draft relies on the pinned shell sending the handed roots back
 >   unchanged. The browser journey asserts this on beta.9; it passed locally on PostgreSQL 16 on 2026-10-08, and
 >   CI runs it on every engine.
@@ -383,7 +387,9 @@ running editor while drafting. The browser journey, which covers the title only,
   status lines. That lasts until the re-pin to a Studio release with the host-block projection. Values appear in
   the Outline, the inspector, Content mode and the accepted-revision preview.
 - *Moving blocks.* A moved block persists only through **Save new type version**, because `itemComposition`
-  stays `denied`. Per-item layout is a later App change.
+  stays `denied`. Per-item layout is a later App change. *Superseded by
+  [ADR 0025](0025-item-layout-overrides.md) (proposed): every type declares `overrides`, and **Save item** keeps
+  a moved or inserted block as the item's own layout without changing the type.*
 - *Defaults follow the model until an author changes them.* A type save that leaves the default untouched stores
   an empty draft, so the default is derived again at every load from the current model. Once an author changes
   the layout and saves the type, it is an authored layout: a later model change neither adds new fields to it nor

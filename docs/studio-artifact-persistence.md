@@ -56,6 +56,18 @@ New-item and new-type outcomes therefore require explicit application use cases 
 protocol operations; they are not achieved by relaxing `artifact.save` or manufacturing an initial head in browser
 code.
 
+An item's own layout ([ADR 0025](roadmap/decisions/0025-item-layout-overrides.md), proposed) is one such use case.
+It is an ordinary `blueprint` artifact with id `content-item-blueprint:<entry UUID>`, version `1.0.0` and status
+`published`, written only by the contextual **Save item** through `StudioContentCompositionService`, never by
+`artifact.save`. Blueprint sessions and the generic artifact port refuse its id. Its revision is content-addressed
+(`item-` and a SHA-256 of the site, identity, model, base type Blueprint, theme, block locks and roots), so equal
+layouts share a revision. A new revision is appended through the same compare-and-set on the head. A revision
+already in history, such as a layout the author returns to, is not stored again; the entry is re-pinned to it,
+because history refuses a repeated revision. The entry's pointer, `item_blueprint_revision` on
+`studio_entry_composition_overrides`, decides which revision is rendered; the artifact head is only the base for
+appending history. The pointer moves by its own compare-and-set in the same transaction as the entry save and
+the audit event.
+
 Idempotency scope is the digest of actor, authenticated session binding, resource-context key, session
 generation, operation and caller key. Intent separately digests the canonical semantic argument plus
 protocol, locale and expected revision. Request and trace IDs are correlation only. Equal completed intent

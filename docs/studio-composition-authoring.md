@@ -80,6 +80,26 @@ closed capability projection and return context, and answers every operation thr
   breaks. Decimal, rich-text, date, date-time, media and resource ports have no inspector control on the pinned
   shell and are edited in Content mode. Migration `20261007120000_studio_field_block_revision` moved stored
   `core-block-r1` field locks to r2 in place, keeping revision identities;
+- per-item layouts ([ADR 0025](roadmap/decisions/0025-item-layout-overrides.md), proposed). Every type declares
+  `itemComposition: 'overrides'`, so an author can move blocks on one item, or insert catalogue blocks there
+  (proven by the integration journey; the browser journey moves blocks), and keep that layout with
+  **Save item** without changing the reusable type or its other items. The plan lists the item's entry and its item
+  Blueprint as affected, and its consequences say so; a layout save needs confirmation when the item does not yet
+  use its own layout, and for every layout change of a published item, including a return to the type's layout,
+  which also warns that the public page changes. PHP builds the layout from the sent roots as an immutable
+  `content-item-blueprint:<entry UUID>` Blueprint revision, validates it against the session's entry, model, type
+  Blueprint, block catalogue, artifact admission and the publication guard, pins it from the entry's composition
+  override record and audits it, all in the save's transaction. A layout equal to the type's is not stored, and
+  saving one returns an item that used its own layout to the type's. The editor is handed the pinned layout as
+  stored, and the accepted-revision preview and the public page render it; a published item's new layout goes live
+  on save. An item save is refused with `studio.authoring/type-changed` when the type changed after it was handed,
+  or when a create would pin a type version published after its session opened.
+  Saving a new type version or a new type from an item's own layout makes it the type's layout and clears the pin;
+  an item re-pinned to another type version by any other path, or whose layout is locked to a theme that is no
+  longer published, keeps its layout unused, with the diagnostic `kumwe.app/item-layout-detached`. One shared
+  `StudioItemCompositionPolicy` carries the policy to the editor, preview and public renderer; sharing it with
+  `denied` is the rollback. Blueprint sessions and the generic artifact port refuse item layout ids.
+  Migration `20261008120000_studio_item_composition` adds the pointer and the type fence as two nullable columns;
 - the interface-locale Studio message catalogue served by the localization port, fetched alongside the module so
   the shell never shows source-language labels first, and the host's own return label, save consequences and
   palette entries (the App's Content field blocks and its empty-section pattern) resolved in the same interface
@@ -135,9 +155,12 @@ What remains open, and why:
   core/field-…" status line. Bound values appear in the Outline, the inspector, Content mode and the
   accepted-revision preview. Rendering host blocks on the canvas is a Studio release item and reaches App with
   the next re-pin.
-- **Per-item layout.** Every type declares `itemComposition: 'denied'`, so a block moved in the editor persists
-  only through **Save new type version**, as a new type version. Per-item layout needs its own audited
-  persistence and decision record.
+- **Per-item layout on beta.9.** The pinned shell has no "use the type's layout" action, so an author restores
+  inheritance by moving the blocks back to the type's arrangement. Its save confirmation lists consequences, not
+  affected artifacts, so the consequence text names the item's entry and item Blueprint. In the Hybrid session
+  the default section's field blocks can be reordered inside the section, while root nodes stay fixed. A
+  per-type switch, staging a published item's layout and purging the layouts of removed entries are left to
+  later decisions (ADR 0025).
 - **Live-draft preview.** The hosted in-shell preview cannot stage a live draft, so the App preview shows accepted
   revisions only. Studio beta.7 fixes repeated-save continuity and accepts localized messages for the chooser and
   save confirmation; App supplies those messages at mount time. App also preserves authored field identities across

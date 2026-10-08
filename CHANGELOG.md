@@ -14,6 +14,41 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ## [Unreleased]
 
+### Studio item layout
+
+These changes rest on three working assumptions that await the maintainer;
+[ADR 0025](docs/roadmap/decisions/0025-item-layout-overrides.md) (proposed) records them with their reversal.
+Studio stays pinned at `0.1.0-beta.9`, with no Producer or SDK change.
+
+- Let an author move blocks on one item, or insert catalogue blocks there, and keep that layout with **Save
+  item**, without changing the reusable type or its other items (an inserted block is proven by the integration
+  journey; the browser journey moves blocks). Every Content type now declares `itemComposition: 'overrides'`. The layout is
+  stored as an immutable item Blueprint revision, `content-item-blueprint:<entry UUID>`, pinned from the entry's
+  composition override record, validated against the session's entry, model, type Blueprint, block catalogue,
+  artifact admission and the publication guard, and saved and audited (`studio.composition.item-layout`) in the
+  entry save's transaction. A layout equal to the type's is not stored, and saving one returns the item to the
+  type's layout; returning to an earlier layout re-pins its stored revision. The save confirmation names the item's
+  entry and item Blueprint, and warns and asks for confirmation when a save changes a published item's public
+  page, whether it keeps a new layout or returns the item to the type's.
+- Hand the pinned item layout to the editor as stored, render it in the accepted-revision preview of its own
+  entry, and render it on the public page before the type's layout, even while the type's layout is a draft. An
+  item re-pinned to another type version, or whose layout is locked to a theme that is no longer published,
+  keeps its layout unused, with the diagnostic `kumwe.app/item-layout-detached`. One shared
+  `StudioItemCompositionPolicy` carries the item-composition policy to the editor, preview and public renderer;
+  sharing it with `denied` rolls item layouts back without losing them.
+- Keep the type's Blueprint lineage when a new type version is saved from an item with its own layout. When a new
+  type version or a new type is saved from such an item, its layout becomes the type's and the item's pin is
+  cleared. Refuse an item save with `studio.authoring/type-changed`
+  before any effect when the type changed after it was handed to the session, or when a create would pin a type
+  version published after its session opened while the layout locks the earlier one, and refuse item layout ids in
+  Blueprint sessions and the generic artifact port.
+- Migration `20261008120000_studio_item_composition`, forward-only and repeatable, adds two nullable columns,
+  `studio_entry_composition_overrides.item_blueprint_revision` and
+  `studio_content_authoring_contexts.handed_type_digest`. Sharing `StudioItemCompositionPolicy` with `denied` (its
+  default is `StudioContentCompositionService::ITEM_COMPOSITION`) rolls the behaviour back and keeps stored layouts
+  unused. Five new interface messages carry the
+  save consequences and the diagnostic in all nine catalogues.
+
 ### Studio default composition and editable field blocks
 
 These changes rest on three working assumptions that await the maintainer;
@@ -37,8 +72,8 @@ with their reversal. Studio stays pinned at `0.1.0-beta.9`, with no Producer or 
 - Open Studio maximized in the Content editor, and let the inline workspace grow toward the viewport height.
   The accepted-revision preview now waits in a closed disclosure below the shell. On beta.9 the page canvas is
   still Studio's local render, which shows each App field block as an "Unsupported Studio block" line until a
-  re-pin brings Studio's host-block projection. A moved block persists only as a new type version, because
-  items cannot yet carry their own layout.
+  re-pin brings Studio's host-block projection. A moved block is kept on its own item through **Save item**
+  (see Studio item layout above).
 
 ### Diagnostics administrator layout
 
