@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Studio\Application\Composition;
 
 use DateTimeImmutable;
+use InvalidArgumentException;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Content\Application\ContentModelRepository;
 use Kumwe\Content\Application\ContentRecord;
@@ -24,6 +25,7 @@ use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Composition\CanonicalStudioPublishedContentRenderer;
 use Kumwe\App\Studio\Application\Composition\StudioBuiltInThemeRelease;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionThemeMismatch;
+use Kumwe\App\Studio\Application\Composition\StudioItemCompositionPolicy;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedBlueprintMismatch;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedBlueprintUnavailable;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedCompositionGuard;
@@ -56,6 +58,7 @@ use Kumwe\Producer\Render\RenderResult;
 use Kumwe\Producer\Render\RenderState;
 use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\App\Studio\Domain\Projection\ContentBlueprintBinding;
+use Kumwe\App\Studio\Domain\Projection\EntryCompositionOverrides;
 use Kumwe\App\Tests\Support\TrustFencedStudioPreviewRenderers;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -76,11 +79,13 @@ use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 #[CoversClass(StudioPublishedBlueprintUnavailable::class)]
 #[CoversClass(StudioPublishedModelMismatch::class)]
 #[CoversClass(StudioPublishedBlockRendererUnavailable::class)]
+#[CoversClass(StudioItemCompositionPolicy::class)]
 #[UsesClass(ContentStudioProjector::class)]
 #[UsesClass(StudioBlockRendererRuntime::class)]
 #[UsesClass(StudioContentFieldBlockRenderer::class)]
 #[UsesClass(TrustEnforcingStudioPreviewBlockRenderer::class)]
 #[UsesClass(TrustStore::class)]
+#[UsesClass(EntryCompositionOverrides::class)]
 final class StudioPublishedContentRendererTest extends TestCase
 {
     use TrustFencedStudioPreviewRenderers;
@@ -279,6 +284,128 @@ final class StudioPublishedContentRendererTest extends TestCase
                 $theme,
             )->render($this->record()),
         );
+    }
+
+    /**
+     * An entry that pins its own published layout (App ADR 0025) renders it before its type's layout, even while
+     * the type's layout is a draft; a layout made for another type version falls back to the type's path; a
+     * missing pinned revision, another entry's layout and an unpublished layout fail closed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnEntryItemLayoutRendersBeforeItsTypeLayout(): void
+    {
+        $theme = $this->theme();
+        $binding = $this->binding();
+        $admission = self::admission();
+        $type = $admission->admit(SiteContext::DEFAULT, $this->blueprint($theme));
+        $draftType = $admission->revise($type, 'blueprint-draft', 'draft');
+        $item = $admission->admit(SiteContext::DEFAULT, $this->itemLayout($theme, self::ENTRY_ID));
+        $site = SiteContext::default();
+        $pinned = new EntryCompositionOverrides($site, self::ENTRY_ID, new stdClass(), 2, $item->revision);
+
+        $typeOnly = $this->itemRenderer($binding, $type, [], null, $theme)->render($this->record());
+        self::assertNotNull($typeOnly);
+        self::assertStringNotContainsString('Exact title', $typeOnly->html);
+        $following = new EntryCompositionOverrides($site, self::ENTRY_ID, new stdClass(), 1);
+        self::assertSame(
+            $typeOnly->html,
+            $this->itemRenderer($binding, $type, [], $following, $theme)->render($this->record())?->html,
+        );
+
+        foreach (['published type' => $type, 'draft type' => $draftType] as $label => $typeArtifact) {
+            $rendered = $this->itemRenderer($binding, $typeArtifact, [$item], $pinned, $theme)->render($this->record());
+            self::assertNotNull($rendered, $label);
+            $title = strpos($rendered->html, 'Exact title');
+            $body = strpos($rendered->html, 'Exact &amp; safe');
+            self::assertIsInt($title, $label);
+            self::assertIsInt($body, $label);
+            self::assertLessThan($body, $title, $label);
+        }
+
+        $earlierDocument = $this->itemLayout($theme, self::ENTRY_ID);
+        $earlierDocument->model->version = ContentStudioProjector::modelVersion(3);
+        $earlierDocument->model->revision = ContentStudioProjector::modelRevision(3);
+        $earlierDocument->revision = 'item-' . str_repeat('e', 64);
+        $earlier = $admission->admit(SiteContext::DEFAULT, $earlierDocument);
+        $detached = new EntryCompositionOverrides($site, self::ENTRY_ID, new stdClass(), 3, $earlier->revision);
+        self::assertSame(
+            $typeOnly->html,
+            $this->itemRenderer($binding, $type, [$earlier], $detached, $theme)->render($this->record())?->html,
+        );
+        self::assertNull(
+            $this->itemRenderer($binding, $draftType, [$earlier], $detached, $theme)->render($this->record()),
+        );
+
+        $this->assertThrows(
+            StudioPublishedBlueprintUnavailable::class,
+            fn () => $this->itemRenderer($binding, $type, [], $pinned, $theme)->render($this->record()),
+        );
+        $foreignDocument = $this->itemLayout($theme, '018f22e2-7c8b-7ab0-8f3a-88e8026be812');
+        $foreignDocument->revision = $item->revision;
+        $foreign = $admission->admit(SiteContext::DEFAULT, $foreignDocument);
+        $unpublished = $admission->revise($item, $item->revision, 'draft');
+        foreach (['another entry' => $foreign, 'unpublished' => $unpublished] as $label => $candidate) {
+            $this->assertThrows(
+                StudioPublishedBlueprintMismatch::class,
+                fn () => $this->itemRenderer($binding, $type, [$candidate], $pinned, $theme)->render($this->record()),
+            );
+        }
+    }
+
+    /**
+     * The `denied` item-composition policy, the rollback of App ADR 0025, ignores a pinned item layout: the
+     * type's layout renders, or the legacy page while the type's layout is a draft. An item layout locked to a
+     * theme that is no longer published is kept but not used in the same way, so the type's layout renders.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheDeniedPolicyAndAStaleThemeLockFallBackToTheTypeLayout(): void
+    {
+        $theme = $this->theme();
+        $binding = $this->binding();
+        $admission = self::admission();
+        $type = $admission->admit(SiteContext::DEFAULT, $this->blueprint($theme));
+        $draftType = $admission->revise($type, 'blueprint-draft', 'draft');
+        $item = $admission->admit(SiteContext::DEFAULT, $this->itemLayout($theme, self::ENTRY_ID));
+        $site = SiteContext::default();
+        $pinned = new EntryCompositionOverrides($site, self::ENTRY_ID, new stdClass(), 2, $item->revision);
+        $typeOnly = $this->itemRenderer($binding, $type, [], null, $theme)->render($this->record());
+        self::assertNotNull($typeOnly);
+        $allowed = $this->itemRenderer($binding, $type, [$item], $pinned, $theme)->render($this->record());
+        self::assertNotNull($allowed);
+        self::assertNotSame($typeOnly->html, $allowed->html, 'The default policy renders the item layout.');
+
+        $denied = new StudioItemCompositionPolicy('denied');
+        self::assertFalse($denied->allowsItemLayouts());
+        self::assertSame(
+            $typeOnly->html,
+            $this->itemRenderer($binding, $type, [$item], $pinned, $theme, $denied)->render($this->record())?->html,
+        );
+        self::assertNull(
+            $this->itemRenderer($binding, $draftType, [$item], $pinned, $theme, $denied)->render($this->record()),
+            'Under the denied policy a draft type layout keeps the legacy page.',
+        );
+
+        $staleDocument = $this->itemLayout($theme, self::ENTRY_ID);
+        $staleDocument->dependencyLock->theme->revision = 'published-stale';
+        $staleDocument->revision = 'item-' . str_repeat('f', 64);
+        $stale = $admission->admit(SiteContext::DEFAULT, $staleDocument);
+        $stalePin = new EntryCompositionOverrides($site, self::ENTRY_ID, new stdClass(), 3, $stale->revision);
+        self::assertSame(
+            $typeOnly->html,
+            $this->itemRenderer($binding, $type, [$stale], $stalePin, $theme)->render($this->record())?->html,
+        );
+        self::assertNull(
+            $this->itemRenderer($binding, $draftType, [$stale], $stalePin, $theme)->render($this->record()),
+        );
+
+        $this->expectException(InvalidArgumentException::class);
+        new StudioItemCompositionPolicy('inherit');
     }
 
     /**
@@ -924,6 +1051,91 @@ final class StudioPublishedContentRendererTest extends TestCase
             $runtime,
             $resolver,
         );
+    }
+
+    /**
+     * Build the public renderer over one type binding, its artifact, stored item layouts and an override record.
+     *
+     * @param   ContentBlueprintBinding     $binding      Type version binding.
+     * @param   StoredStudioArtifact        $type         The type binding's artifact.
+     * @param   list<StoredStudioArtifact>  $items        Item layout revisions the store holds.
+     * @param   ?EntryCompositionOverrides  $overrides    The entry's override record, or null.
+     * @param   StudioPublishedTheme        $theme        Deterministic live public theme.
+     * @param   ?StudioItemCompositionPolicy  $policy     Item-composition policy, or null for the App-wide default.
+     *
+     * @return  CanonicalStudioPublishedContentRenderer  Renderer under test.
+     *
+     * @since   2.0.0
+     */
+    private function itemRenderer(
+        ContentBlueprintBinding $binding,
+        StoredStudioArtifact $type,
+        array $items,
+        ?EntryCompositionOverrides $overrides,
+        StudioPublishedTheme $theme,
+        ?StudioItemCompositionPolicy $policy = null,
+    ): CanonicalStudioPublishedContentRenderer {
+        $bindings = $this->createStub(ContentProjectionBindingRepository::class);
+        $bindings->method('blueprint')->willReturn($binding);
+        $bindings->method('overrides')->willReturn($overrides);
+        $artifacts = $this->createStub(StudioArtifactRepository::class);
+        $artifacts->method('current')->willReturn($type);
+        $artifacts->method('revision')->willReturnCallback(
+            static function (
+                string $site,
+                string $id,
+                string $version,
+                string $revision,
+            ) use ($items): ?StoredStudioArtifact {
+                foreach ($items as $item) {
+                    if ($item->revision === $revision) {
+                        return $item;
+                    }
+                }
+
+                return null;
+            },
+        );
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
+        $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
+
+        return new CanonicalStudioPublishedContentRenderer(
+            $bindings,
+            $artifacts,
+            $this->guard($theme, $runtime, $registries, bindings: $bindings),
+            $this->projector(),
+            $runtime,
+            new StudioPreviewBindingResolver(),
+            $policy ?? new StudioItemCompositionPolicy(),
+        );
+    }
+
+    /**
+     * Build one entry's published item layout: the title field above the body field.
+     *
+     * @param   StudioPublishedTheme  $theme    Live theme whose immutable coordinate is locked.
+     * @param   string                $entryId  Entry that keeps the layout.
+     *
+     * @return  stdClass  Canonical published item layout document.
+     *
+     * @since   2.0.0
+     */
+    private function itemLayout(StudioPublishedTheme $theme, string $entryId): stdClass
+    {
+        $document = self::copy($this->blueprint($theme));
+        $document->id = EntryCompositionOverrides::ITEM_BLUEPRINT_PREFIX . $entryId;
+        $document->version = '1.0.0';
+        $document->revision = 'item-' . hash('sha256', $entryId);
+        $document->label = (object) ['key' => 'kumwe.app/content-item-blueprint', 'defaultMessage' => 'Item layout'];
+        $title = self::copy($document->roots[0]);
+        $title->id = 'title-field';
+        $title->bindings->value->source->fieldPath = ['title'];
+        $document->roots = [$title, $document->roots[0]];
+
+        return $document;
     }
 
     /**

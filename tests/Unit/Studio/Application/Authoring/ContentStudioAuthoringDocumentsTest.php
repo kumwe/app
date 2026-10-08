@@ -6,12 +6,15 @@ namespace Kumwe\App\Tests\Unit\Studio\Application\Authoring;
 
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringDocuments;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTarget;
+use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
+use Kumwe\App\Studio\Application\Composition\StudioItemCompositionPolicy;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
 use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -20,6 +23,8 @@ use PHPUnit\Framework\TestCase;
  * @since  2.0.0
  */
 #[CoversClass(ContentStudioAuthoringDocuments::class)]
+#[UsesClass(StudioContentCompositionService::class)]
+#[UsesClass(StudioItemCompositionPolicy::class)]
 final class ContentStudioAuthoringDocumentsTest extends TestCase
 {
     /**
@@ -47,6 +52,43 @@ final class ContentStudioAuthoringDocumentsTest extends TestCase
         self::assertSame(ContentStudioAuthoringTarget::TARGET_ID, $bare->id);
         self::assertSame([], $bare->contributionDependencies);
         self::assertSame([$dependency], $dependent->contributionDependencies);
+    }
+
+    /**
+     * Every Content type declares every mode and the App-wide item-composition policy, which lets Save item keep
+     * an item's own layout (App ADR 0025); the declared policy is schema-valid and is the one readers consult,
+     * and the `denied` rollback policy is declared as it is.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheAuthoringPolicyLetsAnItemKeepItsOwnLayout(): void
+    {
+        $policy = ContentStudioAuthoringDocuments::authoringPolicy();
+
+        self::assertEquals(
+            (object) ['modes' => ['model', 'blueprint', 'content'], 'itemComposition' => 'overrides'],
+            $policy,
+        );
+        self::assertTrue(
+            StudioDocumentSchemaRegistry::fromVendoredCorpus()
+                ->validateDefinition('reusable-content-type', 'authoringPolicy', $policy)
+                ->valid(),
+        );
+        self::assertSame(StudioContentCompositionService::ITEM_COMPOSITION, $policy->itemComposition);
+        self::assertTrue(StudioContentCompositionService::itemLayoutsAllowed());
+        self::assertFalse(StudioContentCompositionService::itemLayoutsAllowed('denied'));
+        self::assertTrue((new StudioItemCompositionPolicy())->allowsItemLayouts());
+
+        // The rollback policy is declared to Studio as it is, and is schema-valid too.
+        $denied = ContentStudioAuthoringDocuments::authoringPolicy('denied');
+        self::assertSame('denied', $denied->itemComposition);
+        self::assertTrue(
+            StudioDocumentSchemaRegistry::fromVendoredCorpus()
+                ->validateDefinition('reusable-content-type', 'authoringPolicy', $denied)
+                ->valid(),
+        );
     }
 
     /**

@@ -296,9 +296,17 @@ final readonly class ContentStudioProjector
             ],
         ];
         if ($overrides !== null) {
-            $document->extensions->{'kumwe.app/composition-override'} = (object) [
-                'revision' => $overrides->revision,
-            ];
+            $override = (object) ['revision' => $overrides->revision];
+            $itemBlueprintId = $overrides->itemBlueprintId();
+            if ($itemBlueprintId !== null) {
+                // The pinned item layout (App ADR 0025); every item layout is version 1.0.0 of its entry's Blueprint.
+                $override->blueprint = (object) [
+                    'id' => $itemBlueprintId,
+                    'version' => '1.0.0',
+                    'revision' => $overrides->itemBlueprintRevision,
+                ];
+            }
+            $document->extensions->{'kumwe.app/composition-override'} = $override;
         }
 
         return $this->validated('entry', $document);

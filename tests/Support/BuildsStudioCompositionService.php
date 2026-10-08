@@ -13,12 +13,15 @@ use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Presentation\Application\SitePresentation;
 use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Composition\ContentBlueprintBindingStore;
+use Kumwe\App\Studio\Application\Composition\EntryCompositionOverrideStore;
 use Kumwe\App\Studio\Application\Composition\StudioBuiltInThemeRelease;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionCatalog;
 use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
+use Kumwe\App\Studio\Application\Composition\StudioPublishedCompositionGuard;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
 use Kumwe\App\Studio\Application\Host\StudioArtifactRepository;
+use Kumwe\App\Studio\Application\Host\StudioPersistenceRace;
 use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Application\Projection\RecordAuthorizedStudioContentFieldDisclosure;
@@ -27,6 +30,7 @@ use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
 use Kumwe\App\Studio\Application\Rendering\StudioContentFieldBlockRenderer;
 use Kumwe\App\Studio\Domain\Artifact\StoredStudioArtifact;
 use Kumwe\App\Studio\Domain\Projection\ContentBlueprintBinding;
+use Kumwe\App\Studio\Domain\Projection\EntryCompositionOverrides;
 use Kumwe\Content\Application\ContentModelRepository;
 use Kumwe\Content\Application\ContentRepository;
 use Kumwe\Content\Domain\ContentTypeDefinition;
@@ -44,6 +48,8 @@ use Kumwe\Transaction\Testing\ImmediateTransactionManager;
  * and audit stay the service's own, so a machine adapter under test is proven against the same composition the
  * administrator screen reads and provisions. Only one Content type exists, `COMPOSITION_TYPE_ID` at version
  * four; `retheme()` changes the published presentation so every bound Blueprint meets its theme mismatch.
+ * Item layout Blueprints (App ADR 0025) keep their own in-memory history and head, the entry override record
+ * moves by compare-and-set, and the real publication guard checks every item layout the service admits.
  *
  * @since  2.0.0
  */
@@ -72,6 +78,30 @@ trait BuildsStudioCompositionService
      * @since  2.0.0
      */
     private ?StoredStudioArtifact $compositionArtifact = null;
+
+    /**
+     * Item layout Blueprint revisions stored so far, in storage order.
+     *
+     * @var    list<StoredStudioArtifact>
+     * @since  2.0.0
+     */
+    private array $compositionItemArtifacts = [];
+
+    /**
+     * The one entry override record the binding store holds, or null before one is pinned.
+     *
+     * @var    ?EntryCompositionOverrides
+     * @since  2.0.0
+     */
+    private ?EntryCompositionOverrides $compositionOverrides = null;
+
+    /**
+     * Whether the item layout Blueprint head refuses every store, as a concurrent writer that moved it would.
+     *
+     * @var    bool
+     * @since  2.0.0
+     */
+    private bool $compositionItemHeadMoved = false;
 
     /**
      * Public presentation the published theme reference is derived from.
@@ -122,17 +152,58 @@ trait BuildsStudioCompositionService
         $bindings->method('blueprint')->willReturnCallback(
             fn (): ?ContentBlueprintBinding => $this->compositionBinding,
         );
+        $bindings->method('overrides')->willReturnCallback(
+            fn (): ?EntryCompositionOverrides => $this->compositionOverrides,
+        );
         $bindingStore = $this->createStub(ContentBlueprintBindingStore::class);
         $bindingStore->method('add')->willReturnCallback(function (ContentBlueprintBinding $binding): void {
             $this->compositionBinding = $binding;
         });
+        $overrideStore = $this->createStub(EntryCompositionOverrideStore::class);
+        $overrideStore->method('pin')->willReturnCallback(
+            function (EntryCompositionOverrides $next, ?int $expected): void {
+                if ($this->compositionOverrides?->revision !== $expected) {
+                    throw new StudioPersistenceRace('The entry override record moved.');
+                }
+                $this->compositionOverrides = $next;
+            },
+        );
         $artifacts = $this->createStub(StudioArtifactRepository::class);
-        $artifacts->method('current')->willReturnCallback(fn (): ?StoredStudioArtifact => $this->compositionArtifact);
-        $artifacts->method('store')->willReturnCallback(function (StoredStudioArtifact $artifact): bool {
-            $this->compositionArtifact = $artifact;
+        $artifacts->method('current')->willReturnCallback(
+            fn (string $site, string $id): ?StoredStudioArtifact => str_starts_with(
+                $id,
+                EntryCompositionOverrides::ITEM_BLUEPRINT_PREFIX,
+            ) ? $this->compositionItemHead($id) : $this->compositionArtifact,
+        );
+        $artifacts->method('revision')->willReturnCallback(
+            function (string $site, string $id, string $version, string $revision): ?StoredStudioArtifact {
+                foreach ($this->compositionItemArtifacts as $artifact) {
+                    if ($artifact->id === $id && $artifact->version === $version && $artifact->revision === $revision) {
+                        return $artifact;
+                    }
+                }
 
-            return true;
-        });
+                return null;
+            },
+        );
+        $artifacts->method('store')->willReturnCallback(
+            function (StoredStudioArtifact $artifact, ?string $expected): bool {
+                if (!str_starts_with($artifact->id, EntryCompositionOverrides::ITEM_BLUEPRINT_PREFIX)) {
+                    $this->compositionArtifact = $artifact;
+
+                    return true;
+                }
+                if (
+                    $this->compositionItemHeadMoved
+                    || $this->compositionItemHead($artifact->id)?->revision !== $expected
+                ) {
+                    return false;
+                }
+                $this->compositionItemArtifacts[] = $artifact;
+
+                return true;
+            },
+        );
         $settings = $this->createStub(SiteSettings::class);
         $settings->method('current')->willReturnCallback(
             fn (): array => ['presentation' => $this->compositionPresentation, 'timezone' => []],
@@ -143,6 +214,17 @@ trait BuildsStudioCompositionService
         );
         $transactions = new ImmediateTransactionManager();
         $authorization = AuthorizationContext::gateway();
+        $theme = new StudioPublishedTheme(
+            $settings,
+            new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+                withCore: false,
+            )),
+            new StudioBuiltInThemeRelease(str_repeat('a', 64)),
+        );
+        $admission = new StudioArtifactAdmission(StudioDocumentSchemaRegistry::fromVendoredCorpus());
+        $blocks = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
 
         return new StudioContentCompositionService(
             new StudioContentProjectionService(
@@ -174,25 +256,37 @@ trait BuildsStudioCompositionService
             ),
             $bindings,
             $bindingStore,
-            new StudioArtifactAdmission(StudioDocumentSchemaRegistry::fromVendoredCorpus()),
+            $admission,
             $artifacts,
             $transactions,
             $audit,
             $clock,
-            new StudioCompositionContributionCatalog(
-                $registries,
-                new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer()),
-            ),
-            new StudioPublishedTheme(
-                $settings,
-                new ActiveExtensionSet(new ExtensionContributionRegistrySet(
-                    new DeterministicCanonicalEncoder(),
-                    new SdkFieldConfigurationAdmission(),
-                    withCore: false,
-                )),
-                new StudioBuiltInThemeRelease(str_repeat('a', 64)),
-            ),
+            new StudioCompositionContributionCatalog($registries, $blocks),
+            $theme,
+            $overrideStore,
+            new StudioPublishedCompositionGuard($admission, $models, $theme, $blocks, $registries, $bindings),
         );
+    }
+
+    /**
+     * The latest stored revision of one item layout Blueprint, or null before its first.
+     *
+     * @param   string  $id  Item layout Blueprint identity.
+     *
+     * @return  ?StoredStudioArtifact  The item Blueprint head.
+     *
+     * @since   2.0.0
+     */
+    private function compositionItemHead(string $id): ?StoredStudioArtifact
+    {
+        $head = null;
+        foreach ($this->compositionItemArtifacts as $artifact) {
+            if ($artifact->id === $id) {
+                $head = $artifact;
+            }
+        }
+
+        return $head;
     }
 
     /**

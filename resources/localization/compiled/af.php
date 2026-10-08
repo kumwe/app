@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2645 messages.
+ * Compiled interface message catalogue for af, carrying 2650 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1300,6 +1300,11 @@ return [
     'core.administrator.content_form.studio_dependent_entries_remain' => 'Ander items van hierdie tipe behou die huidige weergawe totdat hulle gemigreer word.',
     'core.administrator.content_form.studio_item_adopts_successor' => 'Hierdie item neem die nuwe tipeweergawe aan; sy waardes word behou.',
     'core.administrator.content_form.studio_item_created' => '’n Nuwe inhoudsitem word in sy aanvanklike werkvloeistatus geskep.',
+    'core.administrator.content_form.studio_item_layout_detached' => 'Hierdie item se eie uitleg is vir ’n ander weergawe van sy inhoudtipe of vir ’n ander werfvoorkoms gemaak en word dus nie gebruik nie. Dit word behou.',
+    'core.administrator.content_form.studio_item_layout_inherited' => 'Hierdie item gebruik weer sy inhoudtipe se uitleg.',
+    'core.administrator.content_form.studio_item_layout_kept' => 'Hierdie uitleg word slegs vir hierdie item gestoor, as ’n item-Blueprint langs sy inskrywing. Die inhoudtipe en sy ander items behou hul uitleg.',
+    'core.administrator.content_form.studio_item_layout_live' => 'Hierdie item is gepubliseer, dus verskyn sy nuwe uitleg op die openbare webwerf wanneer jy stoor.',
+    'core.administrator.content_form.studio_item_layout_promoted' => 'Hierdie item se eie uitleg word die uitleg van die tipe wat jy stoor, en die item volg dit daarna.',
     'core.administrator.content_form.studio_item_revision_advances' => 'Die item kry ’n nuwe hersiening; sy werkvloeistatus verander nie.',
     'core.administrator.content_form.studio_new_type_for_item' => '’n Nuwe herbruikbare inhoudtipe word uit hierdie ontwerp geskep en hierdie item neem dit aan.',
     'core.administrator.content_form.studio_new_type_for_new_item' => '’n Nuwe herbruikbare inhoudtipe word uit hierdie ontwerp geskep en hierdie item gebruik dit.',

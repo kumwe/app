@@ -8,6 +8,7 @@ use Kumwe\App\Studio\Domain\Artifact\StoredStudioArtifact;
 use Kumwe\App\Studio\Domain\Artifact\StudioArtifactReference;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
+use Kumwe\App\Studio\Domain\Projection\EntryCompositionOverrides;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Error\HostRefusal;
@@ -561,6 +562,9 @@ final readonly class StudioArtifactHostPort implements ArtifactPortInterface
     /**
      * Require the artifact kind to fit the trusted resource family and canonical mode.
      *
+     * An item layout is never a resource of the generic artifact port: it is written only by its entry's
+     * audited item save (App ADR 0025), so it is refused for every kind and mode.
+     *
      * @param   StudioHostSessionSnapshot  $snapshot  Trusted live host session.
      * @param   string                     $id        Candidate artifact identifier.
      * @param   string                     $kind      Admitted artifact kind.
@@ -571,6 +575,9 @@ final readonly class StudioArtifactHostPort implements ArtifactPortInterface
      */
     private function requireResource(StudioHostSessionSnapshot $snapshot, string $id, string $kind): void
     {
+        if (str_starts_with(strtolower($id), EntryCompositionOverrides::ITEM_BLUEPRINT_PREFIX)) {
+            StudioProducerError::refuse('forbidden', 'studio.host/session-refused');
+        }
         $this->requireResourceId($snapshot, $id);
         $fits = match ($kind) {
             'blueprint' => $snapshot->session->resourceKind === StudioResourceKind::Blueprint

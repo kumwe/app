@@ -272,6 +272,16 @@ async function rootTypes(shell: Locator): Promise<string[]> {
   });
 }
 
+/** The node identities of one slot of one root of the Blueprint the session holds, in order. */
+async function slotChildIds(shell: Locator, root: number, slot: string): Promise<string[]> {
+  return shell.evaluate((element, [rootIndex, slotId]) => {
+    const canvas = (element as HTMLElement & { blueprintElement?: { document?: {
+      roots: Array<{ slots: Record<string, Array<{ id: string }> | undefined> }>;
+    } } }).blueprintElement;
+    return canvas?.document?.roots[rootIndex]?.slots[slotId]?.map(({ id }) => id) ?? [];
+  }, [root, slot] as const);
+}
+
 /** The lifecycle status of the Blueprint the host handed the session; a layout a type save stored is `published`. */
 async function blueprintStatus(shell: Locator): Promise<string | undefined> {
   return shell.evaluate((element) => {
@@ -608,6 +618,78 @@ test('the accepted item previews through the authenticated channel and renders p
   await expect(page.locator('.studio-preview-extension-grid', { hasText: 'Contributed grid: 2 columns' })).toBeVisible();
   expect(await page.locator('script[src*="studio-browser"], link[href*="studio-browser"]').count()).toBe(0);
   expect(await page.locator('[data-studio-preview-marker]').count()).toBe(0);
+});
+
+/**
+ * An item keeps its own layout through Save item, and another item of the same type is unaffected.
+ *
+ * App ADR 0025 (working assumptions I1 and I2): every type lets an item keep its own layout. Moving the summary
+ * block above the title through the Outline's explicit move control, with no drag, and choosing Save item keeps
+ * that layout for this item only. The item is published, so the host discloses that the new layout goes live and
+ * asks for confirmation. The reopened item keeps the moved order without a new type version, and its public page
+ * renders the summary first. A new item started from the same type still receives the type's order.
+ */
+test('an item keeps its own layout through Save item', async ({ page }) => {
+  test.slow();
+  const editPath = journey.editPath;
+  const slug = journey.slug;
+  const modelId = journey.modelId;
+  expect(editPath !== undefined && slug !== undefined && modelId !== undefined, 'The blank-creation step must have accepted its item.')
+    .toBe(true);
+  await signInToAdministrator(page);
+  await openEditor(page, editPath ?? '');
+  const shell = shellOf(page);
+  const identity = await shell.locator('.contextual-identity p').innerText();
+  await mode(shell, 'blueprint');
+  expect(await slotChildIds(shell, 0, 'content')).toEqual(['default/field/title', 'default/field/summary']);
+
+  // The explicit, non-drag move control of the Outline moves the selected block within its section.
+  await openStudioPanel(shell, 'outline', journeyLocale);
+  await shell.locator('button.outline-entry[data-node-id="default/field/summary"]').click();
+  await openStudioPanel(shell, 'outline', journeyLocale);
+  const moveUp = shell.locator('button.outline-move-up');
+  await expect(moveUp).toBeEnabled();
+  await moveUp.click();
+  await expect.poll(() => slotChildIds(shell, 0, 'content'))
+    .toEqual(['default/field/summary', 'default/field/title']);
+  await expect(shell.locator('.dirty-summary')).toHaveAttribute('data-dirty', 'true');
+  await save(page, 'save-item', [
+    'kumwe.app/item-revision-advances',
+    'kumwe.app/item-layout-kept',
+    'kumwe.app/item-layout-live',
+  ]);
+  await expect(shell.locator('.contextual-identity p')).toHaveText(identity);
+
+  // The reopened item keeps the moved order; the reusable type did not move.
+  await openEditor(page, editPath ?? '');
+  const reopened = shellOf(page);
+  await expect(reopened.locator('.contextual-identity p')).toHaveText(identity);
+  expect(await slotChildIds(reopened, 0, 'content')).toEqual(['default/field/summary', 'default/field/title']);
+  await expect(reopened.locator('.dirty-summary')).toHaveAttribute('data-dirty', 'false');
+  await expectAccessible(page);
+
+  // The published page renders the item's own layout: the summary now precedes the title.
+  const response = await page.goto(`/${slug ?? ''}`);
+  expect(response?.status()).toBe(200);
+  const fields = page.locator('.studio-preview-field-text');
+  await expect(fields.first()).toContainText('Accepted by the first editor.');
+  await expect(fields.nth(1)).toContainText('Studio journey item edited');
+
+  // A new item of the same type still receives the type's own order.
+  await openEditor(page, '/administrator/content/new');
+  await startFrom(page, new RegExp(`content-type:${modelId ?? ''}@`, 'u'));
+  const created = shellOf(page);
+  await mode(created, 'content');
+  await created.getByRole('textbox', { name: 'Title', exact: true }).fill('Studio sibling item');
+  await created.getByRole('textbox', { name: 'Slug', exact: true }).fill(`studio-sibling-${Date.now().toString(36)}`);
+  await created.getByRole('textbox', { name: 'Slug', exact: true }).press('Tab');
+  await save(page, 'save-item');
+  await created.locator('.contextual-return-button').click();
+  await expect(page).toHaveURL(/\/administrator\/content\/[0-9a-f-]{36}\/edit/u);
+  await openEditor(page, new URL(page.url()).pathname);
+  const sibling = shellOf(page);
+  expect(await slotChildIds(sibling, 0, 'content')).toEqual(['default/field/title', 'default/field/summary']);
+  await expectAccessible(page);
 });
 
 /**

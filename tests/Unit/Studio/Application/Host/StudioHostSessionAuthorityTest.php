@@ -172,6 +172,42 @@ final class StudioHostSessionAuthorityTest extends TestCase
     }
 
     /**
+     * No surface may open a Blueprint session on an entry's item layout (App ADR 0025), whatever the identifier's
+     * case; the item save is its only write path, and an ordinary Blueprint identity still opens.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testABlueprintSessionOnAnItemLayoutIsRefused(): void
+    {
+        [$authority] = $this->authority();
+        $context = self::context(['studio.mode.blueprint']);
+        foreach (
+            [
+                'content-item-blueprint:018f22e2-7c8b-7ab0-8f3a-88e8026be9b1',
+                'Content-Item-Blueprint:018F22E2-7C8B-7AB0-8F3A-88E8026BE9B1',
+            ] as $resourceId
+        ) {
+            try {
+                $authority->open($context, StudioSessionMode::Blueprint, StudioResourceKind::Blueprint, $resourceId);
+                self::fail('A Blueprint session on an item layout must be refused.');
+            } catch (StudioHostAccessRefused $refused) {
+                self::assertSame('forbidden', $refused->category, $resourceId);
+                self::assertSame('studio.host/session-refused', $refused->diagnosticCode, $resourceId);
+            }
+        }
+
+        $type = $authority->open(
+            $context,
+            StudioSessionMode::Blueprint,
+            StudioResourceKind::Blueprint,
+            'content-blueprint:018f22e2-7c8b-7ab0-8f3a-88e8026be9b2:v1',
+        );
+        self::assertSame(StudioResourceKind::Blueprint, $type->session->resourceKind);
+    }
+
+    /**
      * Grant and security-epoch changes alter the live generation deterministically.
      *
      * @return  void

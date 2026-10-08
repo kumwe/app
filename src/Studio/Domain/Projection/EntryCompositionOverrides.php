@@ -16,7 +16,9 @@ use stdClass;
  * The object is copied into Studio's `entry.compositionOverrides` member and is deliberately separate
  * from the Content entry body: Studio may read it, while Content validation, workflow, and translation
  * state remain authoritative in their own bounded context. Canonical bytes are stored privately so a
- * caller cannot mutate an object after construction and change what this value means.
+ * caller cannot mutate an object after construction and change what this value means. The same record
+ * may also pin the exact revision of the entry's own item layout, a Blueprint stored as an immutable
+ * Studio artifact; without that pointer the entry follows its content type's layout.
  *
  * @since  2.0.0
  */
@@ -33,12 +35,13 @@ final readonly class EntryCompositionOverrides
     /**
      * Capture one entry's override object at an optimistic revision.
      *
-     * @param   SiteContext  $site      Site whose entry is addressed.
-     * @param   string       $entryId   Canonical UUID of the Content entry.
-     * @param   stdClass     $values    Override values keyed by Studio stable node or binding identifier.
-     * @param   int          $revision  Optimistic override revision, starting at one.
+     * @param   SiteContext  $site                   Site whose entry is addressed.
+     * @param   string       $entryId                Canonical UUID of the Content entry.
+     * @param   stdClass     $values                 Override values keyed by Studio stable node or binding identifier.
+     * @param   int          $revision               Optimistic override revision, starting at one.
+     * @param   ?string      $itemBlueprintRevision  Pinned item layout revision, or null to follow the type.
      *
-     * @throws  InvalidArgumentException  When the entry, revision, key set, or byte budget is invalid.
+     * @throws  InvalidArgumentException  When the entry, revision, key set, pointer, or byte budget is invalid.
      * @throws  CanonicalEncodingException  When a value is not representable as canonical JSON.
      *
      * @since   2.0.0
@@ -48,12 +51,16 @@ final readonly class EntryCompositionOverrides
         public string $entryId,
         stdClass $values,
         public int $revision,
+        public ?string $itemBlueprintRevision = null,
     ) {
         if (preg_match(self::UUID, $entryId) !== 1) {
             throw new InvalidArgumentException('Studio entry overrides require a canonical Content UUID.');
         }
         if ($revision < 1) {
             throw new InvalidArgumentException('A Studio entry override revision must be positive.');
+        }
+        if ($itemBlueprintRevision !== null && preg_match(self::ITEM_REVISION, $itemBlueprintRevision) !== 1) {
+            throw new InvalidArgumentException('A Studio item layout revision must be a content-addressed digest.');
         }
         $members = get_object_vars($values);
         if (count($members) > 1000) {
@@ -109,6 +116,25 @@ final readonly class EntryCompositionOverrides
     }
 
     /**
+     * Return the artifact identifier of this entry's pinned item layout.
+     *
+     * Item layouts have one Blueprint artifact per entry for the entry's life; the identifier is
+     * derived from the entry UUID, so persistence stores only the pinned revision.
+     *
+     * @return  ?string  Item Blueprint identifier, or null when the entry follows its content type's layout.
+     *
+     * @since   2.0.0
+     */
+    public function itemBlueprintId(): ?string
+    {
+        if ($this->itemBlueprintRevision === null) {
+            return null;
+        }
+
+        return self::ITEM_BLUEPRINT_PREFIX . strtolower($this->entryId);
+    }
+
+    /**
      * Enforce the recursive limits inherited from Studio's canonical JSON value definition.
      *
      * @param   mixed  $value  Candidate nested override value.
@@ -157,6 +183,22 @@ final readonly class EntryCompositionOverrides
             self::assertJsonValueShape($member, $depth + 1);
         }
     }
+
+    /**
+     * Identifier prefix of every item layout Blueprint, disjoint from the type Blueprint prefix.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string ITEM_BLUEPRINT_PREFIX = 'content-item-blueprint:';
+
+    /**
+     * Content-addressed item layout revision grammar: a fixed prefix and a lowercase SHA-256 digest.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string ITEM_REVISION = '/^item-[0-9a-f]{64}$/D';
 
     /**
      * Canonical UUID grammar shared with Content entries.

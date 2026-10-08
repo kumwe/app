@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2645 messages.
+ * Compiled interface message catalogue for ar, carrying 2650 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1300,6 +1300,11 @@ return [
     'core.administrator.content_form.studio_dependent_entries_remain' => 'تحتفظ العناصر الأخرى من هذا النوع بالإصدار الحالي حتى يتم ترحيلها.',
     'core.administrator.content_form.studio_item_adopts_successor' => 'يعتمد هذا العنصر إصدار النوع الجديد؛ وتُحفظ قيمه.',
     'core.administrator.content_form.studio_item_created' => 'يُنشأ عنصر محتوى جديد في حالة سير العمل الأولية الخاصة به.',
+    'core.administrator.content_form.studio_item_layout_detached' => 'صُمّم التخطيط الخاص بهذا العنصر لإصدار آخر من نوع المحتوى الخاص به أو لسمة أخرى للموقع، لذا لا يُستخدم. ويُحتفظ به.',
+    'core.administrator.content_form.studio_item_layout_inherited' => 'يستخدم هذا العنصر تخطيط نوع المحتوى الخاص به مجددًا.',
+    'core.administrator.content_form.studio_item_layout_kept' => 'يُحفظ هذا التخطيط لهذا العنصر وحده، بوصفه Blueprint خاصًا بالعنصر إلى جانب إدخاله. ويحتفظ نوع المحتوى وعناصره الأخرى بتخطيطها.',
+    'core.administrator.content_form.studio_item_layout_live' => 'هذا العنصر منشور، لذا يظهر تخطيطه الجديد على الموقع العام عند الحفظ.',
+    'core.administrator.content_form.studio_item_layout_promoted' => 'يصبح التخطيط الخاص بهذا العنصر تخطيطَ النوع الذي تحفظه، ثم يتبعه العنصر.',
     'core.administrator.content_form.studio_item_revision_advances' => 'يحصل العنصر على مراجعة جديدة؛ ولا تتغير حالة سير العمل الخاصة به.',
     'core.administrator.content_form.studio_new_type_for_item' => 'يُنشأ نوع محتوى جديد قابل لإعادة الاستخدام من هذا التصميم ويعتمده هذا العنصر.',
     'core.administrator.content_form.studio_new_type_for_new_item' => 'يُنشأ نوع محتوى جديد قابل لإعادة الاستخدام من هذا التصميم ويستخدمه هذا العنصر.',

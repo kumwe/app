@@ -137,6 +137,41 @@ final class StudioArtifactHostPortTest extends TestCase
     }
 
     /**
+     * Prove an item layout is never a resource of the generic artifact port (App ADR 0025): even a session
+     * bound to an item layout identity, loading an artifact kind its mode would otherwise serve, is refused.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnItemLayoutIsNeverServedByTheGenericPort(): void
+    {
+        foreach (
+            [
+                'content-item-blueprint:018f22e2-7c8b-7ab0-8f3a-88e8026be9b1',
+                'CONTENT-ITEM-BLUEPRINT:018F22E2-7C8B-7AB0-8F3A-88E8026BE9B1',
+            ] as $id
+        ) {
+            $document = self::entryDocument();
+            $document->id = $id;
+            $head = self::admission()->admit('default', $document);
+            $load = StudioProducerRequest::authorized(
+                'studio.operation/artifact.load',
+                (object) ['reference' => (object) ['id' => $id, 'version' => '1.0.0']],
+                resource: $id,
+            );
+            try {
+                self::port(self::repository($head))->forRequest($load->authority)
+                    ->load($load->arguments(), $load->context());
+                self::fail('An item layout identity must not be served by the generic artifact port.');
+            } catch (HostRefusal $refused) {
+                self::assertSame('forbidden', $refused->error()->category(), $id);
+                self::assertSame('studio.host/session-refused', $refused->error()->diagnostics()[0]->code(), $id);
+            }
+        }
+    }
+
+    /**
      * Prove a read operation refuses a context carrying mutation coordinates.
      *
      * @return  void

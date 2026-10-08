@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringContextMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioItemCompositionMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextBinding;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTarget;
@@ -16,6 +17,7 @@ use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineContentStudioAuthoringCo
 use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineContentStudioAuthoringContextRepository;
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\SiteContext;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -30,6 +32,7 @@ use RuntimeException;
 #[CoversClass(DoctrineContentStudioAuthoringContextRepository::class)]
 #[CoversClass(DoctrineContentStudioAuthoringContextPurger::class)]
 #[CoversClass(StudioContentAuthoringContextMigration::class)]
+#[UsesClass(StudioItemCompositionMigration::class)]
 #[UsesClass(ContentStudioAuthoringContextBinding::class)]
 #[UsesClass(ContentStudioAuthoringTarget::class)]
 final class ContentStudioAuthoringContextPersistenceTest extends TestCase
@@ -76,6 +79,58 @@ final class ContentStudioAuthoringContextPersistenceTest extends TestCase
         foreach (['cookie', 'credential', 'csrf', 'capabilities', 'endpoint', 'configuration'] as $forbidden) {
             self::assertNotContains($forbidden, $columns);
         }
+    }
+
+    /**
+     * The handed-type digest (App ADR 0025) is absent until recorded, replaced by every hand, idempotent on a
+     * repeated hand, confined to its own binding, and refused when malformed on write or on read.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheHandedTypeDigestRoundTripsOnTheMigratedTable(): void
+    {
+        $database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $tables = new TableNames($database, 'kumwe_');
+        (new StudioContentAuthoringContextMigration($tables))->up($database);
+        // The item composition migration also extends the entry override table; a stand-in suffices here.
+        $database->executeStatement(sprintf(
+            'CREATE TABLE %s (site_identifier VARCHAR(191) NOT NULL)',
+            $tables->quoted('studio_entry_composition_overrides'),
+        ));
+        (new StudioItemCompositionMigration($tables))->up($database);
+        $repository = new DoctrineContentStudioAuthoringContextRepository($database, $tables);
+        $binding = self::binding();
+        $other = self::binding('another-context');
+        $repository->add($binding);
+        $repository->add($other);
+        $first = hash('sha256', 'type handed at start');
+        $second = hash('sha256', 'type handed by a save result');
+
+        self::assertNull($repository->handedType($binding->contextKey));
+        $repository->recordHandedType($binding->contextKey, $first);
+        $repository->recordHandedType($binding->contextKey, $first);
+        self::assertSame($first, $repository->handedType($binding->contextKey));
+        $repository->recordHandedType($binding->contextKey, $second);
+        self::assertSame($second, $repository->handedType($binding->contextKey));
+        self::assertNull($repository->handedType($other->contextKey), 'Another binding records nothing.');
+        self::assertNull($repository->handedType('contexts/' . str_repeat('e', 64)));
+        self::assertEquals($binding, $repository->find($binding->contextKey), 'The binding itself is unchanged.');
+
+        try {
+            $repository->recordHandedType($binding->contextKey, strtoupper($first));
+            self::fail('A malformed handed-type digest was recorded.');
+        } catch (InvalidArgumentException) {
+            self::assertSame($second, $repository->handedType($binding->contextKey));
+        }
+        $database->update(
+            $tables->raw('studio_content_authoring_contexts'),
+            ['handed_type_digest' => 'not-a-digest'],
+            ['context_key' => $binding->contextKey],
+        );
+        $this->expectException(RuntimeException::class);
+        $repository->handedType($binding->contextKey);
     }
 
     /**

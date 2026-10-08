@@ -11,6 +11,7 @@ use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Access\Capability;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
+use Kumwe\App\Studio\Domain\Projection\EntryCompositionOverrides;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
 
@@ -149,6 +150,8 @@ final readonly class StudioHostSessionAuthority
      * The administrator browser may open any resource family its mode fits. A machine surface — REST,
      * CLI or MCP — may open only a contextual Content authoring session or a Blueprint composition session,
      * bound to its credential rather than to a browser session; the generic Content family stays browser-only.
+     * No surface may open a Blueprint session on an item layout: an entry's own layout is written only by its
+     * audited item save (App ADR 0025).
      *
      * @param   ExecutionContext    $context       Fresh authenticated execution context.
      * @param   StudioSessionMode   $mode          Exact canonical authoring mode requested.
@@ -171,6 +174,10 @@ final readonly class StudioHostSessionAuthority
             !StudioSessionSurfaceBinding::admits($context->surface())
             || !self::surfaceFits($context->surface(), $resourceKind)
             || !self::modeFits($mode, $resourceKind)
+            || (
+                $resourceKind === StudioResourceKind::Blueprint
+                && str_starts_with(strtolower($resourceId), EntryCompositionOverrides::ITEM_BLUEPRINT_PREFIX)
+            )
         ) {
             throw new StudioHostAccessRefused('studio.host/session-refused', 'forbidden');
         }

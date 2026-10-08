@@ -129,7 +129,7 @@
           "path": "tests/Browser/studio-authoring.spec.ts",
           "marker": "the existing item reopens with its exact revisions, saves, and refuses a stale concurrent save"
         },
-        "automationNote": "Automated for Entry values with save-item and reopen. A layout change is a reusable-type change under itemComposition=denied and is proven by save-new-type-version."
+        "automationNote": "Automated for Entry values with save-item and reopen. A layout change kept with save item under itemComposition=overrides (App ADR 0025) is automated by 'an item keeps its own layout through Save item', which reopens the item with its moved blocks, keeps the type version, and shows that a new item of the type still receives the type's order. That an existing item of the type is unchanged is proven by ContentStudioAuthoringJourneyIntegrationTest::testAnItemKeepsItsOwnLayoutThroughSaveItem."
       },
       {
         "id": "create-from-type",

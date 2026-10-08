@@ -188,6 +188,47 @@ final readonly class ContentStudioAuthoringContextAuthority
     }
 
     /**
+     * Record the digest of the reusable content type a session was just handed.
+     *
+     * Every start and every save result hands the session a type; the latest digest replaces the previous
+     * one, so a later item save is fenced against the type its author actually saw (App ADR 0025).
+     *
+     * @param   ExecutionContext  $context     Current authenticated administrator request.
+     * @param   string            $contextKey  Opaque server-issued context key.
+     * @param   string            $digest      Lowercase hexadecimal SHA-256 of the handed type's canonical JSON.
+     *
+     * @return  void
+     *
+     * @throws  ContentStudioAuthoringContextRefused  When the binding is absent, foreign or expired.
+     *
+     * @since   2.0.0
+     */
+    public function rememberHandedType(ExecutionContext $context, string $contextKey, string $digest): void
+    {
+        $this->assertHeld($context, $contextKey);
+        $this->contexts->recordHandedType($contextKey, $digest);
+    }
+
+    /**
+     * Read the digest of the reusable content type a session was last handed.
+     *
+     * @param   ExecutionContext  $context     Current authenticated administrator request.
+     * @param   string            $contextKey  Opaque server-issued context key.
+     *
+     * @return  ?string  Recorded digest, or null when the session has recorded none.
+     *
+     * @throws  ContentStudioAuthoringContextRefused  When the binding is absent, foreign or expired.
+     *
+     * @since   2.0.0
+     */
+    public function handedTypeOf(ExecutionContext $context, string $contextKey): ?string
+    {
+        $this->assertHeld($context, $contextKey);
+
+        return $this->contexts->handedType($contextKey);
+    }
+
+    /**
      * Require a live binding held by the current administrator session.
      *
      * @param   ExecutionContext  $context     Current authenticated administrator request.

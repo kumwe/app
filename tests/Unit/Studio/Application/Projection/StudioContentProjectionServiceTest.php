@@ -36,6 +36,7 @@ use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextAuthorit
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextRepository;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
 use Kumwe\App\Studio\Application\Composition\ContentBlueprintBindingStore;
+use Kumwe\App\Studio\Application\Composition\EntryCompositionOverrideStore;
 use Kumwe\App\Studio\Application\Host\StudioResourceContextKeyFactory;
 use Kumwe\App\Studio\Application\Composition\StudioBuiltInThemeRelease;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionLockMismatch;
@@ -43,6 +44,7 @@ use Kumwe\App\Studio\Application\Composition\StudioCompositionModelMismatch;
 use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
 use Kumwe\App\Studio\Application\Composition\StudioContentDefaultComposition;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionCatalog;
+use Kumwe\App\Studio\Application\Composition\StudioPublishedCompositionGuard;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
 use Kumwe\App\Studio\Application\Host\StudioArtifactRepository;
@@ -124,6 +126,7 @@ use Kumwe\App\Tests\Support\InterfaceTranslation;
 #[UsesClass(ExtensionContributionRegistrySet::class)]
 #[UsesClass(StudioPreviewRendererContribution::class)]
 #[UsesClass(StudioBlockRendererRuntime::class)]
+#[UsesClass(StudioPublishedCompositionGuard::class)]
 #[UsesClass(StudioContentFieldBlockRenderer::class)]
 #[UsesClass(TrustEnforcingStudioPreviewBlockRenderer::class)]
 #[UsesClass(TrustStore::class)]
@@ -365,6 +368,8 @@ final class StudioContentProjectionServiceTest extends TestCase
             $clock,
             $catalog,
             $theme,
+            $this->createStub(EntryCompositionOverrideStore::class),
+            $this->publicationGuard($models, $admission, $theme, $bindings),
         );
 
         $first = $service->provision(
@@ -1219,6 +1224,41 @@ final class StudioContentProjectionServiceTest extends TestCase
             $clock,
             $catalog,
             $theme,
+            $this->createStub(EntryCompositionOverrideStore::class),
+            $this->publicationGuard($this->createStub(ContentModelRepository::class), $admission, $theme, $bindings),
+        );
+    }
+
+    /**
+     * Build the real publication guard an item layout must pass, over the scenario's model and bindings.
+     *
+     * @param   ContentModelRepository              $models     Exact Content definition store double.
+     * @param   StudioArtifactAdmission             $admission  Canonical artifact admission.
+     * @param   StudioPublishedTheme                $theme      Exact public theme projection.
+     * @param   ContentProjectionBindingRepository  $bindings   Binding read model double.
+     *
+     * @return  StudioPublishedCompositionGuard  Guard over the core block registries.
+     *
+     * @since   2.0.0
+     */
+    private function publicationGuard(
+        ContentModelRepository $models,
+        StudioArtifactAdmission $admission,
+        StudioPublishedTheme $theme,
+        ContentProjectionBindingRepository $bindings,
+    ): StudioPublishedCompositionGuard {
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
+
+        return new StudioPublishedCompositionGuard(
+            $admission,
+            $models,
+            $theme,
+            new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer()),
+            $registries,
+            $bindings,
         );
     }
 

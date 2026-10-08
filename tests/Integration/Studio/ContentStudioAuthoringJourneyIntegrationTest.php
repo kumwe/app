@@ -15,6 +15,7 @@ use Kumwe\App\Extension\Application\ExtensionManager;
 use InvalidArgumentException;
 use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\Content\Application\ContentModelService;
+use Kumwe\Producer\Error\HostRefusal;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Content\Infrastructure\Persistence\DoctrineContentRepository;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
@@ -34,8 +35,15 @@ use Kumwe\App\Studio\Application\Authoring\StudioContextualAuthoringConfiguratio
 use Kumwe\App\Studio\Application\Authoring\StudioHostedDeploymentConfiguration;
 use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
 use Kumwe\App\Studio\Application\Composition\StudioContentDefaultComposition;
+use Kumwe\App\Studio\Application\Composition\CanonicalStudioPublishedContentRenderer;
+use Kumwe\App\Studio\Application\Composition\StudioPublishedContentRenderer;
+use Kumwe\App\Studio\Application\Composition\StudioItemCompositionPolicy;
+use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
+use Kumwe\App\Studio\Application\Host\StudioArtifactRepository;
+use Kumwe\App\Studio\Application\Host\StudioHostAccessRefused;
 use Kumwe\App\Studio\Application\Host\StudioAuthoringHostPort;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionAuthority;
+use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionRepository;
 use Kumwe\App\Studio\Application\Host\StudioProducerError;
 use Kumwe\App\Studio\Application\Host\StudioProducerHostFactory;
@@ -46,9 +54,14 @@ use Kumwe\App\Studio\Application\Preview\StudioPreviewHostPort;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewTransportGuard;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Application\Projection\StudioContentProjectionService;
+use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewDraft;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewTransport;
+use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
+use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
+use Kumwe\App\Studio\Domain\Projection\EntryCompositionOverrides;
+use Kumwe\Content\Domain\ContentStatus;
 use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineContentStudioAuthoringContextRepository;
 use Kumwe\App\Studio\Infrastructure\Release\PinnedStudioContextualAuthoringAvailability;
 use Kumwe\App\Tests\Support\TestKernelFactory;
@@ -100,8 +113,25 @@ use stdClass;
 #[CoversClass(ContentService::class)]
 #[CoversClass(DoctrineContentRepository::class)]
 #[CoversClass(ContainerFactory::class)]
+#[CoversClass(StudioContentCompositionService::class)]
+#[CoversClass(CanonicalStudioPublishedContentRenderer::class)]
 final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
 {
+    /**
+     * Content-slot children of the default layout of a type with a title and two text fields.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    private const array DEFAULT_ORDER = ['default/field/title', 'default/field/summary', 'default/field/teaser'];
+
+    /**
+     * The same children after the summary block is moved above the title.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    private const array MOVED_ORDER = ['default/field/summary', 'default/field/title', 'default/field/teaser'];
     /**
      * Create, resolve, start from a reusable type, plan and save one item end to end.
      *
@@ -400,7 +430,10 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         $typeDraft = (object) [
             'outcome' => 'save-as-new-type',
             'label' => (object) ['key' => 'kumwe.app/journey-type', 'defaultMessage' => $name],
-            'authoringPolicy' => (object) ['modes' => ['model', 'blueprint', 'content'], 'itemComposition' => 'denied'],
+            'authoringPolicy' => (object) [
+                'modes' => ['model', 'blueprint', 'content'],
+                'itemComposition' => 'overrides',
+            ],
             'model' => $model,
             'blueprint' => self::clone($snapshot->state->blueprint),
         ];
@@ -659,7 +692,10 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
                 'key' => 'kumwe.app/journey-composed-type',
                 'defaultMessage' => 'Composed type ' . bin2hex(random_bytes(3)),
             ],
-            'authoringPolicy' => (object) ['modes' => ['model', 'blueprint', 'content'], 'itemComposition' => 'denied'],
+            'authoringPolicy' => (object) [
+                'modes' => ['model', 'blueprint', 'content'],
+                'itemComposition' => 'overrides',
+            ],
             'model' => $model,
             'blueprint' => $blueprint,
         ];
@@ -761,7 +797,7 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
                     ],
                     'authoringPolicy' => (object) [
                         'modes' => ['model', 'blueprint', 'content'],
-                        'itemComposition' => 'denied',
+                        'itemComposition' => 'overrides',
                     ],
                     'model' => $model,
                     'blueprint' => self::clone($snapshot->state->blueprint),
@@ -1114,8 +1150,12 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
             'entry' => $entry,
             'itemBlueprint' => self::clone($snapshot->state->blueprint),
         ];
-        $composedIntent = $intent(['draft' => $composed]);
-        $refused('authoring/plan-save', 'intent', $composedIntent, false, $invalid, 'item-composition-denied');
+        // Every type lets an item keep its own layout (App ADR 0025): an item Blueprint equal to the type's handed
+        // layout inherits it, so the plan names the item Blueprint as affected but needs no confirmation.
+        $composedPlan = $dispatch('authoring/plan-save', 'intent', $intent(['draft' => $composed]), false);
+        self::assertSame(['entry', 'blueprint'], $composedPlan->affectedArtifacts);
+        self::assertFalse($composedPlan->confirmationRequired);
+        self::assertSame(['kumwe.app/item-created'], self::codes($composedPlan));
 
         $saveItem = static fn (
             stdClass $plan,
@@ -1183,7 +1223,10 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         $typeDraft = static fn (stdClass $model, stdClass $blueprint): stdClass => (object) [
             'outcome' => 'save-as-new-type',
             'label' => (object) ['key' => 'kumwe.app/journey-refusals-type', 'defaultMessage' => $name],
-            'authoringPolicy' => (object) ['modes' => ['model', 'blueprint', 'content'], 'itemComposition' => 'denied'],
+            'authoringPolicy' => (object) [
+                'modes' => ['model', 'blueprint', 'content'],
+                'itemComposition' => 'overrides',
+            ],
             'model' => $model,
             'blueprint' => $blueprint,
         ];
@@ -1543,7 +1586,10 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
                 'key' => 'kumwe.app/journey-type',
                 'defaultMessage' => 'Default composition type ' . bin2hex(random_bytes(3)),
             ],
-            'authoringPolicy' => (object) ['modes' => ['model', 'blueprint', 'content'], 'itemComposition' => 'denied'],
+            'authoringPolicy' => (object) [
+                'modes' => ['model', 'blueprint', 'content'],
+                'itemComposition' => 'overrides',
+            ],
             'model' => $model,
             'blueprint' => $emptyLayout,
         ]);
@@ -1769,7 +1815,7 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
                 'label' => (object) ['key' => 'kumwe.app/journey-type', 'defaultMessage' => 'Grid type ' . $marker],
                 'authoringPolicy' => (object) [
                     'modes' => ['model', 'blueprint', 'content'],
-                    'itemComposition' => 'denied',
+                    'itemComposition' => 'overrides',
                 ],
                 'model' => self::clone($snapshot->state->model),
                 'blueprint' => $blueprint,
@@ -2068,6 +2114,1193 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
             false,
         );
         self::assertNull($owner->refusalCategory, $owner->body);
+    }
+
+    /**
+     * An author moves a block on one item and keeps it with Save item (App ADR 0025): the plan names the entry and
+     * the item Blueprint and asks for confirmation, the reusable type and another item of it are unchanged, a
+     * reopen hands the item layout as the coordinated Blueprint while the type still names its own, a
+     * values-only save keeps the item coordinate, preview and the public page render the item layout, and a
+     * save replayed under its idempotency key stores and audits the layout once.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnItemKeepsItsOwnLayoutThroughSaveItem(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = self::administratorContext($container);
+        $content = self::service($container, ContentService::class);
+        $compositions = self::service($container, StudioContentCompositionService::class);
+        $bindings = self::service($container, ContentProjectionBindingRepository::class);
+        $artifacts = self::service($container, StudioArtifactRepository::class);
+        $hosts = self::service($container, StudioProducerHostFactory::class);
+        $site = $context->site();
+        $typeId = self::layoutType($container, $context);
+        $typeBefore = $compositions->find($context, $typeId, 1);
+        self::assertNotNull($typeBefore);
+        $bindingBefore = $bindings->blueprint($site, $typeId, 1);
+        $a = $content->create($context, 'Item A', 'item-a-' . bin2hex(random_bytes(4)), [
+            'summary' => 'Summary of A',
+            'teaser' => 'Teaser of A',
+        ], null, $typeId)->entry->id();
+        $b = $content->create($context, 'Item B', 'item-b-' . bin2hex(random_bytes(4)), [
+            'summary' => 'Summary of B',
+            'teaser' => 'Teaser of B',
+        ], null, $typeId)->entry->id();
+        $itemId = StudioContentCompositionService::itemBlueprintId($a);
+
+        [$started, $dispatch] = self::mounted($container, $context, self::editTarget($container, $context, $a));
+        self::assertSame(self::DEFAULT_ORDER, self::contentIds($started->state->blueprint));
+        $moved = self::reordered($started->state->blueprint, [1, 0, 2]);
+        $plan = self::plannedSave($dispatch, $started, self::itemDraft($started, $moved));
+        self::assertSame(['entry', 'blueprint'], $plan->affectedArtifacts);
+        self::assertSame(
+            ['kumwe.app/item-revision-advances', ContentStudioAuthoringService::ITEM_LAYOUT_KEPT],
+            self::codes($plan),
+        );
+        self::assertTrue($plan->confirmationRequired, 'The first layout of an item is confirmed.');
+        $kept = self::saved($dispatch, $started->sessionId, $started->state->coordinates, self::itemDraft(
+            $started,
+            $moved,
+        ));
+        $pinned = $kept->session->state->coordinates->blueprint;
+        self::assertSame($itemId, $pinned->id);
+        self::assertSame('1.0.0', $pinned->version);
+        self::assertEquals($started->type->blueprint, $kept->session->type->blueprint);
+        self::assertSame(self::MOVED_ORDER, self::contentIds($kept->session->state->blueprint));
+        $overrides = $bindings->overrides($site, $a);
+        self::assertNotNull($overrides);
+        self::assertSame($pinned->revision, $overrides->itemBlueprintRevision);
+        $stored = $artifacts->revision($site->identifier(), $itemId, '1.0.0', $pinned->revision);
+        self::assertNotNull($stored);
+        self::assertSame('published', $stored->status);
+        self::assertSame('kumwe.app/content-item-blueprint', $stored->document()->label->key);
+        self::assertEquals(
+            $started->type->blueprint,
+            $stored->document()->extensions->{StudioContentCompositionService::ITEM_EXTENSION}->base,
+        );
+        $typeAfter = $compositions->find($context, $typeId, 1);
+        self::assertNotNull($typeAfter);
+        self::assertSame($typeBefore->blueprint->canonicalDocument, $typeAfter->blueprint->canonicalDocument);
+        self::assertEquals($bindingBefore, $bindings->blueprint($site, $typeId, 1));
+
+        // A reopen hands the item layout exactly as kept; another item of the type still follows the type.
+        [$reopened, $reopenedDispatch, $key, $generation, $deployment] = self::mounted(
+            $container,
+            $context,
+            self::editTarget($container, $context, $a),
+        );
+        self::assertEquals($pinned, $reopened->state->coordinates->blueprint);
+        self::assertEquals($started->type->blueprint, $reopened->type->blueprint);
+        self::assertSame(self::MOVED_ORDER, self::contentIds($reopened->state->blueprint));
+        self::assertSame([], $reopened->state->diagnostics);
+        [$other, , $otherKey, $otherGeneration, $otherDeployment] = self::mounted(
+            $container,
+            $context,
+            self::editTarget($container, $context, $b),
+        );
+        self::assertSame(self::DEFAULT_ORDER, self::contentIds($other->state->blueprint));
+        self::assertEquals($started->type->blueprint, $other->state->coordinates->blueprint);
+        self::assertNull($bindings->overrides($site, $b));
+
+        // A values-only save never moves the item coordinate.
+        $values = self::itemDraft($reopened);
+        $values->entry->values->title = 'Item A revised';
+        $valuesPlan = self::plannedSave($reopenedDispatch, $reopened, $values);
+        self::assertSame(['entry'], $valuesPlan->affectedArtifacts);
+        $revised = self::saved($reopenedDispatch, $reopened->sessionId, $reopened->state->coordinates, $values);
+        self::assertEquals($pinned, $revised->session->state->coordinates->blueprint);
+
+        // Preview renders the item layout for its own entry only.
+        $preview = static function (
+            string $key,
+            string $generation,
+            stdClass $deployment,
+            stdClass $blueprint,
+        ) use (
+            $hosts,
+            $context,
+        ): Response {
+            $channel = $deployment->session->extensions->{'kumwe.app/preview'};
+
+            return self::respond($hosts, $context, $key, $generation, 'preview/render', 'payload', (object) [
+                'artifactId' => $blueprint->id,
+                'draftDigest' => hash('sha256', CanonicalJson::stringify($blueprint)),
+                'draftRevision' => $blueprint->revision,
+                'requestId' => 'requests/preview-' . bin2hex(random_bytes(8)),
+                'viewport' => 'expanded',
+            ], false, new StudioPreviewTransport($channel->origin, $channel->channelId, $channel->sourceId, 0));
+        };
+        $rendered = $preview($key, $generation, $deployment, $reopened->state->blueprint);
+        self::assertNull($rendered->refusalCategory, $rendered->body);
+        $markers = json_decode($rendered->body, false, 64, JSON_THROW_ON_ERROR)->value->markerMap;
+        self::assertSame([StudioContentDefaultComposition::SECTION_ID, ...self::MOVED_ORDER], array_values(
+            get_object_vars($markers),
+        ));
+        $foreign = $preview($otherKey, $otherGeneration, $otherDeployment, $reopened->state->blueprint);
+        self::assertNotNull($foreign->refusalCategory, 'Another item may not preview this item layout.');
+
+        // Once published, the public page renders the item layout, and a layout change is disclosed as live.
+        self::published($content, $context, $a);
+        self::assertTextOrder(
+            ['Summary of A', 'Item A revised', 'Teaser of A'],
+            self::publicHtml($container, $a),
+        );
+        [$live, $liveDispatch, $liveKey, $liveGeneration] = self::mounted(
+            $container,
+            $context,
+            self::editTarget($container, $context, $a),
+        );
+        $again = self::itemDraft($live, self::reordered($live->state->blueprint, [2, 0, 1]));
+        $livePlan = self::plannedSave($liveDispatch, $live, $again);
+        self::assertSame(
+            [
+                'kumwe.app/item-revision-advances',
+                ContentStudioAuthoringService::ITEM_LAYOUT_KEPT,
+                ContentStudioAuthoringService::ITEM_LAYOUT_LIVE,
+            ],
+            self::codes($livePlan),
+        );
+        self::assertTrue($livePlan->confirmationRequired, 'A change a public page shows at once is confirmed.');
+        $request = (object) [
+            'contractVersion' => '0.1-draft',
+            'kind' => 'authoring-save-item-request',
+            'plan' => (object) [
+                'id' => $livePlan->id,
+                'revision' => $livePlan->revision,
+                'successorContext' => $livePlan->successorContext,
+            ],
+            'acceptedConsequences' => self::codes($livePlan),
+            'draft' => $again,
+        ];
+        $idempotencyKey = 'studio-idempotency/' . bin2hex(random_bytes(8));
+        $replays = [];
+        foreach ([1, 2] as $attempt) {
+            $replays[$attempt] = self::respond(
+                $hosts,
+                $context,
+                $liveKey,
+                $liveGeneration,
+                'authoring/save-item',
+                'request',
+                $request,
+                true,
+                idempotencyKey: $idempotencyKey,
+            );
+            self::assertNull($replays[$attempt]->refusalCategory, $replays[$attempt]->body);
+        }
+        self::assertSame($replays[1]->body, $replays[2]->body);
+        self::assertSame(2, self::historyRows($container, $itemId), 'The replayed layout is stored once.');
+        self::assertSame(['kept', 'kept'], array_column(self::layoutEvents($container, $a), 'reason'));
+        self::assertTextOrder(
+            ['Teaser of A', 'Summary of A', 'Item A revised'],
+            self::publicHtml($container, $a),
+        );
+
+        // Going back to the type's layout changes the published page at once too, so it is disclosed and
+        // confirmed; the type's layout is still the untouched default draft, so the legacy page renders again.
+        [$back, $backDispatch] = self::mounted($container, $context, self::editTarget($container, $context, $a));
+        $inherit = self::itemDraft($back, self::reordered($back->state->blueprint, [2, 1, 0]));
+        self::assertSame(self::DEFAULT_ORDER, self::contentIds($inherit->itemBlueprint));
+        $inheritPlan = self::plannedSave($backDispatch, $back, $inherit);
+        self::assertSame(['entry', 'blueprint'], $inheritPlan->affectedArtifacts);
+        self::assertSame(
+            [
+                'kumwe.app/item-revision-advances',
+                ContentStudioAuthoringService::ITEM_LAYOUT_INHERITED,
+                ContentStudioAuthoringService::ITEM_LAYOUT_LIVE,
+            ],
+            self::codes($inheritPlan),
+        );
+        self::assertTrue($inheritPlan->confirmationRequired, 'Leaving a live item layout is confirmed.');
+        $inherited = self::saved($backDispatch, $back->sessionId, $back->state->coordinates, $inherit);
+        self::assertEquals($started->type->blueprint, $inherited->session->state->coordinates->blueprint);
+        self::assertSame(self::DEFAULT_ORDER, self::contentIds($inherited->session->state->blueprint));
+        self::assertNull($bindings->overrides($site, $a)?->itemBlueprintRevision);
+        self::assertSame(
+            ['kept', 'kept', 'inherited'],
+            array_column(self::layoutEvents($container, $a), 'reason'),
+        );
+        $record = $content->publishedById($a);
+        self::assertNotNull($record);
+        self::assertNull(
+            self::service($container, StudioPublishedContentRenderer::class)->render($record),
+            'With the type layout still a draft, the published item renders its legacy page again.',
+        );
+    }
+
+    /**
+     * Equal layouts share a revision (App ADR 0025): an untouched layout inherits and writes nothing, moving the
+     * blocks back clears the item's layout, returning to an earlier layout re-pins its stored revision without a
+     * second history row, an unchanged layout writes and audits nothing, and a new item keeps a layout chosen
+     * before it exists.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRevisitedItemLayoutsRepinAndEqualLayoutsInherit(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = self::administratorContext($container);
+        $content = self::service($container, ContentService::class);
+        $bindings = self::service($container, ContentProjectionBindingRepository::class);
+        $site = $context->site();
+        $typeId = self::layoutType($container, $context);
+        $a = $content->create($context, 'Revisited', 'revisited-' . bin2hex(random_bytes(4)), [
+            'summary' => 'Revisited summary',
+        ], null, $typeId)->entry->id();
+        $itemId = StudioContentCompositionService::itemBlueprintId($a);
+        [$started, $dispatch] = self::mounted($container, $context, self::editTarget($container, $context, $a));
+        $typeReference = $started->state->coordinates->blueprint;
+        $save = static function (stdClass $session, ?stdClass $layout) use ($dispatch): array {
+            $draft = self::itemDraft($session, $layout);
+            $plan = self::plannedSave($dispatch, $session, $draft);
+
+            return [$plan, self::saved($dispatch, $session->sessionId, $session->state->coordinates, $draft)->session];
+        };
+
+        // The untouched layout the session was handed inherits: nothing is stored or pinned.
+        [$plan, $inherited] = $save($started, self::clone($started->state->blueprint));
+        self::assertSame(['entry', 'blueprint'], $plan->affectedArtifacts);
+        self::assertSame(['kumwe.app/item-revision-advances'], self::codes($plan));
+        self::assertFalse($plan->confirmationRequired);
+        self::assertEquals($typeReference, $inherited->state->coordinates->blueprint);
+        self::assertNull($bindings->overrides($site, $a));
+        self::assertSame(0, self::historyRows($container, $itemId));
+
+        // X is kept; moving the blocks back clears it, and the item follows its type again.
+        [, $x] = $save($inherited, self::reordered($inherited->state->blueprint, [1, 0, 2]));
+        $revisionX = $x->state->coordinates->blueprint->revision;
+        [$plan, $back] = $save($x, self::reordered($x->state->blueprint, [1, 0, 2]));
+        self::assertSame(
+            ['kumwe.app/item-revision-advances', ContentStudioAuthoringService::ITEM_LAYOUT_INHERITED],
+            self::codes($plan),
+        );
+        self::assertFalse($plan->confirmationRequired);
+        self::assertEquals($typeReference, $back->state->coordinates->blueprint);
+        self::assertSame(self::DEFAULT_ORDER, self::contentIds($back->state->blueprint));
+        self::assertNull($bindings->overrides($site, $a)?->itemBlueprintRevision);
+        self::assertSame(2, $bindings->overrides($site, $a)?->revision);
+
+        // X again re-pins the stored revision; X, then Y, then X does too.
+        [$plan, $again] = $save($back, self::reordered($back->state->blueprint, [1, 0, 2]));
+        self::assertTrue($plan->confirmationRequired, 'Diverging from the type again is confirmed again.');
+        self::assertSame($revisionX, $again->state->coordinates->blueprint->revision);
+        self::assertSame(1, self::historyRows($container, $itemId));
+        [$plan, $y] = $save($again, self::reordered($again->state->blueprint, [2, 0, 1]));
+        self::assertFalse($plan->confirmationRequired, 'Changing a draft item\'s own layout needs no confirmation.');
+        self::assertNotSame($revisionX, $y->state->coordinates->blueprint->revision);
+        [, $repinned] = $save($y, self::reordered($y->state->blueprint, [1, 2, 0]));
+        self::assertSame(self::MOVED_ORDER, self::contentIds($repinned->state->blueprint));
+        self::assertSame($revisionX, $repinned->state->coordinates->blueprint->revision);
+        self::assertSame(2, self::historyRows($container, $itemId));
+
+        // An unchanged layout advances the entry but writes, moves and audits nothing else.
+        $overrideRevision = $bindings->overrides($site, $a)?->revision;
+        [$plan, $unchanged] = $save($repinned, self::clone($repinned->state->blueprint));
+        self::assertSame(['kumwe.app/item-revision-advances'], self::codes($plan));
+        self::assertFalse($plan->confirmationRequired);
+        self::assertEquals($repinned->state->coordinates->blueprint, $unchanged->state->coordinates->blueprint);
+        self::assertSame($overrideRevision, $bindings->overrides($site, $a)?->revision);
+        self::assertSame(
+            ['kept', 'inherited', 'kept', 'kept', 'kept'],
+            array_column(self::layoutEvents($container, $a), 'reason'),
+        );
+
+        // A create session keeps the layout for the item it creates.
+        $type = self::service($container, ContentModelService::class)->contentType($context, $typeId, 1);
+        $targets = self::service($container, ContentStudioAuthoringTargetResolver::class);
+        [$create, $createDispatch] = self::mounted($container, $context, $targets->create($context, $type));
+        $entry = self::clone($create->state->entry);
+        $entry->values->title = 'Created with a layout';
+        $entry->values->slug = 'created-layout-' . bin2hex(random_bytes(4));
+        $draft = (object) [
+            'outcome' => 'save-item',
+            'entry' => $entry,
+            'itemBlueprint' => self::reordered($create->state->blueprint, [2, 0, 1]),
+        ];
+        $created = self::saved($createDispatch, $create->sessionId, $create->state->coordinates, $draft);
+        $createdId = ContentStudioProjector::contentEntryId($created->session->state->coordinates->entry->id);
+        self::assertIsString($createdId);
+        self::assertSame(
+            StudioContentCompositionService::itemBlueprintId($createdId),
+            $created->session->state->coordinates->blueprint->id,
+        );
+        self::assertSame(
+            ['default/field/teaser', 'default/field/title', 'default/field/summary'],
+            self::contentIds($created->session->state->blueprint),
+        );
+
+        // A block inserted from the catalogue, a second text block bound to an existing field, is kept with the
+        // item, handed back on reopen and rendered on its public page.
+        [$insert, $insertDispatch] = self::mounted($container, $context, self::editTarget($container, $context, $a));
+        self::assertSame(self::MOVED_ORDER, self::contentIds($insert->state->blueprint));
+        $withInsert = self::clone($insert->state->blueprint);
+        $summary = self::clone($withInsert->roots[0]->slots->content[0]);
+        self::assertSame('default/field/summary', $summary->id);
+        $summary->id = 'item/field/summary-again';
+        $withInsert->roots[0]->slots->content[] = $summary;
+        $insertPlan = self::plannedSave($insertDispatch, $insert, self::itemDraft($insert, $withInsert));
+        self::assertSame(
+            ['kumwe.app/item-revision-advances', ContentStudioAuthoringService::ITEM_LAYOUT_KEPT],
+            self::codes($insertPlan),
+        );
+        $kept = self::saved(
+            $insertDispatch,
+            $insert->sessionId,
+            $insert->state->coordinates,
+            self::itemDraft($insert, $withInsert),
+        );
+        $expected = [...self::MOVED_ORDER, 'item/field/summary-again'];
+        self::assertSame($expected, self::contentIds($kept->session->state->blueprint));
+        self::assertSame($itemId, $kept->session->state->coordinates->blueprint->id);
+        [$reopened] = self::mounted($container, $context, self::editTarget($container, $context, $a));
+        self::assertEquals($kept->session->state->coordinates->blueprint, $reopened->state->coordinates->blueprint);
+        self::assertSame($expected, self::contentIds($reopened->state->blueprint));
+        self::assertEquals(
+            $insert->state->blueprint->dependencyLock->blocks,
+            $reopened->state->blueprint->dependencyLock->blocks,
+            'The inserted block reuses a block the layout already locks.',
+        );
+        self::published($content, $context, $a);
+        self::assertSame(2, substr_count(self::publicHtml($container, $a), 'Revisited summary'));
+    }
+
+    /**
+     * An item save is fenced against the reusable type its session was handed, and every malformed or
+     * incompatible item layout is refused before any effect: no entry version moves and nothing is pinned. No
+     * surface may open a Blueprint session on an item layout.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testItemLayoutSavesAreFencedAndRefusedBeforeEffect(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = self::administratorContext($container);
+        $content = self::service($container, ContentService::class);
+        $compositions = self::service($container, StudioContentCompositionService::class);
+        $bindings = self::service($container, ContentProjectionBindingRepository::class);
+        $artifacts = self::service($container, StudioArtifactRepository::class);
+        $hosts = self::service($container, StudioProducerHostFactory::class);
+        $site = $context->site();
+        // A type created outside Studio is provisioned on first use with a binding that follows its head.
+        $type = self::service($container, ContentModelService::class)->createContentType(
+            $context,
+            'fenced-' . bin2hex(random_bytes(4)),
+            'Fenced type',
+            ContentService::CORE_WORKFLOW_ID,
+            [
+                'type' => 'object',
+                'additionalProperties' => false,
+                'properties' => ['summary' => ['type' => 'string'], 'teaser' => ['type' => 'string']],
+            ],
+        );
+        $a = $content->create($context, 'Fenced', 'fenced-' . bin2hex(random_bytes(4)), [
+            'summary' => 'Fenced summary',
+        ], null, $type->id)->entry->id();
+        $itemId = StudioContentCompositionService::itemBlueprintId($a);
+        [$first, $firstDispatch] = self::mounted($container, $context, self::editTarget($container, $context, $a));
+        $keep = self::itemDraft($first, self::reordered($first->state->blueprint, [1, 0, 2]));
+        self::saved($firstDispatch, $first->sessionId, $first->state->coordinates, $keep);
+        $version = $content->get($context, $a)->entry->version();
+        $pointer = $bindings->overrides($site, $a)?->itemBlueprintRevision;
+        self::assertIsString($pointer);
+        $untouched = static function () use (
+            $content,
+            $context,
+            $a,
+            $bindings,
+            $site,
+            $container,
+            $itemId,
+            $version,
+            $pointer,
+        ): void {
+            self::assertSame($version, $content->get($context, $a)->entry->version(), 'No entry version moved.');
+            self::assertSame($pointer, $bindings->overrides($site, $a)?->itemBlueprintRevision);
+            self::assertSame(1, self::historyRows($container, $itemId));
+        };
+
+        // While the item keeps its own layout, the type's Blueprint is no longer among the coordinates a plan
+        // compares; only the fence on the handed type stops a save over a type that moved meanwhile.
+        $target = self::editTarget($container, $context, $a);
+        [$started, , $key, $generation] = self::mounted($container, $context, $target);
+        self::assertSame($itemId, $started->state->coordinates->blueprint->id);
+        $draft = self::itemDraft($started, self::reordered($started->state->blueprint, [2, 0, 1]));
+        $intent = static fn (stdClass $draft): stdClass => (object) [
+            'contractVersion' => '0.1-draft',
+            'kind' => 'authoring-save-intent',
+            'sessionId' => $started->sessionId,
+            'expected' => $started->state->coordinates,
+            'draft' => $draft,
+        ];
+        $plan = self::respond(
+            $hosts,
+            $context,
+            $key,
+            $generation,
+            'authoring/plan-save',
+            'intent',
+            $intent($draft),
+            false,
+        );
+        self::assertNull($plan->refusalCategory, $plan->body);
+        $planned = json_decode($plan->body, false, 64, JSON_THROW_ON_ERROR)->value;
+
+        // The type's layout moves within its version while the item session is open.
+        $composition = $compositions->find($context, $type->id, 1);
+        self::assertNotNull($composition);
+        self::assertNull($composition->binding->blueprintRevision, 'The binding follows its Blueprint head.');
+        $head = $composition->blueprint;
+        $admission = self::service($container, StudioArtifactAdmission::class);
+        $movedHead = $admission->revise($head, 'initial-' . hash('sha256', 'moved head'), $head->status);
+        self::assertTrue(self::service($container, Connection::class)->transactional(
+            static fn (): bool => $artifacts->store($movedHead, $head->revision),
+        ));
+        $commit = self::respond($hosts, $context, $key, $generation, 'authoring/save-item', 'request', (object) [
+            'contractVersion' => '0.1-draft',
+            'kind' => 'authoring-save-item-request',
+            'plan' => (object) [
+                'id' => $planned->id,
+                'revision' => $planned->revision,
+                'successorContext' => $planned->successorContext,
+            ],
+            'acceptedConsequences' => self::codes($planned),
+            'draft' => $draft,
+        ], true);
+        self::assertSame('conflict', $commit->refusalCategory, $commit->body);
+        self::assertStringContainsString('studio.authoring/type-changed', $commit->body);
+        $replanned = self::respond($hosts, $context, $key, $generation, 'authoring/plan-save', 'intent', $intent(
+            self::itemDraft($started),
+        ), false);
+        self::assertSame('conflict', $replanned->refusalCategory, 'Even a values-only save is fenced.');
+        self::assertStringContainsString('studio.authoring/type-changed', $replanned->body);
+        $untouched();
+
+        // A fresh session is handed the moved type; malformed layouts are refused at the plan.
+        [$fresh, , $freshKey, $freshGeneration] = self::mounted(
+            $container,
+            $context,
+            self::editTarget($container, $context, $a),
+        );
+        $layout = static fn (callable $change): stdClass => $change(self::clone($fresh->state->blueprint));
+        $children = $fresh->state->blueprint->roots[0]->slots->content;
+        $refusals = [
+            'studio.authoring/item-layout-conflict' => ['conflict', $layout(static function (stdClass $b): stdClass {
+                $b->revision = 'item-' . hash('sha256', 'stale base');
+
+                return $b;
+            })],
+            'studio.authoring/item-layout-model-mismatch' => ['validation-failed', $layout(
+                static function (stdClass $b): stdClass {
+                    $b->model->revision = ContentStudioProjector::modelRevision(9);
+
+                    return $b;
+                },
+            )],
+            'studio.authoring/item-layout-empty' => ['validation-failed', $layout(
+                static function (stdClass $b): stdClass {
+                    // A published Blueprint needs a root, so an emptied layout is sent as a draft.
+                    $b->roots = [];
+                    $b->status = 'draft';
+
+                    return $b;
+                },
+            )],
+            'studio.authoring/unlocked-block' => ['validation-failed', $layout(
+                static function (stdClass $b) use ($children): stdClass {
+                    $unlocked = self::clone($children[0]);
+                    $unlocked->id = 'unlocked/block';
+                    $unlocked->type = 'kumwe.test/unlocked';
+                    $b->roots[0]->slots->content[] = $unlocked;
+
+                    return $b;
+                },
+            )],
+            'studio.authoring/item-layout-incompatible' => ['validation-failed', $layout(
+                static function (stdClass $b) use ($children): stdClass {
+                    $missing = self::clone($children[1]);
+                    $missing->id = 'default/field/missing';
+                    $missing->bindings->value->source->fieldPath = ['data_missing'];
+                    $b->roots[0]->slots->content = [$missing, ...$b->roots[0]->slots->content];
+
+                    return $b;
+                },
+            )],
+        ];
+        foreach ($refusals as $code => [$category, $refused]) {
+            $response = self::respond(
+                $hosts,
+                $context,
+                $freshKey,
+                $freshGeneration,
+                'authoring/plan-save',
+                'intent',
+                (object) [
+                    'contractVersion' => '0.1-draft',
+                    'kind' => 'authoring-save-intent',
+                    'sessionId' => $fresh->sessionId,
+                    'expected' => $fresh->state->coordinates,
+                    'draft' => self::itemDraft($fresh, $refused),
+                ],
+                false,
+            );
+            self::assertSame($category, $response->refusalCategory, $code . ': ' . $response->body);
+            self::assertStringContainsString($code, $response->body);
+        }
+        $untouched();
+
+        // A session whose permissions lack Blueprint editing may save the item's values but never its layout.
+        $live = self::service($container, StudioHostSessionAuthority::class)->resolve($context, $freshKey);
+        $restricted = new StudioHostSessionSnapshot(
+            $live->session,
+            array_values(array_diff($live->permissions, ['studio.permission/edit-blueprint'])),
+            $live->generation,
+            $live->modeAllowed,
+            $live->canPublish,
+            $live->canUnpublish,
+        );
+        $authoring = self::service($container, ContentStudioAuthoringService::class);
+        $restrictedIntent = static fn (stdClass $draft): stdClass => (object) [
+            'contractVersion' => '0.1-draft',
+            'kind' => 'authoring-save-intent',
+            'sessionId' => $fresh->sessionId,
+            'expected' => $fresh->state->coordinates,
+            'draft' => $draft,
+        ];
+        self::assertSame(
+            ['entry'],
+            $authoring->planSave($context, $restricted, $restrictedIntent(self::itemDraft($fresh)))->affectedArtifacts,
+        );
+        try {
+            $authoring->planSave($context, $restricted, $restrictedIntent(self::itemDraft(
+                $fresh,
+                self::reordered($fresh->state->blueprint, [1, 0, 2]),
+            )));
+            self::fail('A layout save without Blueprint editing must be refused.');
+        } catch (HostRefusal $refused) {
+            self::assertSame('forbidden', $refused->error()->category());
+            self::assertStringContainsString(
+                'studio.authoring/item-layout-refused',
+                $refused->error()->toCanonicalJson(),
+            );
+        }
+        $untouched();
+
+        // A create session on version one keeps a layout only for an item of version one: once another version
+        // is published meanwhile, the create would pin that version, so the whole save is refused and rolled back.
+        $models = self::service($container, ContentModelService::class);
+        $targets = self::service($container, ContentStudioAuthoringTargetResolver::class);
+        [$create, $createDispatch, $createKey, $createGeneration] = self::mounted(
+            $container,
+            $context,
+            $targets->create($context, $models->contentType($context, $type->id, 1)),
+        );
+        $createdId = ContentStudioProjector::contentEntryId($create->state->coordinates->entry->id);
+        self::assertIsString($createdId);
+        $entry = self::clone($create->state->entry);
+        $entry->values->title = 'Created over a moved type';
+        $entry->values->slug = 'created-fenced-' . bin2hex(random_bytes(4));
+        $createDraft = (object) [
+            'outcome' => 'save-item',
+            'entry' => $entry,
+            'itemBlueprint' => self::reordered($create->state->blueprint, [2, 0, 1]),
+        ];
+        $createPlan = self::plannedSave($createDispatch, $create, $createDraft);
+        self::assertContains(ContentStudioAuthoringService::ITEM_LAYOUT_KEPT, self::codes($createPlan));
+        $models->updateContentType(
+            $context,
+            $type->id,
+            1,
+            'Fenced type',
+            ContentService::CORE_WORKFLOW_ID,
+            [
+                'type' => 'object',
+                'additionalProperties' => false,
+                'properties' => [
+                    'summary' => ['type' => 'string'],
+                    'teaser' => ['type' => 'string'],
+                    'extra' => ['type' => 'string'],
+                ],
+            ],
+        );
+        $createCommit = self::respond(
+            $hosts,
+            $context,
+            $createKey,
+            $createGeneration,
+            'authoring/save-item',
+            'request',
+            (object) [
+                'contractVersion' => '0.1-draft',
+                'kind' => 'authoring-save-item-request',
+                'plan' => (object) [
+                    'id' => $createPlan->id,
+                    'revision' => $createPlan->revision,
+                    'successorContext' => $createPlan->successorContext,
+                ],
+                'acceptedConsequences' => self::codes($createPlan),
+                'draft' => $createDraft,
+            ],
+            true,
+        );
+        self::assertSame('conflict', $createCommit->refusalCategory, $createCommit->body);
+        self::assertStringContainsString('studio.authoring/type-changed', $createCommit->body);
+        self::assertSame(0, (int) self::service($container, Connection::class)->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE id = ?',
+            self::service($container, TableNames::class)->quoted('content_entries'),
+        ), [$createdId]), 'The refused create persists no entry.');
+        self::assertNull($bindings->overrides($site, $createdId));
+        self::assertSame(
+            0,
+            self::historyRows($container, StudioContentCompositionService::itemBlueprintId($createdId)),
+        );
+        $untouched();
+
+        try {
+            self::service($container, StudioHostSessionAuthority::class)->open(
+                $context,
+                StudioSessionMode::Blueprint,
+                StudioResourceKind::Blueprint,
+                $itemId,
+            );
+            self::fail('A Blueprint session on an item layout must be refused.');
+        } catch (StudioHostAccessRefused $refused) {
+            self::assertSame('forbidden', $refused->category);
+        }
+    }
+
+    /**
+     * Saving a new type version from an item's own layout keeps the reusable type's Blueprint lineage, stores
+     * that layout as the type's without the item's marks, and clears the item's pointer as promoted; an item
+     * re-pinned to that version outside Studio keeps its own layout unused, is handed the type's layout with
+     * the detached diagnostic, and renders the type's layout publicly.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testATypeVersionSavedFromAnItemLayoutKeepsTheTypeLineage(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = self::administratorContext($container);
+        $content = self::service($container, ContentService::class);
+        $compositions = self::service($container, StudioContentCompositionService::class);
+        $bindings = self::service($container, ContentProjectionBindingRepository::class);
+        $site = $context->site();
+        $typeId = self::layoutType($container, $context);
+        $a = $content->create($context, 'Promoting', 'promoting-' . bin2hex(random_bytes(4)), [
+            'summary' => 'Promoted summary',
+        ], null, $typeId)->entry->id();
+        $b = $content->create($context, 'Detaching', 'detaching-' . bin2hex(random_bytes(4)), [
+            'summary' => 'Detached summary',
+            'teaser' => 'Detached teaser',
+        ], null, $typeId)->entry->id();
+        $first = $compositions->find($context, $typeId, 1);
+        self::assertNotNull($first);
+        foreach ([$a => [1, 0, 2], $b => [2, 1, 0]] as $entryId => $order) {
+            [$session, $dispatch] = self::mounted(
+                $container,
+                $context,
+                self::editTarget($container, $context, (string) $entryId),
+            );
+            $draft = self::itemDraft($session, self::reordered($session->state->blueprint, $order));
+            self::saved($dispatch, $session->sessionId, $session->state->coordinates, $draft);
+        }
+        $detachedRevision = $bindings->overrides($site, $b)?->itemBlueprintRevision;
+        self::assertIsString($detachedRevision);
+
+        [$own, $dispatch] = self::mounted($container, $context, self::editTarget($container, $context, $a));
+        self::assertStringStartsWith(
+            EntryCompositionOverrides::ITEM_BLUEPRINT_PREFIX,
+            $own->state->coordinates->blueprint->id,
+        );
+        $draft = (object) [
+            'outcome' => 'save-new-type-version',
+            'model' => self::clone($own->state->model),
+            'blueprint' => self::clone($own->state->blueprint),
+        ];
+        self::assertContains(
+            ContentStudioAuthoringService::ITEM_LAYOUT_PROMOTED,
+            self::codes(self::plannedSave($dispatch, $own, $draft)),
+        );
+        $promoted = self::saved($dispatch, $own->sessionId, $own->state->coordinates, $draft);
+
+        $second = $compositions->find($context, $typeId, 2);
+        self::assertNotNull($second);
+        self::assertSame($first->binding->blueprintId, $second->binding->blueprintId, 'The type lineage is kept.');
+        self::assertStringStartsWith('content-blueprint:', $second->binding->blueprintId);
+        $document = $second->blueprint->document();
+        self::assertSame('published', $second->blueprint->status);
+        self::assertSame('kumwe.app/content-blueprint', $document->label->key);
+        self::assertFalse(isset($document->extensions->{StudioContentCompositionService::ITEM_EXTENSION}));
+        self::assertSame(self::MOVED_ORDER, self::contentIds($document));
+        self::assertNull($bindings->overrides($site, $a)?->itemBlueprintRevision);
+        self::assertSame(['kept', 'promoted'], array_column(self::layoutEvents($container, $a), 'reason'));
+        self::assertSame($second->binding->blueprintId, $promoted->session->state->coordinates->blueprint->id);
+        self::assertSame($second->blueprint->revision, $promoted->session->type->blueprint->revision);
+        self::assertSame(2, $content->get($context, $a)->contentTypeVersion);
+
+        // Re-pinned outside Studio, B keeps its own layout but follows the version it now pins.
+        $stored = $content->get($context, $b);
+        $content->adoptContentType($context, $b, $stored->entry->version(), $typeId, 2);
+        [$detached] = self::mounted($container, $context, self::editTarget($container, $context, $b));
+        self::assertSame($second->binding->blueprintId, $detached->state->coordinates->blueprint->id);
+        self::assertSame($second->blueprint->revision, $detached->state->coordinates->blueprint->revision);
+        self::assertSame(self::MOVED_ORDER, self::contentIds($detached->state->blueprint));
+        self::assertCount(1, $detached->state->diagnostics);
+        self::assertSame(ContentStudioAuthoringService::ITEM_LAYOUT_DETACHED, $detached->state->diagnostics[0]->code);
+        self::assertSame('warning', $detached->state->diagnostics[0]->severity);
+        self::assertSame($detachedRevision, $bindings->overrides($site, $b)?->itemBlueprintRevision);
+        self::published($content, $context, $b);
+        self::assertTextOrder(
+            ['Detached summary', 'Detaching', 'Detached teaser'],
+            self::publicHtml($container, $b),
+        );
+    }
+
+    /**
+     * Saving a new reusable type from an item's own layout starts that type's own Blueprint lineage from the
+     * layout, without the item's marks, and clears the item's pointer as promoted (App ADR 0025, decision 8).
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testANewTypeSavedFromAnItemLayoutTakesThatLayout(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = self::administratorContext($container);
+        $content = self::service($container, ContentService::class);
+        $compositions = self::service($container, StudioContentCompositionService::class);
+        $bindings = self::service($container, ContentProjectionBindingRepository::class);
+        $site = $context->site();
+        $typeId = self::layoutType($container, $context);
+        $a = $content->create($context, 'Founding', 'founding-' . bin2hex(random_bytes(4)), [
+            'summary' => 'Founding summary',
+            'teaser' => 'Founding teaser',
+        ], null, $typeId)->entry->id();
+        [$session, $dispatch] = self::mounted($container, $context, self::editTarget($container, $context, $a));
+        self::saved($dispatch, $session->sessionId, $session->state->coordinates, self::itemDraft(
+            $session,
+            self::reordered($session->state->blueprint, [1, 0, 2]),
+        ));
+
+        [$own, $ownDispatch] = self::mounted($container, $context, self::editTarget($container, $context, $a));
+        self::assertStringStartsWith(
+            EntryCompositionOverrides::ITEM_BLUEPRINT_PREFIX,
+            $own->state->coordinates->blueprint->id,
+        );
+        $draft = (object) [
+            'outcome' => 'save-as-new-type',
+            'label' => (object) [
+                'key' => 'kumwe.app/journey-founded-type',
+                'defaultMessage' => 'Founded type ' . bin2hex(random_bytes(3)),
+            ],
+            'authoringPolicy' => (object) [
+                'modes' => ['model', 'blueprint', 'content'],
+                'itemComposition' => 'overrides',
+            ],
+            'model' => self::clone($own->state->model),
+            'blueprint' => self::clone($own->state->blueprint),
+        ];
+        $plan = self::plannedSave($ownDispatch, $own, $draft);
+        self::assertContains(ContentStudioAuthoringService::ITEM_LAYOUT_PROMOTED, self::codes($plan));
+        self::assertTrue($plan->confirmationRequired);
+        $founded = self::saved($ownDispatch, $own->sessionId, $own->state->coordinates, $draft);
+
+        $newTypeId = ContentStudioAuthoringDocuments::contentTypeId($founded->session->type->id);
+        self::assertIsString($newTypeId);
+        self::assertNotSame($typeId, $newTypeId);
+        $composition = $compositions->find($context, $newTypeId, 1);
+        self::assertNotNull($composition);
+        self::assertStringStartsWith('content-blueprint:', $composition->binding->blueprintId);
+        $document = $composition->blueprint->document();
+        self::assertSame('kumwe.app/content-blueprint', $document->label->key);
+        self::assertFalse(isset($document->extensions->{StudioContentCompositionService::ITEM_EXTENSION}));
+        self::assertSame(self::MOVED_ORDER, self::contentIds($document));
+        self::assertNull($bindings->overrides($site, $a)?->itemBlueprintRevision);
+        self::assertSame(['kept', 'promoted'], array_column(self::layoutEvents($container, $a), 'reason'));
+        self::assertSame($composition->binding->blueprintId, $founded->session->state->coordinates->blueprint->id);
+        self::assertSame($newTypeId, $content->get($context, $a)->contentTypeId);
+    }
+
+    /**
+     * The `denied` item-composition policy is the rollback of App ADR 0025: with it injected, every reusable type
+     * declares it, the editor hands the type's layout with no diagnostic, a save carrying an item layout is
+     * refused and the public page ignores it, while the stored layout and its pointer are kept byte for byte
+     * and values still save. The preview binding source's refusal under the policy is proven by its unit test.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheDeniedPolicyRollsItemLayoutsBackWithoutLosingThem(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = self::administratorContext($container);
+        $content = self::service($container, ContentService::class);
+        $typeId = self::layoutType($container, $context);
+        $a = $content->create($context, 'Rolled back', 'rolled-back-' . bin2hex(random_bytes(4)), [
+            'summary' => 'Rolled summary',
+            'teaser' => 'Rolled teaser',
+        ], null, $typeId)->entry->id();
+        $itemId = StudioContentCompositionService::itemBlueprintId($a);
+        [$session, $dispatch] = self::mounted($container, $context, self::editTarget($container, $context, $a));
+        $kept = self::saved($dispatch, $session->sessionId, $session->state->coordinates, self::itemDraft(
+            $session,
+            self::reordered($session->state->blueprint, [1, 0, 2]),
+        ));
+        $pinned = $kept->session->state->coordinates->blueprint;
+        self::assertSame($itemId, $pinned->id);
+        self::published($content, $context, $a);
+        self::assertTextOrder(['Rolled summary', 'Rolled back', 'Rolled teaser'], self::publicHtml($container, $a));
+
+        // A runtime whose one shared policy is `denied`, injected before any reader of item layouts exists.
+        $denied = TestKernelFactory::create(Environment::fromGlobals());
+        $denied->share(
+            StudioItemCompositionPolicy::class,
+            static fn (): StudioItemCompositionPolicy => new StudioItemCompositionPolicy('denied'),
+            true,
+        );
+        $deniedContext = self::administratorContext($denied);
+        $bindings = self::service($denied, ContentProjectionBindingRepository::class);
+        $site = $deniedContext->site();
+        $overrides = $bindings->overrides($site, $a);
+        self::assertSame($pinned->revision, $overrides?->itemBlueprintRevision);
+        [$rolled, $rolledDispatch, $key, $generation] = self::mounted(
+            $denied,
+            $deniedContext,
+            self::editTarget($denied, $deniedContext, $a),
+        );
+        self::assertSame('denied', $rolled->type->authoringPolicy->itemComposition);
+        self::assertEquals($rolled->type->blueprint, $rolled->state->coordinates->blueprint);
+        self::assertStringStartsWith('content-blueprint:', $rolled->state->coordinates->blueprint->id);
+        self::assertSame(self::DEFAULT_ORDER, self::contentIds($rolled->state->blueprint));
+        self::assertSame([], $rolled->state->diagnostics, 'The rollback hands the type layout without a warning.');
+
+        $refused = self::respond(
+            self::service($denied, StudioProducerHostFactory::class),
+            $deniedContext,
+            $key,
+            $generation,
+            'authoring/plan-save',
+            'intent',
+            (object) [
+                'contractVersion' => '0.1-draft',
+                'kind' => 'authoring-save-intent',
+                'sessionId' => $rolled->sessionId,
+                'expected' => $rolled->state->coordinates,
+                'draft' => self::itemDraft($rolled, self::reordered($rolled->state->blueprint, [1, 0, 2])),
+            ],
+            false,
+        );
+        self::assertSame('validation-failed', $refused->refusalCategory, $refused->body);
+        self::assertStringContainsString('studio.authoring/item-composition-denied', $refused->body);
+
+        $record = $content->publishedById($a);
+        self::assertNotNull($record);
+        self::assertNull(
+            self::service($denied, StudioPublishedContentRenderer::class)->render($record),
+            'The public page ignores the item layout; the type layout is still a draft, so the legacy page renders.',
+        );
+
+        $values = self::itemDraft($rolled);
+        $values->entry->values->title = 'Rolled back revised';
+        $revised = self::saved($rolledDispatch, $rolled->sessionId, $rolled->state->coordinates, $values);
+        self::assertEquals($rolled->type->blueprint, $revised->session->state->coordinates->blueprint);
+        self::assertSame($pinned->revision, $bindings->overrides($site, $a)?->itemBlueprintRevision);
+        self::assertSame($overrides?->revision, $bindings->overrides($site, $a)?->revision);
+        self::assertSame(1, self::historyRows($denied, $itemId));
+        self::assertSame(['kept'], array_column(self::layoutEvents($denied, $a), 'reason'));
+    }
+
+    /**
+     * Save, through a blank Studio session, a new reusable type with a title and two text fields whose layout is
+     * the untouched default, so it stays a draft derived from the model (App ADR 0024).
+     *
+     * @param   Container         $container  Booted runtime container.
+     * @param   ExecutionContext  $context    Administrator context.
+     *
+     * @return  string  Content type UUID, at version one.
+     *
+     * @since   2.0.0
+     */
+    private static function layoutType(Container $container, ExecutionContext $context): string
+    {
+        $targets = self::service($container, ContentStudioAuthoringTargetResolver::class);
+        [$blank, $dispatch] = self::started($container, $context, $targets->create($context), 'blank');
+        $model = self::clone($blank->state->model);
+        foreach (['summary' => 'Summary', 'teaser' => 'Teaser'] as $key => $label) {
+            $field = self::dataField($key, $label);
+            $field->id = $key;
+            unset($field->extensions);
+            $model->fields[] = $field;
+        }
+        $layout = self::clone($blank->state->blueprint);
+        $layout->roots = [];
+        $created = self::saved($dispatch, $blank->sessionId, $blank->state->coordinates, (object) [
+            'outcome' => 'save-as-new-type',
+            'label' => (object) [
+                'key' => 'kumwe.app/journey-item-layout-type',
+                'defaultMessage' => 'Item layout type ' . bin2hex(random_bytes(3)),
+            ],
+            'authoringPolicy' => (object) [
+                'modes' => ['model', 'blueprint', 'content'],
+                'itemComposition' => 'overrides',
+            ],
+            'model' => $model,
+            'blueprint' => $layout,
+        ]);
+        self::assertSame('overrides', $created->session->type->authoringPolicy->itemComposition);
+        $typeId = ContentStudioAuthoringDocuments::contentTypeId($created->session->type->id);
+        self::assertIsString($typeId);
+
+        return $typeId;
+    }
+
+    /**
+     * Mount one contextual target, resolve it and start it from the source its launch names.
+     *
+     * @param   Container                     $container  Booted runtime container.
+     * @param   ExecutionContext              $context    Administrator context.
+     * @param   ContentStudioAuthoringTarget  $target     Exact create or edit target.
+     *
+     * @return  array{
+     *              0: stdClass,
+     *              1: callable(string, string, stdClass, bool): stdClass,
+     *              2: string,
+     *              3: string,
+     *              4: stdClass
+     *          }  Started snapshot, the session's dispatcher, its host session key and generation, and the
+     *          deployment document.
+     *
+     * @since   2.0.0
+     */
+    private static function mounted(
+        Container $container,
+        ExecutionContext $context,
+        ContentStudioAuthoringTarget $target,
+    ): array {
+        $configuration = self::service($container, StudioContextualAuthoringConfigurationProvider::class)
+            ->forMount($context, $target, 'integration-csrf');
+        self::assertInstanceOf(StudioHostedDeploymentConfiguration::class, $configuration);
+        $deployment = json_decode($configuration->configurationJson, false, 32, JSON_THROW_ON_ERROR);
+        self::assertInstanceOf(stdClass::class, $deployment);
+        $resourceContext = $deployment->session->resourceContext;
+        $key = $resourceContext->key;
+        $generation = $deployment->session->sessionGeneration;
+        self::assertIsString($key);
+        self::assertIsString($generation);
+        $dispatch = self::dispatcher(
+            self::service($container, StudioProducerHostFactory::class),
+            $context,
+            $key,
+            $generation,
+        );
+        $dispatch('authoring/resolve-target', 'request', (object) [
+            'targetId' => $deployment->launch->targetId,
+            'intent' => $deployment->launch->intent,
+            'resourceContext' => $resourceContext,
+            'requestedPresentation' => 'inline',
+        ], false);
+        $snapshot = $dispatch('authoring/start', 'request', (object) [
+            'targetId' => $deployment->launch->targetId,
+            'resourceContext' => $resourceContext,
+            'source' => $deployment->launch->start,
+            'presentation' => 'inline',
+        ], true);
+
+        return [$snapshot, $dispatch, $key, $generation, $deployment];
+    }
+
+    /**
+     * Plan one save against the latest state a session was handed.
+     *
+     * @param   callable(string, string, stdClass, bool): stdClass  $dispatch  Session dispatcher.
+     * @param   stdClass                                             $session   Started snapshot or the session of
+     *          the latest save result.
+     * @param   stdClass                                             $draft     Save draft.
+     *
+     * @return  stdClass  The host-reviewed save plan.
+     *
+     * @since   2.0.0
+     */
+    private static function plannedSave(callable $dispatch, stdClass $session, stdClass $draft): stdClass
+    {
+        return $dispatch('authoring/plan-save', 'intent', (object) [
+            'contractVersion' => '0.1-draft',
+            'kind' => 'authoring-save-intent',
+            'sessionId' => $session->sessionId,
+            'expected' => $session->state->coordinates,
+            'draft' => $draft,
+        ], false);
+    }
+
+    /**
+     * A save-item draft of a session's handed entry, carrying an item layout when one is given.
+     *
+     * @param   stdClass   $session  Started snapshot or the session of the latest save result.
+     * @param   ?stdClass  $layout   Item Blueprint the draft carries, or null for a values-only save.
+     *
+     * @return  stdClass  Save-item draft.
+     *
+     * @since   2.0.0
+     */
+    private static function itemDraft(stdClass $session, ?stdClass $layout = null): stdClass
+    {
+        $draft = (object) ['outcome' => 'save-item', 'entry' => self::clone($session->state->entry)];
+        if ($layout !== null) {
+            $draft->itemBlueprint = $layout;
+        }
+
+        return $draft;
+    }
+
+    /**
+     * Copy a Blueprint with the children of its first root's content slot in a new order.
+     *
+     * @param   stdClass   $blueprint  Handed Blueprint.
+     * @param   list<int>  $order      Former positions, in their new order.
+     *
+     * @return  stdClass  Reordered copy, as the Outline's move controls leave it.
+     *
+     * @since   2.0.0
+     */
+    private static function reordered(stdClass $blueprint, array $order): stdClass
+    {
+        $copy = self::clone($blueprint);
+        $children = $copy->roots[0]->slots->content;
+        $copy->roots[0]->slots->content = array_map(static fn (int $index): stdClass => $children[$index], $order);
+
+        return $copy;
+    }
+
+    /**
+     * The node identities of a Blueprint's first root's content slot, in order.
+     *
+     * @param   stdClass  $blueprint  Blueprint document.
+     *
+     * @return  list<string>  Child node identities.
+     *
+     * @since   2.0.0
+     */
+    private static function contentIds(stdClass $blueprint): array
+    {
+        return array_map(
+            static fn (stdClass $node): string => (string) $node->id,
+            $blueprint->roots[0]->slots->content,
+        );
+    }
+
+    /**
+     * Count the immutable history revisions stored for one artifact identity.
+     *
+     * @param   Container  $container   Booted runtime container.
+     * @param   string     $artifactId  Artifact identity.
+     *
+     * @return  int  Stored revisions.
+     *
+     * @since   2.0.0
+     */
+    private static function historyRows(Container $container, string $artifactId): int
+    {
+        return (int) self::service($container, Connection::class)->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE artifact_id = ?',
+            self::service($container, TableNames::class)->quoted('studio_artifact_revisions'),
+        ), [$artifactId]);
+    }
+
+    /**
+     * The metadata of every item layout audit event one entry recorded, oldest first.
+     *
+     * @param   Container  $container  Booted runtime container.
+     * @param   string     $entryId    Content entry UUID.
+     *
+     * @return  list<array<array-key, mixed>>  Decoded audit metadata.
+     *
+     * @since   2.0.0
+     */
+    private static function layoutEvents(Container $container, string $entryId): array
+    {
+        $rows = self::service($container, Connection::class)->fetchFirstColumn(sprintf(
+            'SELECT metadata FROM %s WHERE action = ? AND subject_type = ? AND subject_id = ? ORDER BY position',
+            self::service($container, TableNames::class)->quoted('audit_events'),
+        ), ['studio.composition.item-layout', 'content_entry', $entryId]);
+        $events = [];
+        foreach ($rows as $row) {
+            self::assertIsString($row);
+            $metadata = json_decode($row, true, 8, JSON_THROW_ON_ERROR);
+            self::assertIsArray($metadata);
+            self::assertArrayNotHasKey('roots', $metadata, 'No document bytes are audited.');
+            $events[] = $metadata;
+        }
+
+        return $events;
+    }
+
+    /**
+     * Move one draft item through review to published under the core workflow.
+     *
+     * @param   ContentService    $content  Content application service.
+     * @param   ExecutionContext  $context  Administrator context.
+     * @param   string            $entryId  Content entry UUID.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private static function published(ContentService $content, ExecutionContext $context, string $entryId): void
+    {
+        $stored = $content->get($context, $entryId);
+        $review = $content->transition($context, $entryId, $stored->entry->version(), ContentStatus::Review);
+        $content->transition($context, $entryId, $review->entry->version(), ContentStatus::Published);
+    }
+
+    /**
+     * Render one published item's public page through the Studio composition renderer.
+     *
+     * @param   Container  $container  Booted runtime container.
+     * @param   string     $entryId    Published Content entry UUID.
+     *
+     * @return  string  Rendered public HTML.
+     *
+     * @since   2.0.0
+     */
+    private static function publicHtml(Container $container, string $entryId): string
+    {
+        $record = self::service($container, ContentService::class)->publishedById($entryId);
+        self::assertNotNull($record);
+        $rendered = self::service($container, StudioPublishedContentRenderer::class)->render($record);
+        self::assertNotNull($rendered, 'The published item renders through its Studio composition.');
+
+        return $rendered->html;
+    }
+
+    /**
+     * Assert that each text first appears in a document after the one before it.
+     *
+     * @param   list<string>  $texts     Texts in their expected order.
+     * @param   string        $document  Rendered document or wire response.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private static function assertTextOrder(array $texts, string $document): void
+    {
+        $previous = -1;
+        foreach ($texts as $text) {
+            $position = strpos($document, $text);
+            self::assertIsInt($position, sprintf('"%s" is rendered.', $text));
+            self::assertGreaterThan($previous, $position, sprintf('"%s" is rendered in order.', $text));
+            $previous = $position;
+        }
     }
 
     /**

@@ -208,6 +208,61 @@ final readonly class DoctrineContentStudioAuthoringContextRepository implements 
     }
 
     /**
+     * Replace the recorded handed-type digest of one binding.
+     *
+     * The statement's affected-row count is not checked: an engine that reports only changed rows
+     * returns zero when the same digest is recorded again, which is not an error.
+     *
+     * @param   string  $contextKey  Opaque key of an existing binding.
+     * @param   string  $digest      Lowercase hexadecimal SHA-256 of the handed type's canonical JSON.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the digest is not a lowercase hexadecimal SHA-256.
+     * @throws  \Doctrine\DBAL\Exception  When the database refuses the update.
+     *
+     * @since   2.0.0
+     */
+    public function recordHandedType(string $contextKey, string $digest): void
+    {
+        if (preg_match(self::DIGEST, $digest) !== 1) {
+            throw new InvalidArgumentException('A handed Studio content type digest must be a SHA-256.');
+        }
+        $this->connection->executeStatement(sprintf(
+            'UPDATE %s SET handed_type_digest = ? WHERE context_key = ?',
+            $this->tables->quoted('studio_content_authoring_contexts'),
+        ), [$digest, $contextKey], [ParameterType::STRING, ParameterType::STRING]);
+    }
+
+    /**
+     * Read the recorded handed-type digest of one binding.
+     *
+     * @param   string  $contextKey  Opaque key of an existing binding.
+     *
+     * @return  ?string  Recorded digest, or null when none was recorded or the binding does not exist.
+     *
+     * @throws  RuntimeException  When a stored digest is not a lowercase hexadecimal SHA-256.
+     * @throws  \Doctrine\DBAL\Exception  When the database read fails.
+     *
+     * @since   2.0.0
+     */
+    public function handedType(string $contextKey): ?string
+    {
+        $digest = $this->connection->fetchOne(sprintf(
+            'SELECT handed_type_digest FROM %s WHERE context_key = ?',
+            $this->tables->quoted('studio_content_authoring_contexts'),
+        ), [$contextKey], [ParameterType::STRING]);
+        if ($digest === false || $digest === null) {
+            return null;
+        }
+        if (!is_string($digest) || preg_match(self::DIGEST, $digest) !== 1) {
+            throw new RuntimeException('Stored Studio Content authoring column handed_type_digest is invalid.');
+        }
+
+        return $digest;
+    }
+
+    /**
      * Read one required non-empty textual database column.
      *
      * @param   array<string, mixed>  $row   Fetched database row.
@@ -277,4 +332,12 @@ final readonly class DoctrineContentStudioAuthoringContextRepository implements 
 
         return new DateTimeImmutable($value, new DateTimeZone('UTC'));
     }
+
+    /**
+     * Grammar of a handed-type digest: a lowercase hexadecimal SHA-256.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string DIGEST = '/^[0-9a-f]{64}$/D';
 }

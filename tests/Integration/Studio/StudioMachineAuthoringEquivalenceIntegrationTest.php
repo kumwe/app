@@ -505,7 +505,7 @@ final class StudioMachineAuthoringEquivalenceIntegrationTest extends TestCase
             'label' => (object) ['key' => 'kumwe.app/machine-journey-type', 'defaultMessage' => $name],
             'authoringPolicy' => (object) [
                 'modes' => ['model', 'blueprint', 'content'],
-                'itemComposition' => 'denied',
+                'itemComposition' => 'overrides',
             ],
             'model' => self::copy($saved->session->state->model),
             'blueprint' => self::copy($saved->session->state->blueprint),
