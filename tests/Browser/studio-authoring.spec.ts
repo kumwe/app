@@ -272,6 +272,15 @@ async function rootTypes(shell: Locator): Promise<string[]> {
   });
 }
 
+/** The lifecycle status of the Blueprint the host handed the session; a layout a type save stored is `published`. */
+async function blueprintStatus(shell: Locator): Promise<string | undefined> {
+  return shell.evaluate((element) => {
+    const canvas = (element as HTMLElement & { blueprintElement?: { document?: { status?: string } } })
+      .blueprintElement;
+    return canvas?.document?.status;
+  });
+}
+
 /**
  * Blank creation: typed field, reusable type and the item's values in one contextual session.
  *
@@ -427,10 +436,12 @@ test('a new item from the reusable type receives its fields with empty values', 
  * from the blank canvas with an empty layout hands the session one section holding a field block for each of
  * the type's scalar fields. The Outline lists the section, the title and the summary, and selecting the title
  * shows its stored value in an editable Inspector field; a value typed there is saved with the item and is the
- * Title when the item reopens. A model-only type save from the untouched default keeps the layout a draft: the
- * stored composition stays empty, so the reopened item is handed the default derived again from the saved
- * model, and only that derivation holds a block for the field the save added. The layout journey that follows
- * therefore starts from an untouched default too.
+ * Title when the item reopens. A type save that leaves the default untouched keeps the layout a draft: the
+ * successor stores an empty draft, so the reopened item is handed the default derived again from the saved model,
+ * still a draft. A stored copy of the default would have been published instead. The pinned shell adds a Model
+ * field only while the handed Model is a draft, and an existing item's type is published, so this type save
+ * changes neither the Model nor the layout; the database journey covers a type save that adds a field. The layout
+ * journey that follows therefore starts from an untouched default too.
  */
 test('an existing item whose type has no layout opens maximized with its blocks in the Outline and its title in the Inspector', async ({
   page,
@@ -472,24 +483,23 @@ test('an existing item whose type has no layout opens maximized with its blocks 
   await expect(shellOf(page).getByRole('textbox', { name: 'Title', exact: true }))
     .toHaveValue('Studio journey item edited');
 
-  // A model-only type save from the untouched default: the layout stays an empty draft, so the reopened item
-  // is handed a default that also composes the added field. A stored copy of the earlier default would not.
+  // A type save from the untouched default: the successor's layout stays an empty draft, so the reopened item is
+  // handed the default derived again, still a draft. A stored copy of the default would reopen published.
   const reopened = shellOf(page);
   const before = await reopened.locator('.contextual-identity p').innerText();
-  await mode(reopened, 'model');
-  await reopened.getByLabel(studio('field-identifier')).fill('teaser');
-  await reopened.getByLabel(studio('field-label'), { exact: true }).fill('Teaser');
-  await reopened.getByLabel(studio('field-type')).selectOption('string');
-  await reopened.getByRole('button', { name: studio('add-field') }).click();
-  await expect(reopened.locator('li[data-field-path="teaser"]')).toBeVisible();
+  expect(await blueprintStatus(reopened)).toBe('draft');
   await save(page, 'save-new-type-version', ['kumwe.app/dependent-entries-remain', 'kumwe.app/item-adopts-successor']);
   await expect(reopened.locator('.contextual-identity p')).not.toHaveText(before);
+  const adopted = await reopened.locator('.contextual-identity p').innerText();
+  expect(await blueprintStatus(reopened)).toBe('draft');
 
   await openEditor(page, editPath ?? '');
   const successor = shellOf(page);
+  await expect(successor.locator('.contextual-identity p')).toHaveText(adopted);
+  expect(await blueprintStatus(successor)).toBe('draft');
   await mode(successor, 'blueprint');
   await openStudioPanel(successor, 'outline', journeyLocale);
-  for (const node of ['default/section', 'default/field/title', 'default/field/summary', 'default/field/teaser']) {
+  for (const node of ['default/section', 'default/field/title', 'default/field/summary']) {
     await expect(successor.locator(`button.outline-entry[data-node-id="${node}"]`)).toBeVisible();
   }
   await expect(successor.locator('.dirty-summary')).toHaveAttribute('data-dirty', 'false');
@@ -568,8 +578,8 @@ test('the accepted item previews through the authenticated channel and renders p
   await expect(frame).toBeVisible();
   const document = page.frameLocator('[data-studio-contextual-preview]');
   await expect(document.locator('[data-kis-surface="core.administrator.content-editor"]')).toBeAttached();
-  // One marker per node: the default section, its title, summary and teaser, the inserted field and the extension.
-  await expect(document.locator('[data-studio-preview-marker]')).toHaveCount(6);
+  // One marker per node: the default section, its title and summary, the inserted field and the extension.
+  await expect(document.locator('[data-studio-preview-marker]')).toHaveCount(5);
   // The default summary block and the inserted block both render the accepted summary.
   const previewed = document.locator('.studio-preview-field-text', { hasText: 'Accepted by the first editor.' });
   await expect(previewed).toHaveCount(2);

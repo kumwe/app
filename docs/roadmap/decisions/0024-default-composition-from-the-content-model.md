@@ -338,8 +338,12 @@ This note is written for the pull request description.
 >   re-pin carrying Studio's host-block projection.
 > - A moved block is kept only by a type save until per-item layout lands in a later pull request (B2).
 > - The guard that keeps an untouched default a draft relies on the pinned shell sending the handed roots back
->   unchanged. The browser journey asserts this on beta.9; that lane runs only in CI and was not observed in this
->   sandbox.
+>   unchanged. The browser journey asserts this on beta.9; it passed locally on PostgreSQL 16 on 2026-10-08, and
+>   CI runs it on every engine.
+> - On beta.9 the shell validates the default against its compiled `studio.core/section`, whose `content` slot
+>   accepts only `studio.core/*` blocks, so the Diagnostics region lists one "Slot content does not accept
+>   core/field-text." error per composed field. The host's own section declaration accepts the field blocks, so
+>   saves and the preview are unaffected. Observed locally on 2026-10-08.
 > - The translator note of `core.administrator.content_form.studio_preview` still describes the preview as
 >   beside the Studio mount. B1 leaves the catalogues unchanged; the note is stale until a follow-up.
 
@@ -370,7 +374,8 @@ Open questions only the maintainer can answer:
 - The accepted-revision preview renders the same default, through the host's own renderer.
 
 These outcomes are derived from the pinned shell's code and the App change. They were not observed in a
-running editor while drafting; only the CI browser lane can observe them, and it covers the title only.
+running editor while drafting. The browser journey, which covers the title only, observed them locally on
+2026-10-08, together with the slot diagnostics that the maintainer note lists.
 
 **Limits and costs.**
 
@@ -398,10 +403,13 @@ running editor while drafting; only the CI browser lane can observe them, and it
   per-field disclosure policy would make a provisioned default reflect the provisioning actor's view.
 - *Round-trip equality.* The draft rule compares the roots the browser sends back with the handed roots by
   canonical JSON. If the shell ever rewrote an untouched node, an untouched default would publish on a type
-  save. The browser journey (`tests/Browser/studio-authoring.spec.ts`) makes a model-only type save from the
-  untouched default through the pinned shell and asserts that the reopened item is handed a default that also
-  composes the added field, which only the empty-draft path yields. This is a CI-verified assumption; the
-  browser lane did not run in the sandbox.
+  save. The browser journey (`tests/Browser/studio-authoring.spec.ts`) makes a type save of the untouched
+  default through the pinned shell and asserts that the save result and the reopened item are handed a `draft`
+  Blueprint holding the derived default, which only the empty-draft path yields: a stored copy of the default
+  would be `published`. The pinned shell adds a Model field only while the handed Model is a `draft`
+  (`node_modules/@kumwe/studio/dist/contextual-authoring.js` 441), and an existing item's type is handed
+  `published`, so that type save changes neither the Model nor the layout. The database journey covers type
+  saves that add fields.
 
 ## Rejected alternatives
 
@@ -432,7 +440,7 @@ PostgreSQL 16, Redis and Node 22. It had no browser binaries.
 | Whole unit suite | `composer test:unit` | 3051 tests, 97160 assertions, OK, with 26 PHPUnit notices (the same count an earlier run of this branch reported). |
 | Architecture suite | `vendor/bin/phpunit --testsuite architecture` | 314 tests, 28901 assertions, OK. |
 | Database integration | `vendor/bin/phpunit --testsuite integration,functional` on PostgreSQL 16 after `database:migrate`, with a superuser test role | 709 tests, 26280 assertions, 31 skipped, OK. The default-composition journey asserts that two successive model-only type saves of the untouched default each store an empty draft and that the successor is handed a default composing the added field. MariaDB and MySQL are left to CI. |
-| Browser journeys | CI | Not run here: no browser binaries could be downloaded. `tsc --noEmit` type-checks the spec. |
+| Browser journeys | CI; `tests/Browser/studio-authoring.spec.ts` also locally on 2026-10-08 | The first CI run timed out in the default-composition journey: its model-only type save tried to add a field to an existing item, whose published Model the pinned shell does not let an author change. The journey now saves the untouched default without a Model change. Locally the whole spec passed on `desktop-chromium` and `mobile-chromium` (PostgreSQL 16, a preinstalled Chromium build and a loopback mirror of the pinned Studio packages, because the sandbox could not reach the CDN). |
 | Asset build and direction | `npm run build`, `composer assets:direction` | Built; direction check exit 0. |
 | Quality baseline | `composer baseline:check` | Verified; the review fixes add no public test method, so the recorded baseline is unchanged. |
 | Core growth | `composer kumwe:core-growth-check` | Fails on the base tree and on this tree alike, at the ledger record `KUMWE-MIG-2026-030` (a removed host test), so the growth delta of this change could not be evaluated by the tool. |
