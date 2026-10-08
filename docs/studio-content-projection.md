@@ -85,7 +85,11 @@ coordinates:
 - `studio_content_blueprint_bindings` pins one immutable content-type version to an exact Blueprint
   ID/version and optional Blueprint revision, with its own binding revision;
 - `studio_entry_composition_overrides` holds one canonical JSON object per Content entry, keyed by
-  Studio stable identifiers, with its own override revision.
+  Studio stable identifiers, with its own override revision. The same row may pin the exact revision of
+  the entry's own item layout in `item_blueprint_revision`
+  ([ADR 0025](roadmap/decisions/0025-item-layout-overrides.md), proposed). The layout itself is an
+  immutable Blueprint artifact with id `content-item-blueprint:<entry UUID>`; without a pinned revision
+  the entry follows its content type's layout.
 
 Both repositories require the server-resolved site in every query. Composite foreign keys include
 that site and the authoritative Content coordinate, preventing tenant metadata from being attached to
@@ -93,13 +97,25 @@ another site's definition or entry. Replay repairs an interrupted partial-table 
 revalidate UUIDs, Studio identifier grammars,
 semantic versions, member limits, depth, forbidden property names, and canonical JSON before a row can
 enter a projection. A binding appears in the model extension. Override values appear only in
-`entry.compositionOverrides`, and their host revision appears separately in the entry extension.
+`entry.compositionOverrides`, and their host revision appears separately in the entry extension
+`kumwe.app/composition-override`, which also carries the pinned item layout's `blueprint` reference
+(`id`, `version`, `revision`) when one is set.
 
 This repository port deliberately contains reads only because AP-2 introduced projection rather than an authorized
-Content mutation use case. It must stay read-only. The open contextual-authoring work adds purpose-specific PHP
+Content mutation use case. It must stay read-only. The contextual-authoring work adds purpose-specific PHP
 application operations for item create/save, new-type creation, and type-version creation with authorization,
 validation, transactions, audit, expected revisions, migration policy, and replay discipline. A generic save method
 on the projector would bypass those responsibilities and is not the implementation path.
+
+Writes go through separate write-only ports, which `DoctrineContentProjectionBindingRepository` also implements, so
+a model read never acquires mutation authority. `ContentBlueprintBindingStore` inserts the initial binding of a type
+version. `EntryCompositionOverrideStore::pin()` is the audited write port for the item layout pointer, and only the
+contextual **Save item** and type saves reach it, through `StudioContentCompositionService` inside the save's
+transaction. It requires an active transaction. Without an expected revision it inserts the row, with
+`override_values` set to the supplied values (`{}` for a row created for a layout alone). Otherwise it is a
+compare-and-set on `override_revision` that moves only `item_blueprint_revision` and `override_revision`, so it
+never rewrites stored override values. A concurrent insert or a moved revision is a `StudioPersistenceRace`, which
+the save refuses as a conflict.
 
 ## Dynamic resource and data boundary
 
