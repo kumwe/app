@@ -14,6 +14,32 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ## [Unreleased]
 
+### Studio default composition and editable field blocks
+
+These changes rest on three working assumptions that await the maintainer;
+[ADR 0024](docs/roadmap/decisions/0024-default-composition-from-the-content-model.md) (proposed) records them
+with their reversal. Studio stays pinned at `0.1.0-beta.9`, with no Producer or SDK change.
+
+- Open an existing item of a Content type that has no authored layout with a default composition derived from
+  its model. The composition is one section holding a Content-field block bound to the title and to each
+  top-level scalar field, in the model's authoring order. Previously provisioning stored a draft with no
+  blocks, and the editor opened empty. New types are provisioned with the default from every provisioning
+  surface. A stored empty draft is handed the default at load without being written, and the authenticated
+  preview renders that same document. A type save that leaves the default unchanged stores an empty draft, so
+  public pages keep their structured template and the next load derives the default again from the saved
+  model; any other layout with blocks publishes on a type save, as before.
+- Move the nine Content-field blocks to revision `core-block-r2`. Their text, integer and yes-or-no value ports
+  now name the inspector control that edits the bound entry value; text uses the multi-line control so bodies
+  keep their line breaks. Decimal, rich-text, date, date-time, media and resource values are still edited in
+  Content mode. Migration `20261007120000_studio_field_block_revision` moves stored `core-block-r1` field locks
+  to r2 in place and keeps revision identities, an explicit exception to ADR 0015's immutable revision bytes
+  that ADR 0024 records. Recovery envelopes and replay results are not rewritten.
+- Open Studio maximized in the Content editor, and let the inline workspace grow toward the viewport height.
+  The accepted-revision preview now waits in a closed disclosure below the shell. On beta.9 the page canvas is
+  still Studio's local render, which shows each App field block as an "Unsupported Studio block" line until a
+  re-pin brings Studio's host-block projection. A moved block persists only as a new type version, because
+  items cannot yet carry their own layout.
+
 ### Diagnostics administrator layout
 
 - Render every Diagnostics section inside the authenticated administrator shell with the session's

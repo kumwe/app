@@ -63,7 +63,23 @@ closed capability projection and return context, and answers every operation thr
 - a successor type version keeps its reusable type's Blueprint identity with a new revision, and a stored
   reusable Blueprint locks exactly the blocks it composes, each of which must have a live renderer;
 - inline, minimized, maximized and fullscreen presentation of the same session, and a deterministic return to
-  the accepted item's edit context;
+  the accepted item's edit context. The Content editor opens Studio maximized; every save result reports that
+  recorded start presentation, and Studio keeps any newer local presentation;
+- a default composition for a Content type version with no authored layout
+  ([ADR 0024](roadmap/decisions/0024-default-composition-from-the-content-model.md), proposed). It is one section
+  holding a Content-field block bound to the title and to each top-level scalar field (text, integer, decimal,
+  yes-or-no, date, date and time, media), in the model's authoring order, using the blocks the type's lock
+  carries; a draft that a type save stored with an empty layout locks no block, so it is handed the default under
+  the deployment's renderable block locks. New types are provisioned with it from every provisioning surface. A
+  stored empty draft is handed this default at load without being written. A type save that leaves it unchanged
+  stores an empty draft, so the public page keeps its structured template and the next load derives the default
+  again from the saved model; an authored layout, including an authored draft, publishes on a type save as
+  before. The transitional composition route opens the stored artifact and does not substitute;
+- Content-field blocks at revision `core-block-r2`. The text, integer and yes-or-no value ports name the
+  inspector control that edits the bound entry value; text uses the multi-line control so bodies keep their line
+  breaks. Decimal, rich-text, date, date-time, media and resource ports have no inspector control on the pinned
+  shell and are edited in Content mode. Migration `20261007120000_studio_field_block_revision` moved stored
+  `core-block-r1` field locks to r2 in place, keeping revision identities;
 - the interface-locale Studio message catalogue served by the localization port, fetched alongside the module so
   the shell never shows source-language labels first, and the host's own return label, save consequences and
   palette entries (the App's Content field blocks and its empty-section pattern) resolved in the same interface
@@ -71,8 +87,9 @@ closed capability projection and return context, and answers every operation thr
 - keyboard-only operation from the Content editor's skip link through the start chooser, the start, the
   presentations, the mode tabs, field definition and non-drag block insertion, with focus returned to the Studio
   region's heading when the shell replaces the chooser;
-- a host-owned authenticated preview beside the shell over the origin-pinned, replay-resistant preview port,
-  resolving the saved item's own values behind the opaque context, and trusted public rendering through PHP
+- a host-owned authenticated preview in a closed disclosure below the shell, over the origin-pinned,
+  replay-resistant preview port, resolving the saved item's own values behind the opaque context and
+  rendering the same default composition the shell was handed, and trusted public rendering through PHP
   and Twig once the workflow publishes the item;
 - the structured form as the explicitly labelled `STUDIO-PROD-014` fallback, remembered per editor and used
   when the runtime or configuration is unavailable.
@@ -113,6 +130,14 @@ What remains open, and why:
   Standalone behavior remains Studio-owned, and Content never turns a configured refusal into local mode.
 - **Authoring from a clean packaged start.** The deployed-artifact lane runs without a database by design, and the
   production-topology deployment-acceptance job does not yet drive a Studio session.
+- **Host blocks on the page canvas.** Studio beta.9 renders the page canvas itself, because the hosted preview
+  stays disabled, and its renderer shows each App Content-field block as an "Unsupported Studio block
+  core/field-…" status line. Bound values appear in the Outline, the inspector, Content mode and the
+  accepted-revision preview. Rendering host blocks on the canvas is a Studio release item and reaches App with
+  the next re-pin.
+- **Per-item layout.** Every type declares `itemComposition: 'denied'`, so a block moved in the editor persists
+  only through **Save new type version**, as a new type version. Per-item layout needs its own audited
+  persistence and decision record.
 - **Live-draft preview.** The hosted in-shell preview cannot stage a live draft, so the App preview shows accepted
   revisions only. Studio beta.7 fixes repeated-save continuity and accepts localized messages for the chooser and
   save confirmation; App supplies those messages at mount time. App also preserves authored field identities across
@@ -168,7 +193,7 @@ remain on beta.3, source `42b149251a9f17a2ef8f32db0d9dd1ac2fcfec8a`, release-rec
 |---|---|---|
 | `STUDIO-PROD-008`, `015` step 4: extension-owned target | SDK 0.3.3 `src/Spi/Contribution/CanonicalCompositionKind.php` admits six composition kinds, not `authoring-target`; its public Studio SPI supplies preview rendering, not authoring-resource authority. Studio beta.3 already publishes `authoring-target.schema.json`. | SDK must publish a successor manifest generation carrying the existing canonical target document and a manifest-bound, host-neutral resource-authority SPI, with a runnable extension target fixture. App then admits it under the same trust/generation and capability checks as the core declaration and binds its PHP operations. An App-only manifest kind or a private extension editor is not closure. |
 | `STUDIO-PROD-009`, `015` step 12: usable field adapter, pattern and migration | SDK `resources/fixtures/generations/manifest-6/kumwe.json` names `money`/`decimal` extension field kinds; App Content projects built-in kinds. Its pattern names `section`/`text` dependencies absent from its declarations. Its migration lacks a runnable predecessor/successor fixture. | SDK supplies a self-contained pattern and versioned migration fixture; extension field support must be declared through the owning Content/SDK contract. App still owns target-filtered admission and persistence of accepted migration results, plus disable/unresolved/upgrade browser and database proof. A fixture correction alone cannot close that runtime work. |
-| `STUDIO-PROD-003`, `007`: unsaved Entry and presentation across saves | Beta.3 `packages/core/src/contextual-session.ts`, `assertSaveResult()` and `reconcileExcludedDrafts()`, accepts prior accepted state and preserves excluded local values and presentation; the published core and compiled browser bytes contain this behavior. Upstream tests include “saves a distinct new type without sending Entry values” and “preserves local presentation and adopts the exact planned host successor context”. | No Studio release is needed for that reconciliation. App must preserve exact authored field identities across its `schemaFromModel()` / `ContentStudioProjector` boundary and prove values/bindings before the first type save. For a mount initially opened outside inline, App also needs to retain the accepted initial presentation: `saveResult()` currently always emits inline. Do not add Entry values to reusable-type requests or relax Studio's result guard. |
+| `STUDIO-PROD-003`, `007`: unsaved Entry and presentation across saves | Beta.3 `packages/core/src/contextual-session.ts`, `assertSaveResult()` and `reconcileExcludedDrafts()`, accepts prior accepted state and preserves excluded local values and presentation; the published core and compiled browser bytes contain this behavior. Upstream tests include “saves a distinct new type without sending Entry values” and “preserves local presentation and adopts the exact planned host successor context”. | No Studio release is needed for that reconciliation. App must preserve exact authored field identities across its `schemaFromModel()` / `ContentStudioProjector` boundary and prove values/bindings before the first type save. App reports the recorded start presentation as the accepted base of every save result (`ContentStudioAuthoringService::saveResult()`); the Content editor starts maximized (ADR 0024). Do not add Entry values to reusable-type requests or relax Studio's result guard. |
 | `STUDIO-PROD-003`, `010`: live draft in hosted in-shell preview | Beta.3 `packages/studio-lit/src/hosted-services.ts::assertConfiguredPreviewSupport()` explicitly refuses enabled HTTP preview until a complete draft can be staged. That guard is unchanged in beta.6. | Studio must publish canonical complete-draft staging and its authenticated HTTP binding, with mismatch/cancellation/teardown vectors. Producer must implement and release that exact pin. App can then connect its existing preview authority to the published operation; accepted-revision preview remains the current bounded capability. |
 | `STUDIO-PROD-013`: localized chooser and save confirmation | Beta.3 `hosted-start.ts` calls `messageText()` without per-mount overrides; `hosted-runtime.ts::createSaveConfirmationSurface()` writes fixed English labels. These paths are unchanged in beta.6. | Studio must expose per-mount catalogue input for both surfaces, localize confirmation labels, and publish it. Producer and App adopt the same family and App proves all shipped locales. An App DOM rewrite would duplicate Studio ownership. |
 | `STUDIO-PROD-015`: clean packaged authoring | Existing App source/browser and database evidence does not drive Studio from the production-topology artifact. | App's deployment-acceptance lane must drive the real PHP-hosted journey from the built artifact, without production Node/npm. This is App qualification work, not an upstream release dependency. |
