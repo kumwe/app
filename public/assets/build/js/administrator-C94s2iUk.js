@@ -1,4 +1,4 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["js/studio-composition-ByCf6785.js","js/reveal-validation-DUOMRzvA.js","js/preview-identity-Bvgz1vbs.js","js/studio-launch-Dc2GSwB3.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["js/studio-composition-Ps-42Lg4.js","js/reveal-validation-DUOMRzvA.js","js/preview-identity-Bvgz1vbs.js","js/studio-launch-CfLSwZt6.js"])))=>i.map(i=>d[i]);
 import { a as n, c as A, d as b, i as r, n as setupCopyValues, o as t, p as i$1, r as __decorate, s as i, t as setupValidationReveal } from "./reveal-validation-DUOMRzvA.js";
 import { t as setupAppearance } from "./appearance-AWH5eFRF.js";
 //#region assets/administrator/components/command-palette.ts
@@ -1292,11 +1292,11 @@ setupValidationReveal();
 setupNavigationTargets();
 setupPolicyStepFlows();
 if (document.querySelector("[data-studio-composition]") !== null) __vitePreload(async () => {
-	const { setupStudioComposition } = await import("./studio-composition-ByCf6785.js");
+	const { setupStudioComposition } = await import("./studio-composition-Ps-42Lg4.js");
 	return { setupStudioComposition };
 }, __vite__mapDeps([0,1,2])).then(({ setupStudioComposition }) => setupStudioComposition());
 if (document.querySelector("[data-kumwe-studio][data-studio-module-url]") !== null) __vitePreload(async () => {
-	const { setupStudioLaunch } = await import("./studio-launch-Dc2GSwB3.js");
+	const { setupStudioLaunch } = await import("./studio-launch-CfLSwZt6.js");
 	return { setupStudioLaunch };
 }, __vite__mapDeps([3,2])).then(({ setupStudioLaunch }) => setupStudioLaunch());
 //#endregion

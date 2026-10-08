@@ -421,6 +421,81 @@ test('a new item from the reusable type receives its fields with empty values', 
 });
 
 /**
+ * An existing item whose type has no layout opens with the default composition derived from its model.
+ *
+ * App ADR 0024 (working assumptions A1 and A3): the Content editor opens Studio maximized, and the type saved
+ * from the blank canvas with an empty layout hands the session one section holding a field block for each of
+ * the type's scalar fields. The Outline lists the section, the title and the summary, and selecting the title
+ * shows its stored value in an editable Inspector field; a value typed there is saved with the item and is the
+ * Title when the item reopens. A model-only type save from the untouched default keeps the layout a draft: the
+ * stored composition stays empty, so the reopened item is handed the default derived again from the saved
+ * model, and only that derivation holds a block for the field the save added. The layout journey that follows
+ * therefore starts from an untouched default too.
+ */
+test('an existing item whose type has no layout opens maximized with its blocks in the Outline and its title in the Inspector', async ({
+  page,
+}) => {
+  test.slow();
+  const editPath = journey.editPath;
+  expect(editPath !== undefined, 'The blank-creation step must have accepted its item.').toBe(true);
+  await signInToAdministrator(page);
+  await openEditor(page, editPath ?? '');
+  const shell = shellOf(page);
+  await expect(shell.locator('.contextual-workspace')).toHaveAttribute('data-start', 'existing');
+  await expect(shell.locator('.contextual-workspace')).toHaveAttribute('data-presentation', 'maximized');
+
+  await mode(shell, 'blueprint');
+  await openStudioPanel(shell, 'outline', journeyLocale);
+  // Node identities are locale-independent; the summary keeps the field identity authored on the blank canvas.
+  for (const node of ['default/section', 'default/field/title', 'default/field/summary']) {
+    await expect(shell.locator(`button.outline-entry[data-node-id="${node}"]`)).toBeVisible();
+  }
+
+  await shell.locator('button.outline-entry[data-node-id="default/field/title"]').click();
+  await openStudioPanel(shell, 'inspector', journeyLocale);
+  const value = shell.getByRole('textbox', {
+    name: text('core.administrator.content_form.studio_block_value'),
+    exact: true,
+  });
+  await expect(value).toHaveValue('Studio journey item');
+  await expect(value).toBeEditable();
+  await expect(shell.locator('.dirty-summary')).toHaveAttribute('data-dirty', 'false');
+  await expectAccessible(page);
+
+  // An Inspector edit of the bound title is an item value: Save item stores it and the reopened item shows it.
+  await value.fill('Studio journey item edited');
+  await value.press('Tab');
+  await expect(shell.locator('.dirty-summary')).toHaveAttribute('data-dirty', 'true');
+  await save(page, 'save-item');
+  await openEditor(page, editPath ?? '');
+  await mode(shellOf(page), 'content');
+  await expect(shellOf(page).getByRole('textbox', { name: 'Title', exact: true }))
+    .toHaveValue('Studio journey item edited');
+
+  // A model-only type save from the untouched default: the layout stays an empty draft, so the reopened item
+  // is handed a default that also composes the added field. A stored copy of the earlier default would not.
+  const reopened = shellOf(page);
+  const before = await reopened.locator('.contextual-identity p').innerText();
+  await mode(reopened, 'model');
+  await reopened.getByLabel(studio('field-identifier')).fill('teaser');
+  await reopened.getByLabel(studio('field-label'), { exact: true }).fill('Teaser');
+  await reopened.getByLabel(studio('field-type')).selectOption('string');
+  await reopened.getByRole('button', { name: studio('add-field') }).click();
+  await expect(reopened.locator('li[data-field-path="teaser"]')).toBeVisible();
+  await save(page, 'save-new-type-version', ['kumwe.app/dependent-entries-remain', 'kumwe.app/item-adopts-successor']);
+  await expect(reopened.locator('.contextual-identity p')).not.toHaveText(before);
+
+  await openEditor(page, editPath ?? '');
+  const successor = shellOf(page);
+  await mode(successor, 'blueprint');
+  await openStudioPanel(successor, 'outline', journeyLocale);
+  for (const node of ['default/section', 'default/field/title', 'default/field/summary', 'default/field/teaser']) {
+    await expect(successor.locator(`button.outline-entry[data-node-id="${node}"]`)).toBeVisible();
+  }
+  await expect(successor.locator('.dirty-summary')).toHaveAttribute('data-dirty', 'false');
+});
+
+/**
  * A layout change with an admitted extension block becomes an immutable successor type version.
  *
  * STUDIO-PROD-003, 006, 008 and 009: the Blueprint mode offers the admitted manifest-six extension block
@@ -458,7 +533,8 @@ test('a layout change with an extension block saves an immutable successor type 
   const after = await shell.locator('.contextual-identity p').innerText();
   expect(after).not.toBe(before);
   expect(after).toMatch(/@0\.0\.\d+#content-type-v\d+$/u);
-  expect(await rootTypes(shell)).toEqual(['core/field-text', EXTENSION_BLOCK]);
+  // The reopened item carried the default section; both inserted blocks follow it at the root.
+  expect(await rootTypes(shell)).toEqual(['studio.core/section', 'core/field-text', EXTENSION_BLOCK]);
 
   await openEditor(page, editPath ?? '');
   await expect(shellOf(page).locator('.contextual-identity p')).toHaveText(after);
@@ -481,6 +557,8 @@ test('the accepted item previews through the authenticated channel and renders p
   const requests = recordRequests(page);
   await signInToAdministrator(page);
   await openEditor(page, editPath ?? '');
+  // The accepted-revision preview is a closed disclosure below the shell (App ADR 0024).
+  await page.locator('[data-studio-preview-region] > summary').click();
   const preview = page.getByRole('button', { name: text('core.administrator.content_form.preview_this_item') });
   await expect(preview).toBeVisible();
   await preview.click();
@@ -490,8 +568,13 @@ test('the accepted item previews through the authenticated channel and renders p
   await expect(frame).toBeVisible();
   const document = page.frameLocator('[data-studio-contextual-preview]');
   await expect(document.locator('[data-kis-surface="core.administrator.content-editor"]')).toBeAttached();
-  await expect(document.locator('[data-studio-preview-marker]')).toHaveCount(2);
-  await expect(document.locator('.studio-preview-field-text', { hasText: 'Accepted by the first editor.' })).toBeVisible();
+  // One marker per node: the default section, its title, summary and teaser, the inserted field and the extension.
+  await expect(document.locator('[data-studio-preview-marker]')).toHaveCount(6);
+  // The default summary block and the inserted block both render the accepted summary.
+  const previewed = document.locator('.studio-preview-field-text', { hasText: 'Accepted by the first editor.' });
+  await expect(previewed).toHaveCount(2);
+  await expect(previewed.first()).toBeVisible();
+  await expect(previewed.nth(1)).toBeVisible();
   await expect(document.locator('.studio-preview-extension-grid', { hasText: 'Contributed grid: 2 columns' }))
     .toBeVisible();
   const previewCalls = requests.filter((request) => request.url().includes('/administrator/studio/ports/preview/render'));
@@ -508,7 +591,10 @@ test('the accepted item previews through the authenticated channel and renders p
   }
   const response = await page.goto(`/${slug ?? ''}`);
   expect(response?.status()).toBe(200);
-  await expect(page.locator('.studio-preview-field-text', { hasText: 'Accepted by the first editor.' })).toBeVisible();
+  const published = page.locator('.studio-preview-field-text', { hasText: 'Accepted by the first editor.' });
+  await expect(published).toHaveCount(2);
+  await expect(published.first()).toBeVisible();
+  await expect(published.nth(1)).toBeVisible();
   await expect(page.locator('.studio-preview-extension-grid', { hasText: 'Contributed grid: 2 columns' })).toBeVisible();
   expect(await page.locator('script[src*="studio-browser"], link[href*="studio-browser"]').count()).toBe(0);
   expect(await page.locator('[data-studio-preview-marker]').count()).toBe(0);

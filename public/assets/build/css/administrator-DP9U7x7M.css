@@ -2424,7 +2424,11 @@ button[disabled], button[aria-disabled="true"] { cursor: not-allowed; opacity: .
   display: none;
 }
 
+/* The inline shell grows toward the viewport, less roughly the height of the shell's own header, mode tabs and
+   footer (App ADR 0024). The value inherits into the shell; its maximized and fullscreen presentations size
+   the workspace themselves, which takes precedence over it. */
 .studio-authoring-mount {
+  --studio-workspace-height: max(32rem, calc(100vh - 14rem));
   min-block-size: 24rem;
   max-inline-size: 100%;
   min-inline-size: 0;
@@ -2432,6 +2436,14 @@ button[disabled], button[aria-disabled="true"] { cursor: not-allowed; opacity: .
   border: 1px solid var(--color-border, #d5dbe3);
   border-radius: var(--radius-2, 0.5rem);
   background: var(--color-surface, #fff);
+}
+
+/* A custom property keeps its last declaration even where the value cannot be used, so the dynamic viewport
+   unit replaces the static one only where it is supported. */
+@supports (block-size: 100dvh) {
+  .studio-authoring-mount {
+    --studio-workspace-height: max(32rem, calc(100dvh - 14rem));
+  }
 }
 
 .studio-authoring-toolbar {
@@ -2451,6 +2463,19 @@ button[disabled], button[aria-disabled="true"] { cursor: not-allowed; opacity: .
 
 .studio-authoring-region[data-studio-surface='form'] .studio-authoring-preview {
   display: none;
+}
+
+/* The accepted-revision preview waits in a closed disclosure below the shell (App ADR 0024). Its summary keeps
+   the native disclosure marker and the shared keyboard-focus outline, and the whole row is at least the
+   interface standard's touch target tall. */
+.studio-authoring-preview > summary {
+  min-block-size: max(2.75rem, var(--kis-touch-target, 2.75rem));
+  padding-block: var(--space-2, 0.5rem);
+  cursor: pointer;
+}
+
+.studio-authoring-preview-body {
+  padding-block-start: var(--space-2, 0.5rem);
 }
 
 .studio-authoring-preview-frame {
