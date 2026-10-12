@@ -105,7 +105,7 @@ jobs:
           commit: ${{ inputs.ref }}
 
       - name: Install PHP and Composer
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.5'
           extensions: apcu, ctype, fileinfo, filter, intl, json, mbstring, openssl, pcntl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
@@ -285,7 +285,7 @@ jobs:
         run: node tools/release-artifacts.mjs receipt distribution
       - name: Retain qualification receipt
         if: inputs.release-artifact != ''
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-qualification-${{ github.run_id }}-${{ github.run_attempt }}-distribution
           path: dist/qualification-distribution.json
@@ -1017,7 +1017,7 @@ jobs:
         run: node tools/release-artifacts.mjs receipt ${{ matrix.database.driver }}
       - name: Retain qualification receipt
         if: inputs.release-artifact != ''
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-qualification-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.database.driver }}
           path: dist/qualification-${{ matrix.database.driver }}.json
@@ -1119,7 +1119,7 @@ jobs:
         version: ${{ inputs.release-version }}
         commit: ${{ inputs.ref }}
     - name: Install qualification PHP and Composer
-      uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+      uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962
       with:
         php-version: '8.5'
         extensions: apcu, ctype, fileinfo, filter, intl, json, mbstring, openssl, pcntl, pdo, pdo_mysql, pdo_pgsql,
@@ -1218,7 +1218,7 @@ jobs:
         (cd build/resilience && zip -qr "../../dist/kumwe-resilience-${DB_DRIVER}.zip" .)
         node tools/release-artifacts.mjs receipt "resilience-$DB_DRIVER"
     - name: Retain the successful receipt and exact evidence bytes
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       with:
         name: release-qualification-${{ github.run_id }}-${{ github.run_attempt }}-resilience-${{ matrix.database.driver
           }}
@@ -1229,7 +1229,7 @@ jobs:
         retention-days: 30
     - name: Retain failure diagnostics without issuing a receipt
       if: always()
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       with:
         name: release-resilience-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.database.driver }}
         path: build/resilience/
