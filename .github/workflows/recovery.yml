@@ -95,7 +95,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.5'
           extensions: apcu, ctype, fileinfo, filter, intl, json, mbstring, openssl, pcntl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
@@ -161,7 +161,7 @@ jobs:
             test "$(stat -c %s "$path")" -le 8192
             jq -e 'type == "object"' "$path" >/dev/null
           done
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always() && steps.http-report.outcome == 'success'
         with:
           name: recovery-app-http
@@ -268,7 +268,7 @@ jobs:
             sudo cp "$RUNNER_TEMP/native-recovery/dedup/measurement.json" "$RUNNER_TEMP/recovery-report/dedup.json"
           fi
           sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/recovery-report"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: recovery-${{ matrix.driver }}
