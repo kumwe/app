@@ -1,4 +1,4 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["js/studio-composition-Ps-42Lg4.js","js/reveal-validation-DUOMRzvA.js","js/preview-identity-Bvgz1vbs.js","js/studio-launch-CfLSwZt6.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["js/studio-composition-BYFR2DYN.js","js/reveal-validation-DUOMRzvA.js","js/preview-identity-Bvgz1vbs.js","js/studio-launch-Cj0r3DfV.js"])))=>i.map(i=>d[i]);
 import { a as n, c as A, d as b, i as r, n as setupCopyValues, o as t, p as i$1, r as __decorate, s as i, t as setupValidationReveal } from "./reveal-validation-DUOMRzvA.js";
 import { t as setupAppearance } from "./appearance-AWH5eFRF.js";
 //#region assets/administrator/components/command-palette.ts
@@ -1123,6 +1123,22 @@ var seen = {};
 var isCssPreloadUrl = function isCssPreloadUrl(url) {
 	return url.pathname.endsWith(".css");
 };
+var preloadOnce = function preloadOnce(seen, href, preload) {
+	if (href in seen) return seen[href];
+	const promise = preload();
+	if (!promise) {
+		seen[href] = void 0;
+		return;
+	}
+	const preloadPromise = promise.then(() => {
+		seen[href] = void 0;
+	}, (err) => {
+		seen[href] = void 0;
+		throw err;
+	});
+	seen[href] = preloadPromise;
+	return preloadPromise;
+};
 var __vitePreload = function preload(baseModule, deps, importerUrl) {
 	let promise = Promise.resolve();
 	if (deps && deps.length > 0) {
@@ -1149,32 +1165,32 @@ var __vitePreload = function preload(baseModule, deps, importerUrl) {
 		promise = allSettled(deps.map((depString) => {
 			depString = assetsURL(depString, importerUrl);
 			const dep = importMetaResolve(depString);
-			if (dep.href in seen) return;
-			seen[dep.href] = true;
 			const isCss = isCssPreloadUrl(dep);
-			if (preloadedHrefs === void 0) {
-				preloadedHrefs = {
-					all: /* @__PURE__ */ new Set(),
-					styles: /* @__PURE__ */ new Set()
-				};
-				const links = document.getElementsByTagName("link");
-				for (let i = links.length - 1; i >= 0; i--) {
-					const link = links[i];
-					preloadedHrefs.all.add(link.href);
-					if (link.rel === "stylesheet") preloadedHrefs.styles.add(link.href);
+			return preloadOnce(seen, dep.href, () => {
+				if (preloadedHrefs === void 0) {
+					preloadedHrefs = {
+						all: /* @__PURE__ */ new Set(),
+						styles: /* @__PURE__ */ new Set()
+					};
+					const links = document.getElementsByTagName("link");
+					for (let i = links.length - 1; i >= 0; i--) {
+						const link = links[i];
+						preloadedHrefs.all.add(link.href);
+						if (link.rel === "stylesheet") preloadedHrefs.styles.add(link.href);
+					}
 				}
-			}
-			if ((isCss ? preloadedHrefs.styles : preloadedHrefs.all).has(dep.href)) return;
-			const link = document.createElement("link");
-			link.rel = isCss ? "stylesheet" : scriptRel;
-			if (!isCss) link.as = "script";
-			link.crossOrigin = "";
-			link.href = dep.href;
-			if (cspNonce) link.setAttribute("nonce", cspNonce);
-			document.head.appendChild(link);
-			if (isCss) return new Promise((res, rej) => {
-				link.addEventListener("load", res);
-				link.addEventListener("error", () => rej(/* @__PURE__ */ new Error(`Unable to preload CSS for ${dep}`)));
+				if ((isCss ? preloadedHrefs.styles : preloadedHrefs.all).has(dep.href)) return;
+				const link = document.createElement("link");
+				link.rel = isCss ? "stylesheet" : scriptRel;
+				if (!isCss) link.as = "script";
+				link.crossOrigin = "";
+				link.href = dep.href;
+				if (cspNonce) link.setAttribute("nonce", cspNonce);
+				document.head.appendChild(link);
+				if (isCss) return new Promise((res, rej) => {
+					link.addEventListener("load", res);
+					link.addEventListener("error", () => rej(/* @__PURE__ */ new Error(`Unable to preload CSS for ${dep}`)));
+				});
 			});
 		}).filter((p) => p !== void 0));
 	}
@@ -1292,11 +1308,11 @@ setupValidationReveal();
 setupNavigationTargets();
 setupPolicyStepFlows();
 if (document.querySelector("[data-studio-composition]") !== null) __vitePreload(async () => {
-	const { setupStudioComposition } = await import("./studio-composition-Ps-42Lg4.js");
+	const { setupStudioComposition } = await import("./studio-composition-BYFR2DYN.js");
 	return { setupStudioComposition };
 }, __vite__mapDeps([0,1,2])).then(({ setupStudioComposition }) => setupStudioComposition());
 if (document.querySelector("[data-kumwe-studio][data-studio-module-url]") !== null) __vitePreload(async () => {
-	const { setupStudioLaunch } = await import("./studio-launch-CfLSwZt6.js");
+	const { setupStudioLaunch } = await import("./studio-launch-Cj0r3DfV.js");
 	return { setupStudioLaunch };
 }, __vite__mapDeps([3,2])).then(({ setupStudioLaunch }) => setupStudioLaunch());
 //#endregion
